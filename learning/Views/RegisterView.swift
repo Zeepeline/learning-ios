@@ -1,0 +1,312 @@
+//
+//  RegisterView.swift
+//  learning
+//
+//  Created by macbook on 8/30/26.
+//
+
+import SwiftUI
+
+struct RegisterView: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage("isLoggedIn") private var isLoggedIn: Bool = false
+    
+    // Form States
+    @State private var fullName: String = ""
+    @State private var email: String = ""
+    @State private var password: String = ""
+    @State private var isAgreed: Bool = false
+    @State private var isShowingLogin: Bool = false
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                // Background
+                Color(red: 0.98, green: 0.97, blue: 0.96)
+                    .ignoresSafeArea()
+
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 22) {
+                        
+                        // 1. Tombol Back Kartun
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(.black)
+                                .padding(10)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.black, lineWidth: 1.5)
+                                )
+                                .shadow(color: .black, radius: 0, x: 2, y: 2)
+                        }
+                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+                        .padding(.top, 10)
+
+                        // 2. Header Judul
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 6) {
+                                Text("Create Account")
+                                    .font(.system(size: 28, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.black)
+                                
+                                Text("👋")
+                                    .font(.system(size: 26))
+                            }
+
+                            Text("Please register on our Streamline, where you can continue using our service.")
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .lineSpacing(3)
+                        }
+                        .padding(.top, 4)
+
+                        // 3. Form Input Fields (Kartun Neo-Brutalist)
+                        VStack(spacing: 16) {
+                            // Field Nama Lengkap
+                            CartoonInputField(
+                                placeholder: "Bruce Wayne",
+                                text: $fullName,
+                                icon: "person.fill"
+                            )
+
+                            // Field Email
+                            CartoonInputField(
+                                placeholder: "brucewayne27@suarasa.com",
+                                text: $email,
+                                icon: "envelope.fill",
+                                keyboardType: .emailAddress
+                            )
+
+                            // Field Password
+                            CartoonSecureInputField(
+                                placeholder: "••••••••",
+                                text: $password
+                            )
+                        }
+                        .padding(.top, 8)
+
+                        // 4. Checkbox Persetujuan Terms
+                        HStack(spacing: 10) {
+                            Button {
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
+                                    isAgreed.toggle()
+                                }
+                            } label: {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(isAgreed ? Color(red: 0.95, green: 0.42, blue: 0.33) : Color.white)
+                                        .frame(width: 22, height: 22)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 6)
+                                                .stroke(Color.black, lineWidth: 1.8)
+                                        )
+
+                                    if isAgreed {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 11, weight: .black))
+                                            .foregroundColor(.white)
+                                    }
+                                }
+                            }
+                            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+
+                            Text("I agree to privacy policy & terms")
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .underline()
+                        }
+                        .padding(.top, 2)
+
+                        // 5. Tombol Continue (Warna Coral-Red Tebal)
+                        Button {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                isLoggedIn = true
+                            }
+                        } label: {
+                            Text("Continue")
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 15)
+                                .background(Color(red: 0.95, green: 0.42, blue: 0.33)) // Coral Red
+                                .cornerRadius(14)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 14)
+                                        .stroke(Color.black, lineWidth: 2)
+                                )
+                                .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
+                        }
+                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.5))
+                        .disabled(!isAgreed || fullName.isEmpty || email.isEmpty || password.isEmpty)
+                        .opacity((!isAgreed || fullName.isEmpty || email.isEmpty || password.isEmpty) ? 0.6 : 1.0)
+                        .padding(.top, 10)
+
+                        // 6. Pembatas "Or"
+                        HStack {
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(height: 1)
+                            
+                            Text("Or")
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 8)
+                            
+                            Rectangle()
+                                .fill(Color.gray.opacity(0.3))
+                                .frame(height: 1)
+                        }
+                        .padding(.vertical, 6)
+
+                        // 7. Tombol Social Login (Google, Apple, Facebook)
+                        HStack(spacing: 14) {
+                            SocialCartoonButton(icon: "g.circle.fill", iconColor: .red) {
+                                withAnimation(.spring()) { isLoggedIn = true }
+                            }
+                            
+                            SocialCartoonButton(icon: "apple.logo", iconColor: .black) {
+                                withAnimation(.spring()) { isLoggedIn = true }
+                            }
+                            
+                            SocialCartoonButton(icon: "f.circle.fill", iconColor: .blue) {
+                                withAnimation(.spring()) { isLoggedIn = true }
+                            }
+                        }
+
+                        Spacer(minLength: 25)
+
+                        // 8. Footer Link ke Sign In
+                        HStack(spacing: 4) {
+                            Spacer()
+                            Text("Already have an account?")
+                                .font(.system(size: 12, weight: .medium, design: .rounded))
+                                .foregroundColor(.black)
+                            
+                            Button {
+                                isShowingLogin = true
+                            } label: {
+                                Text("Sign in instead")
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .foregroundColor(Color(red: 0.95, green: 0.42, blue: 0.33))
+                                    .underline()
+                            }
+                            Spacer()
+                        }
+                        .padding(.bottom, 20)
+                    }
+                    .padding(.horizontal, 22)
+                }
+            }
+            .navigationDestination(isPresented: $isShowingLogin) {
+                LoginView()
+                    .navigationBarBackButtonHidden(true)
+            }
+        }
+    }
+}
+
+// MARK: - 🎨 Komponen Input Field Kartun (Sesuai Mockup)
+struct CartoonInputField: View {
+    var placeholder: String
+    @Binding var text: String
+    var icon: String? = nil
+    var keyboardType: UIKeyboardType = .default
+
+    var body: some View {
+        HStack(spacing: 12) {
+            if let icon = icon {
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.secondary)
+            }
+
+            TextField(placeholder, text: $text)
+                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .keyboardType(keyboardType)
+                .autocapitalization(.none)
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color.white)
+        .cornerRadius(14)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.black, lineWidth: 2)
+        )
+        .shadow(color: .black, radius: 0, x: 2.5, y: 2.5) // Offset shadow persis mockup
+    }
+}
+
+// MARK: - 🔒 Input Field Password Kartun
+struct CartoonSecureInputField: View {
+    var placeholder: String
+    @Binding var text: String
+    @State private var isSecured: Bool = true
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundColor(.secondary)
+
+            if isSecured {
+                SecureField(placeholder, text: $text)
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+            } else {
+                TextField(placeholder, text: $text)
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+            }
+
+            Button {
+                isSecured.toggle()
+            } label: {
+                Image(systemName: isSecured ? "eye.slash.fill" : "eye.fill")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .background(Color.white)
+        .cornerRadius(14)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.black, lineWidth: 2)
+        )
+        .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
+    }
+}
+
+// MARK: - 🌐 Tombol Social Auth Kartun
+struct SocialCartoonButton: View {
+    let icon: String
+    let iconColor: Color
+    var action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(iconColor)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(Color.white)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.black, lineWidth: 1.8)
+                )
+                .shadow(color: .black, radius: 0, x: 2, y: 2)
+        }
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+    }
+}
+
+#Preview {
+    RegisterView()
+}

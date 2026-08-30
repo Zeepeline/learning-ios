@@ -10,6 +10,8 @@ import SwiftData
 
 @main
 struct learningApp: App {
+    @AppStorage("isLoggedIn") private var isLoggedIn: Bool = true
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
@@ -25,7 +27,22 @@ struct learningApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            Group {
+                if isLoggedIn {
+                    ContentView()
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                            removal: .opacity
+                        ))
+                } else {
+                    LoginView()
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .scale(scale: 1.02)),
+                            removal: .opacity
+                        ))
+                }
+            }
+            .animation(.spring(response: 0.45, dampingFraction: 0.8), value: isLoggedIn)
         }
         .modelContainer(sharedModelContainer)
     }

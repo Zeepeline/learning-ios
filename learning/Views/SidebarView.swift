@@ -9,10 +9,11 @@ import SwiftUI
 
 struct SidebarView: View {
     @Binding var isOpen: Bool
+    @AppStorage("isLoggedIn") private var isLoggedIn: Bool = true
 
     var body: some View {
         ZStack(alignment: .leading) {
-            // Latar Belakang Gelap Semi-Transparan
+            // Latar Belakang Gelap Transparan
             if isOpen {
                 Color.black.opacity(0.4)
                     .ignoresSafeArea()
@@ -23,162 +24,162 @@ struct SidebarView: View {
                     }
             }
 
-            // Panel Drawer Kartun Modern
+            // Panel Drawer Kartun Kompak & Playful
             if isOpen {
                 HStack(spacing: 0) {
-                    VStack(alignment: .leading, spacing: 16) {
+                    VStack(alignment: .leading, spacing: 14) {
                         
-                        // 1. Header Profil Vector
-                        HStack(spacing: 12) {
+                        // 1. Header Profil Kartun Stiker
+                        HStack(spacing: 10) {
                             ZStack {
                                 Circle()
-                                    .fill(Color.yellow)
-                                    .frame(width: 44, height: 44)
+                                    .fill(Color.cartoonYellow)
+                                    .frame(width: 40, height: 40)
                                     .overlay(
-                                        Circle()
-                                            .stroke(Color.black, lineWidth: 2)
+                                        Circle().stroke(Color.cartoonBorder, lineWidth: 2)
                                     )
-                                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                                    .shadow(color: .cartoonBorder, radius: 0, x: 2, y: 2)
                                 
                                 Image(systemName: "person.crop.circle.fill")
                                     .resizable()
                                     .scaledToFit()
-                                    .frame(width: 26, height: 26)
-                                    .foregroundColor(.black)
+                                    .frame(width: 24, height: 24)
+                                    .foregroundColor(.cartoonTextPrimary)
                             }
 
-                            VStack(alignment: .leading, spacing: 3) {
+                            VStack(alignment: .leading, spacing: 2) {
                                 Text("Herlambang")
-                                    .font(.system(.subheadline, design: .rounded))
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.black)
+                                    .font(.system(size: 13, weight: .black, design: .rounded))
+                                    .foregroundColor(.cartoonTextPrimary)
                                 
-                                // Badge Vector (Menggantikan Emoji Api)
-                                HStack(spacing: 4) {
+                                // Tag Level Kartun
+                                HStack(spacing: 3) {
                                     Image(systemName: "flame.fill")
-                                        .font(.system(size: 9, weight: .bold))
+                                        .font(.system(size: 8, weight: .bold))
                                         .foregroundColor(.orange)
                                     
                                     Text("Level 5")
-                                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                                        .foregroundColor(.black)
+                                        .font(.system(size: 9, weight: .heavy, design: .rounded))
+                                        .foregroundColor(.cartoonTextPrimary)
                                 }
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
-                                .background(Color.mint.opacity(0.8))
+                                .background(Color.cartoonMint)
                                 .clipShape(Capsule())
                                 .overlay(
-                                    Capsule().stroke(Color.black, lineWidth: 1.5)
+                                    Capsule().stroke(Color.cartoonBorder, lineWidth: 1.5)
                                 )
                             }
 
                             Spacer()
 
-                            // Tombol Close Vector Silang
+                            // Tombol Close Silang Kartun
                             Button {
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                                     isOpen = false
                                 }
                             } label: {
                                 Image(systemName: "xmark")
-                                    .font(.system(size: 11, weight: .bold))
-                                    .foregroundColor(.black)
+                                    .font(.system(size: 10, weight: .black))
+                                    .foregroundColor(.cartoonTextPrimary)
                                     .padding(6)
                                     .background(Color.white)
                                     .clipShape(Circle())
-                                    .overlay(Circle().stroke(Color.black, lineWidth: 2))
-                                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                                    .overlay(Circle().stroke(Color.cartoonBorder, lineWidth: 1.5))
+                                    .shadow(color: .cartoonBorder, radius: 0, x: 1.5, y: 1.5)
                             }
+                            .buttonStyle(CartoonPressButtonStyle())
                         }
                         .padding(.top, 50)
 
                         // Garis Pemisah Kartun
                         Rectangle()
-                            .fill(Color.black)
+                            .fill(Color.cartoonBorder)
                             .frame(height: 2)
                             .padding(.vertical, 2)
 
-                        // 2. Daftar Menu dengan Ikon Vector Murni
-                        VStack(spacing: 10) {
-                            CartoonSidebarRow(
+                        // 2. Daftar Menu Kartun Mini
+                        VStack(spacing: 9) {
+                            CartoonMenuPill(
                                 icon: "list.clipboard.fill",
                                 title: "Semua Tugas",
                                 count: 8,
-                                bgColor: Color(red: 0.99, green: 0.88, blue: 0.55), // Pastel Kuning
+                                bgColor: .cartoonYellow,
                                 iconColor: .black
                             )
                             
-                            CartoonSidebarRow(
+                            CartoonMenuPill(
                                 icon: "sun.max.fill",
                                 title: "Hari Ini",
                                 count: 3,
-                                bgColor: Color(red: 1.0, green: 0.78, blue: 0.78), // Pastel Pink
+                                bgColor: .cartoonPink,
                                 iconColor: .red
                             )
                             
-                            CartoonSidebarRow(
+                            CartoonMenuPill(
                                 icon: "bookmark.fill",
                                 title: "Penting",
                                 count: 2,
-                                bgColor: Color(red: 0.78, green: 0.92, blue: 1.0), // Sky Blue
+                                bgColor: .cartoonBlue,
                                 iconColor: .blue
                             )
                             
-                            CartoonSidebarRow(
+                            CartoonMenuPill(
                                 icon: "folder.badge.gearshape",
                                 title: "Kategori",
-                                bgColor: Color(red: 0.84, green: 0.95, blue: 0.84), // Mint Green
+                                bgColor: .cartoonMint,
                                 iconColor: .green
                             )
                             
-                            CartoonSidebarRow(
+                            CartoonMenuPill(
                                 icon: "slider.horizontal.3",
                                 title: "Pengaturan",
-                                bgColor: Color(red: 0.93, green: 0.87, blue: 1.0), // Lavender
+                                bgColor: .cartoonLavender,
                                 iconColor: .purple
                             )
                         }
+                        .padding(.horizontal, 10)
 
                         Spacer()
 
-                        // 3. Banner Bawah (Vector Icon)
-                        HStack(spacing: 8) {
-                            Image(systemName: "bolt.fill")
-                                .font(.caption)
-                                .foregroundColor(.orange)
-                            
-                            Text("Tetap Produktif")
-                                .font(.system(.caption, design: .rounded))
-                                .fontWeight(.bold)
-                                .foregroundColor(.black)
-
-                            Image(systemName: "arrow.up.right.circle.fill")
-                                .font(.caption)
-                                .foregroundColor(.blue)
+                        // 3. Tombol Logout / Keluar Kartun di Bagian Bawah
+                        Button {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                isOpen = false
+                                isLoggedIn = false // Otomatis berpindah ke halaman Login/Register
+                            }
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "rectangle.portrait.and.arrow.right.fill")
+                                    .font(.system(size: 12, weight: .black))
+                                    .foregroundColor(.red)
+                                
+                                Text("Keluar Akun")
+                                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.red)
+                                
+                                Spacer()
+                            }
+                            .padding(.vertical, 8)
+                            .padding(.horizontal, 12)
+                            .frame(maxWidth: .infinity)
+                            .cartoonCard(bgColor: .white, cornerRadius: 10, borderWidth: 1.5, shadowOffset: 2.0)
                         }
-                        .padding(.vertical, 10)
-                        .padding(.horizontal, 12)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.white)
-                        .cornerRadius(10)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(Color.black, lineWidth: 2)
-                        )
-                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+                        .padding(.horizontal, 10)
                         .padding(.bottom, 25)
                     }
-                    .padding(.horizontal, 16)
-                    .frame(width: 260, alignment: .leading)
-                    .background(Color(red: 0.98, green: 0.96, blue: 0.92))
+                    .padding(.horizontal, 14)
+                    .frame(width: 280, alignment: .leading)
+                    .background(Color.cartoonBg)
                     .overlay(
                         Rectangle()
-                            .fill(Color.black)
+                            .fill(Color.cartoonBorder)
                             .frame(width: 2.5),
                         alignment: .trailing
                     )
                     .ignoresSafeArea(.all, edges: .vertical)
-                    .shadow(color: .black.opacity(0.3), radius: 12, x: 6, y: 0)
+                    .shadow(color: .black.opacity(0.25), radius: 12, x: 6, y: 0)
 
                     Spacer()
                 }
@@ -188,8 +189,8 @@ struct SidebarView: View {
     }
 }
 
-// Komponen Tombol Menu Kartun
-struct CartoonSidebarRow: View {
+// Komponen Tombol Menu Kartu Kartun Kompak
+struct CartoonMenuPill: View {
     let icon: String
     let title: String
     var count: Int? = nil
@@ -198,63 +199,47 @@ struct CartoonSidebarRow: View {
 
     var body: some View {
         Button {
-            // Aksi menu
+            // Aksi saat menu diklik
         } label: {
-            HStack(spacing: 10) {
-                // Wadah Ikon Vector
+            HStack(spacing: 8) {
+                // Wadah Ikon Bulat Putih dengan Border
                 ZStack {
                     Circle()
                         .fill(Color.white)
-                        .frame(width: 30, height: 30)
-                        .overlay(Circle().stroke(Color.black, lineWidth: 2))
+                        .frame(width: 26, height: 26)
+                        .overlay(Circle().stroke(Color.cartoonBorder, lineWidth: 1.5))
                     
                     Image(systemName: icon)
-                        .font(.system(size: 13, weight: .bold))
+                        .font(.system(size: 11, weight: .heavy))
                         .foregroundColor(iconColor)
                 }
 
-                // Judul Menu
+                // Judul Menu Tebal tapi Kompak
                 Text(title)
-                    .font(.system(.subheadline, design: .rounded))
-                    .fontWeight(.bold)
-                    .foregroundColor(.black)
+                    .font(.system(size: 12, weight: .heavy, design: .rounded))
+                    .foregroundColor(.cartoonTextPrimary)
 
                 Spacer()
 
-                // Badge Counter Vector
+                // Badge Counter Kartun
                 if let count = count {
                     Text("\(count)")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 3)
+                        .font(.system(size: 10, weight: .black, design: .rounded))
+                        .foregroundColor(.cartoonTextPrimary)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
                         .background(Color.white)
                         .clipShape(Capsule())
                         .overlay(
-                            Capsule().stroke(Color.black, lineWidth: 1.5)
+                            Capsule().stroke(Color.cartoonBorder, lineWidth: 1.2)
                         )
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(bgColor)
-            .cornerRadius(11)
-            .overlay(
-                RoundedRectangle(cornerRadius: 11)
-                    .stroke(Color.black, lineWidth: 2)
-            )
-            .shadow(color: .black, radius: 0, x: 2, y: 2)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .cartoonCard(bgColor: bgColor, cornerRadius: 10, borderWidth: 1.5, shadowOffset: 2.0)
         }
-        .buttonStyle(CartoonPressButtonStyle())
-    }
-}
-
-// Efek Tombol Membal (Bouncy Press)
-struct CartoonPressButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .offset(x: configuration.isPressed ? 1.5 : 0, y: configuration.isPressed ? 1.5 : 0)
-            .animation(.easeInOut(duration: 0.1), value: configuration.isPressed)
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
     }
 }
 

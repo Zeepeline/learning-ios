@@ -64,7 +64,13 @@ struct AddActivity: View {
 
     private func saveActivity() {
         withAnimation {
-            let newItem = Item(timestamp: dueDate)
+            let newItem = Item(
+                title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+                notes: notes,
+                timestamp: dueDate,
+                isCompleted: false,
+                priority: priority
+            )
             modelContext.insert(newItem)
             dismiss()
         }
