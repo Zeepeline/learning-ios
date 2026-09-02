@@ -12,19 +12,6 @@ import SwiftData
 struct learningApp: App {
     @AppStorage("isLoggedIn") private var isLoggedIn: Bool = true
 
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
     var body: some Scene {
         WindowGroup {
             Group {
@@ -42,8 +29,14 @@ struct learningApp: App {
                         ))
                 }
             }
+            .preferredColorScheme(.light)
             .animation(.spring(response: 0.45, dampingFraction: 0.8), value: isLoggedIn)
+            .onAppear {
+                // Inisialisasi Izin Notifikasi Sistem
+                NotificationManager.shared.requestAuthorization()
+            }
         }
-        .modelContainer(sharedModelContainer)
+        
+        .modelContainer(for: Item.self)
     }
 }

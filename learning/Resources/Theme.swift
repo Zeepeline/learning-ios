@@ -7,6 +7,33 @@
 
 import SwiftUI
 
+// MARK: - 📏 Design System: Apple HIG Spatial Spacing System (4pt/8pt Grid)
+enum HIGSpacing {
+    /// 4pt - Micro spacing (jarak ikon ke teks kecil, badge internal)
+    static let xxs: CGFloat = 4
+    
+    /// 8pt - Tight spacing (jarak elemen internal yang berdekatan)
+    static let xs: CGFloat = 8
+    
+    /// 12pt - Medium spacing (jarak antar baris list, padding kartu internal)
+    static let sm: CGFloat = 12
+    
+    /// 16pt - Standard Apple screen horizontal margin & padding
+    static let md: CGFloat = 16
+    
+    /// 20pt - Relaxed spacing (margin layar lega & padding form)
+    static let lg: CGFloat = 20
+    
+    /// 24pt - Section spacing (jarak pemisah antar seksi konten)
+    static let xl: CGFloat = 24
+    
+    /// 32pt - Major section spacing (jarak besar antar grup utama)
+    static let xxl: CGFloat = 32
+    
+    /// 44pt - Apple HIG Minimum Touch Target Area (Standar sentuh jari)
+    static let touchTargetMin: CGFloat = 44
+}
+
 // MARK: - 🎨 Design System: Palet Warna Kartun & Neo-Brutalist
 extension Color {
     /// Warna latar belakang dasar bertema retro cream/off-white
@@ -19,6 +46,7 @@ extension Color {
     static let cartoonMint = Color(red: 0.84, green: 0.95, blue: 0.84)
     static let cartoonLavender = Color(red: 0.93, green: 0.87, blue: 1.0)
     static let cartoonOrange = Color(red: 1.0, green: 0.72, blue: 0.45)
+    static let cartoonCoral = Color(red: 0.95, green: 0.42, blue: 0.33)
     
     /// Warna batas border & teks tegas
     static let cartoonBorder = Color.black

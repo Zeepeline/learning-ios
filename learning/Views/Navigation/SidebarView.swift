@@ -6,10 +6,26 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct SidebarView: View {
     @Binding var isOpen: Bool
     @AppStorage("isLoggedIn") private var isLoggedIn: Bool = true
+    @AppStorage("userName") private var userName: String = "Bruce Wayne"
+    
+    @Query private var allItems: [Item]
+    @State private var isShowingLogoutDialog: Bool = false
+
+    private let calendar = Calendar.current
+
+    // Live counts dari SwiftData
+    private var todayCount: Int {
+        allItems.filter { calendar.isDateInToday($0.timestamp) }.count
+    }
+
+    private var importantCount: Int {
+        allItems.filter { $0.priority == "Tinggi" }.count
+    }
 
     var body: some View {
         ZStack(alignment: .leading) {
@@ -27,30 +43,30 @@ struct SidebarView: View {
             // Panel Drawer Kartun Kompak & Playful
             if isOpen {
                 HStack(spacing: 0) {
-                    VStack(alignment: .leading, spacing: 14) {
+                    VStack(alignment: .leading, spacing: HIGSpacing.md) {
                         
                         // 1. Header Profil Kartun Stiker
-                        HStack(spacing: 10) {
+                        HStack(spacing: HIGSpacing.sm) {
                             ZStack {
                                 Circle()
                                     .fill(Color.cartoonYellow)
-                                    .frame(width: 40, height: 40)
+                                    .frame(width: 44, height: 44)
                                     .overlay(
-                                        Circle().stroke(Color.cartoonBorder, lineWidth: 2)
+                                        Circle().stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                                     )
-                                    .shadow(color: .cartoonBorder, radius: 0, x: 2, y: 2)
+                                    .shadow(color: .black, radius: 0, x: 2, y: 2)
                                 
                                 Image(systemName: "person.crop.circle.fill")
                                     .resizable()
                                     .scaledToFit()
-                                    .frame(width: 24, height: 24)
-                                    .foregroundColor(.cartoonTextPrimary)
+                                    .frame(width: 28, height: 28)
+                                    .foregroundColor(.black)
                             }
 
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Herlambang")
-                                    .font(.system(size: 13, weight: .black, design: .rounded))
-                                    .foregroundColor(.cartoonTextPrimary)
+                            VStack(alignment: .leading, spacing: HIGSpacing.xxs) {
+                                Text(userName)
+                                    .font(.system(size: 14, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.black)
                                 
                                 // Tag Level Kartun
                                 HStack(spacing: 3) {
@@ -58,35 +74,36 @@ struct SidebarView: View {
                                         .font(.system(size: 8, weight: .bold))
                                         .foregroundColor(.orange)
                                     
-                                    Text("Level 5")
+                                    Text("Level 1")
                                         .font(.system(size: 9, weight: .heavy, design: .rounded))
-                                        .foregroundColor(.cartoonTextPrimary)
+                                        .foregroundColor(.black)
                                 }
                                 .padding(.horizontal, 6)
                                 .padding(.vertical, 2)
                                 .background(Color.cartoonMint)
                                 .clipShape(Capsule())
                                 .overlay(
-                                    Capsule().stroke(Color.cartoonBorder, lineWidth: 1.5)
+                                    Capsule().stroke(Color.black, lineWidth: 1.2)
                                 )
                             }
 
                             Spacer()
 
-                            // Tombol Close Silang Kartun
+                            // Tombol Close Silang Kartun (Touch Target 44pt)
                             Button {
+                                HapticManager.shared.impact(style: .light)
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                                     isOpen = false
                                 }
                             } label: {
                                 Image(systemName: "xmark")
-                                    .font(.system(size: 10, weight: .black))
-                                    .foregroundColor(.cartoonTextPrimary)
-                                    .padding(6)
+                                    .font(.system(size: 12, weight: .black))
+                                    .foregroundColor(.black)
+                                    .frame(width: 36, height: 36)
                                     .background(Color.white)
                                     .clipShape(Circle())
-                                    .overlay(Circle().stroke(Color.cartoonBorder, lineWidth: 1.5))
-                                    .shadow(color: .cartoonBorder, radius: 0, x: 1.5, y: 1.5)
+                                    .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
+                                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
                             }
                             .buttonStyle(CartoonPressButtonStyle())
                         }
@@ -94,16 +111,16 @@ struct SidebarView: View {
 
                         // Garis Pemisah Kartun
                         Rectangle()
-                            .fill(Color.cartoonBorder)
+                            .fill(Color.black)
                             .frame(height: 2)
-                            .padding(.vertical, 2)
+                            .padding(.vertical, HIGSpacing.xxs)
 
-                        // 2. Daftar Menu Kartun Mini
-                        VStack(spacing: 9) {
+                        // 2. Daftar Menu Kartun Mini dengan Live Counter
+                        VStack(spacing: HIGSpacing.xs) {
                             CartoonMenuPill(
                                 icon: "list.clipboard.fill",
                                 title: "Semua Tugas",
-                                count: 8,
+                                count: allItems.count,
                                 bgColor: .cartoonYellow,
                                 iconColor: .black
                             )
@@ -111,7 +128,7 @@ struct SidebarView: View {
                             CartoonMenuPill(
                                 icon: "sun.max.fill",
                                 title: "Hari Ini",
-                                count: 3,
+                                count: todayCount,
                                 bgColor: .cartoonPink,
                                 iconColor: .red
                             )
@@ -119,7 +136,7 @@ struct SidebarView: View {
                             CartoonMenuPill(
                                 icon: "bookmark.fill",
                                 title: "Penting",
-                                count: 2,
+                                count: importantCount,
                                 bgColor: .cartoonBlue,
                                 iconColor: .blue
                             )
@@ -130,52 +147,51 @@ struct SidebarView: View {
                                 bgColor: .cartoonMint,
                                 iconColor: .green
                             )
-                            
-                            CartoonMenuPill(
-                                icon: "slider.horizontal.3",
-                                title: "Pengaturan",
-                                bgColor: .cartoonLavender,
-                                iconColor: .purple
-                            )
                         }
-                        .padding(.horizontal, 10)
+                        .padding(.horizontal, HIGSpacing.xs)
 
                         Spacer()
 
                         // 3. Tombol Logout / Keluar Kartun di Bagian Bawah
                         Button {
-                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                isOpen = false
-                                isLoggedIn = false // Otomatis berpindah ke halaman Login/Register
+                            HapticManager.shared.warning()
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                isShowingLogoutDialog = true
                             }
                         } label: {
-                            HStack(spacing: 8) {
+                            HStack(spacing: HIGSpacing.xs) {
                                 Image(systemName: "rectangle.portrait.and.arrow.right.fill")
-                                    .font(.system(size: 12, weight: .black))
+                                    .font(.system(size: 13, weight: .black))
                                     .foregroundColor(.red)
                                 
                                 Text("Keluar Akun")
-                                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                    .font(.system(size: 13, weight: .heavy, design: .rounded))
                                     .foregroundColor(.red)
                                 
                                 Spacer()
                             }
-                            .padding(.vertical, 8)
-                            .padding(.horizontal, 12)
+                            .padding(.vertical, HIGSpacing.sm)
+                            .padding(.horizontal, HIGSpacing.md)
                             .frame(maxWidth: .infinity)
-                            .cartoonCard(bgColor: .white, cornerRadius: 10, borderWidth: 1.5, shadowOffset: 2.0)
+                            .background(Color.white)
+                            .cornerRadius(CartoonMetrics.cardCornerRadius)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                    .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+                            )
+                            .shadow(color: .black, radius: 0, x: 2.0, y: 2.0)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
-                        .padding(.horizontal, 10)
-                        .padding(.bottom, 25)
+                        .padding(.horizontal, HIGSpacing.xs)
+                        .padding(.bottom, HIGSpacing.xl)
                     }
-                    .padding(.horizontal, 14)
+                    .padding(.horizontal, HIGSpacing.md)
                     .frame(width: 280, alignment: .leading)
                     .background(Color.cartoonBg)
                     .overlay(
                         Rectangle()
-                            .fill(Color.cartoonBorder)
-                            .frame(width: 2.5),
+                            .fill(Color.black)
+                            .frame(width: CartoonMetrics.thickBorderWidth),
                         alignment: .trailing
                     )
                     .ignoresSafeArea(.all, edges: .vertical)
@@ -184,6 +200,32 @@ struct SidebarView: View {
                     Spacer()
                 }
                 .transition(.move(edge: .leading))
+            }
+
+            // Dialog Konfirmasi Logout dari Sidebar
+            if isShowingLogoutDialog {
+                CartoonConfirmDialog(
+                    title: "Keluar Akun?",
+                    message: "Apakah kamu yakin ingin keluar?",
+                    icon: "rectangle.portrait.and.arrow.right.fill",
+                    iconBgColor: Color(red: 1.0, green: 0.92, blue: 0.92),
+                    iconFgColor: Color.cartoonCoral,
+                    cancelTitle: "Batal",
+                    confirmTitle: "Ya, Keluar",
+                    confirmColor: Color.cartoonCoral,
+                    onCancel: {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                            isShowingLogoutDialog = false
+                        }
+                    },
+                    onConfirm: {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            isShowingLogoutDialog = false
+                            isOpen = false
+                            isLoggedIn = false
+                        }
+                    }
+                )
             }
         }
     }
@@ -199,15 +241,15 @@ struct CartoonMenuPill: View {
 
     var body: some View {
         Button {
-            // Aksi saat menu diklik
+            HapticManager.shared.impact(style: .light)
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: HIGSpacing.xs) {
                 // Wadah Ikon Bulat Putih dengan Border
                 ZStack {
                     Circle()
                         .fill(Color.white)
-                        .frame(width: 26, height: 26)
-                        .overlay(Circle().stroke(Color.cartoonBorder, lineWidth: 1.5))
+                        .frame(width: 28, height: 28)
+                        .overlay(Circle().stroke(Color.black, lineWidth: 1.4))
                     
                     Image(systemName: icon)
                         .font(.system(size: 11, weight: .heavy))
@@ -217,7 +259,7 @@ struct CartoonMenuPill: View {
                 // Judul Menu Tebal tapi Kompak
                 Text(title)
                     .font(.system(size: 12, weight: .heavy, design: .rounded))
-                    .foregroundColor(.cartoonTextPrimary)
+                    .foregroundColor(.black)
 
                 Spacer()
 
@@ -225,24 +267,31 @@ struct CartoonMenuPill: View {
                 if let count = count {
                     Text("\(count)")
                         .font(.system(size: 10, weight: .black, design: .rounded))
-                        .foregroundColor(.cartoonTextPrimary)
+                        .foregroundColor(.black)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(Color.white)
                         .clipShape(Capsule())
                         .overlay(
-                            Capsule().stroke(Color.cartoonBorder, lineWidth: 1.2)
+                            Capsule().stroke(Color.black, lineWidth: 1.2)
                         )
                 }
             }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 6)
-            .cartoonCard(bgColor: bgColor, cornerRadius: 10, borderWidth: 1.5, shadowOffset: 2.0)
+            .padding(.horizontal, HIGSpacing.sm)
+            .padding(.vertical, 8)
+            .background(bgColor)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.black, lineWidth: 1.6)
+            )
+            .shadow(color: .black, radius: 0, x: 2, y: 2)
         }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
     }
 }
 
 #Preview {
     SidebarView(isOpen: .constant(true))
+        .modelContainer(for: Item.self, inMemory: true)
 }

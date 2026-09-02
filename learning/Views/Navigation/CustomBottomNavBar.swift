@@ -11,7 +11,7 @@ struct CustomBottomNavBar: View {
     @Binding var selectedTab: Int
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: HIGSpacing.xs) {
             CartoonTabButton(
                 icon: "list.clipboard.fill",
                 title: "Tugas",
@@ -44,15 +44,20 @@ struct CustomBottomNavBar: View {
                 activeColor: .cartoonMint
             )
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 8)
-        .cartoonCard(bgColor: .white, cornerRadius: 24, borderWidth: 2.0, shadowOffset: 3.0)
-        .padding(.horizontal, 16)
+        .padding(.horizontal, HIGSpacing.xs)
+        .padding(.vertical, HIGSpacing.xs)
+        .background(Color.white)
+        .clipShape(Capsule())
+        .overlay(
+            Capsule().stroke(Color.cartoonBorder, lineWidth: CartoonMetrics.borderWidth)
+        )
+        .shadow(color: .cartoonBorder, radius: 0, x: 2.5, y: 2.5)
+        .fixedSize(horizontal: true, vertical: false) // Membungkus rapi kontennya tanpa ada gap kosong di tengah
         .padding(.bottom, 6)
     }
 }
 
-// Tombol Tab Kartun Interaktif
+// Tombol Tab Kartun Interaktif Ramping & Proporsional (HIG Touch Compliant)
 struct CartoonTabButton: View {
     let icon: String
     let title: String
@@ -64,32 +69,32 @@ struct CartoonTabButton: View {
 
     var body: some View {
         Button {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                 selectedTab = index
             }
         } label: {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                    .font(.system(size: 15, weight: .bold))
+                    .font(.system(size: 14, weight: .black))
                 
                 if isSelected {
                     Text(title)
-                        .font(.cartoonBadge)
-                        .transition(.scale.combined(with: .opacity))
+                        .font(.system(size: 12, weight: .heavy, design: .rounded))
+                        .transition(.scale(scale: 0.85).combined(with: .opacity))
                 }
             }
             .foregroundColor(.cartoonTextPrimary)
-            .padding(.vertical, 8)
-            .padding(.horizontal, isSelected ? 12 : 10)
+            .padding(.vertical, HIGSpacing.xs)
+            .padding(.horizontal, isSelected ? 14 : 10)
+            .frame(minHeight: 38)
             .background(isSelected ? activeColor : Color.clear)
-            .cornerRadius(16)
+            .clipShape(Capsule())
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(isSelected ? Color.cartoonBorder : Color.clear, lineWidth: 1.5)
+                Capsule().stroke(isSelected ? Color.cartoonBorder : Color.clear, lineWidth: 1.8)
             )
+            .contentShape(Rectangle())
         }
-        .buttonStyle(CartoonPressButtonStyle())
-        .frame(maxWidth: isSelected ? .infinity : nil)
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
     }
 }
 

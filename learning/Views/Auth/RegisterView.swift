@@ -26,30 +26,30 @@ struct RegisterView: View {
                     .ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 22) {
+                    VStack(alignment: .leading, spacing: HIGSpacing.xl) {
                         
-                        // 1. Tombol Back Kartun
+                        // 1. Tombol Back Kartun (Touch Target 44x44)
                         Button {
                             dismiss()
                         } label: {
                             Image(systemName: "chevron.left")
                                 .font(.system(size: 15, weight: .bold))
                                 .foregroundColor(.black)
-                                .padding(10)
+                                .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
                                 .background(Color.white)
-                                .cornerRadius(12)
+                                .cornerRadius(CartoonMetrics.cornerRadius)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
+                                    RoundedRectangle(cornerRadius: CartoonMetrics.cornerRadius)
                                         .stroke(Color.black, lineWidth: 1.5)
                                 )
                                 .shadow(color: .black, radius: 0, x: 2, y: 2)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-                        .padding(.top, 10)
+                        .padding(.top, HIGSpacing.xs)
 
                         // 2. Header Judul
-                        VStack(alignment: .leading, spacing: 8) {
-                            HStack(spacing: 6) {
+                        VStack(alignment: .leading, spacing: HIGSpacing.xs) {
+                            HStack(spacing: HIGSpacing.xxs) {
                                 Text("Create Account")
                                     .font(.system(size: 28, weight: .heavy, design: .rounded))
                                     .foregroundColor(.black)
@@ -63,10 +63,10 @@ struct RegisterView: View {
                                 .foregroundColor(.secondary)
                                 .lineSpacing(3)
                         }
-                        .padding(.top, 4)
+                        .padding(.top, HIGSpacing.xxs)
 
                         // 3. Form Input Fields (Kartun Neo-Brutalist)
-                        VStack(spacing: 16) {
+                        VStack(spacing: HIGSpacing.md) {
                             // Field Nama Lengkap
                             CartoonInputField(
                                 placeholder: "Bruce Wayne",
@@ -88,10 +88,10 @@ struct RegisterView: View {
                                 text: $password
                             )
                         }
-                        .padding(.top, 8)
+                        .padding(.top, HIGSpacing.xs)
 
-                        // 4. Checkbox Persetujuan Terms
-                        HStack(spacing: 10) {
+                        // 4. Checkbox Persetujuan Terms (Touch Target Friendly)
+                        HStack(spacing: HIGSpacing.xs) {
                             Button {
                                 withAnimation(.spring(response: 0.25, dampingFraction: 0.7)) {
                                     isAgreed.toggle()
@@ -99,7 +99,7 @@ struct RegisterView: View {
                             } label: {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 6)
-                                        .fill(isAgreed ? Color(red: 0.95, green: 0.42, blue: 0.33) : Color.white)
+                                        .fill(isAgreed ? Color.cartoonCoral : Color.white)
                                         .frame(width: 22, height: 22)
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 6)
@@ -110,8 +110,9 @@ struct RegisterView: View {
                                         Image(systemName: "checkmark")
                                             .font(.system(size: 11, weight: .black))
                                             .foregroundColor(.white)
-                                    }
+                                        }
                                 }
+                                .frame(width: 36, height: 36)
                             }
                             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
@@ -120,9 +121,9 @@ struct RegisterView: View {
                                 .foregroundColor(.secondary)
                                 .underline()
                         }
-                        .padding(.top, 2)
+                        .padding(.top, HIGSpacing.xxs)
 
-                        // 5. Tombol Continue (Warna Coral-Red Tebal)
+                        // 5. Tombol Continue (Warna Coral-Red Tebal) - 52pt Height
                         Button {
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                                 isLoggedIn = true
@@ -132,19 +133,19 @@ struct RegisterView: View {
                                 .font(.system(size: 15, weight: .bold, design: .rounded))
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
-                                .padding(.vertical, 15)
-                                .background(Color(red: 0.95, green: 0.42, blue: 0.33)) // Coral Red
-                                .cornerRadius(14)
+                                .frame(height: 52)
+                                .background(Color.cartoonCoral)
+                                .cornerRadius(CartoonMetrics.cardCornerRadius)
                                 .overlay(
-                                    RoundedRectangle(cornerRadius: 14)
-                                        .stroke(Color.black, lineWidth: 2)
+                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                        .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                                 )
                                 .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.5))
                         .disabled(!isAgreed || fullName.isEmpty || email.isEmpty || password.isEmpty)
                         .opacity((!isAgreed || fullName.isEmpty || email.isEmpty || password.isEmpty) ? 0.6 : 1.0)
-                        .padding(.top, 10)
+                        .padding(.top, HIGSpacing.xs)
 
                         // 6. Pembatas "Or"
                         HStack {
@@ -155,16 +156,16 @@ struct RegisterView: View {
                             Text("Or")
                                 .font(.system(size: 12, weight: .bold, design: .rounded))
                                 .foregroundColor(.secondary)
-                                .padding(.horizontal, 8)
+                                .padding(.horizontal, HIGSpacing.xs)
                             
                             Rectangle()
                                 .fill(Color.gray.opacity(0.3))
                                 .frame(height: 1)
                         }
-                        .padding(.vertical, 6)
+                        .padding(.vertical, HIGSpacing.xxs)
 
                         // 7. Tombol Social Login (Google, Apple, Facebook)
-                        HStack(spacing: 14) {
+                        HStack(spacing: HIGSpacing.md) {
                             SocialCartoonButton(icon: "g.circle.fill", iconColor: .red) {
                                 withAnimation(.spring()) { isLoggedIn = true }
                             }
@@ -181,7 +182,7 @@ struct RegisterView: View {
                         Spacer(minLength: 25)
 
                         // 8. Footer Link ke Sign In
-                        HStack(spacing: 4) {
+                        HStack(spacing: HIGSpacing.xxs) {
                             Spacer()
                             Text("Already have an account?")
                                 .font(.system(size: 12, weight: .medium, design: .rounded))
@@ -192,14 +193,15 @@ struct RegisterView: View {
                             } label: {
                                 Text("Sign in instead")
                                     .font(.system(size: 12, weight: .bold, design: .rounded))
-                                    .foregroundColor(Color(red: 0.95, green: 0.42, blue: 0.33))
+                                    .foregroundColor(Color.cartoonCoral)
                                     .underline()
+                                    .frame(minHeight: HIGSpacing.touchTargetMin)
                             }
                             Spacer()
                         }
-                        .padding(.bottom, 20)
+                        .padding(.bottom, HIGSpacing.lg)
                     }
-                    .padding(.horizontal, 22)
+                    .padding(.horizontal, HIGSpacing.lg)
                 }
             }
             .navigationDestination(isPresented: $isShowingLogin) {
@@ -210,7 +212,7 @@ struct RegisterView: View {
     }
 }
 
-// MARK: - 🎨 Komponen Input Field Kartun (Sesuai Mockup)
+// MARK: - 🎨 Komponen Input Field Kartun (Sesuai HIG Spacing)
 struct CartoonInputField: View {
     var placeholder: String
     @Binding var text: String
@@ -218,7 +220,7 @@ struct CartoonInputField: View {
     var keyboardType: UIKeyboardType = .default
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: HIGSpacing.sm) {
             if let icon = icon {
                 Image(systemName: icon)
                     .font(.system(size: 14, weight: .semibold))
@@ -230,15 +232,15 @@ struct CartoonInputField: View {
                 .keyboardType(keyboardType)
                 .autocapitalization(.none)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, HIGSpacing.md)
+        .frame(minHeight: 48)
         .background(Color.white)
-        .cornerRadius(14)
+        .cornerRadius(CartoonMetrics.cardCornerRadius)
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.black, lineWidth: 2)
+            RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
         )
-        .shadow(color: .black, radius: 0, x: 2.5, y: 2.5) // Offset shadow persis mockup
+        .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
     }
 }
 
@@ -249,7 +251,7 @@ struct CartoonSecureInputField: View {
     @State private var isSecured: Bool = true
 
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: HIGSpacing.sm) {
             Image(systemName: "lock.fill")
                 .font(.system(size: 14, weight: .semibold))
                 .foregroundColor(.secondary)
@@ -268,15 +270,16 @@ struct CartoonSecureInputField: View {
                 Image(systemName: isSecured ? "eye.slash.fill" : "eye.fill")
                     .font(.system(size: 13, weight: .bold))
                     .foregroundColor(.secondary)
+                    .frame(width: 32, height: 32)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
+        .padding(.horizontal, HIGSpacing.md)
+        .frame(minHeight: 48)
         .background(Color.white)
-        .cornerRadius(14)
+        .cornerRadius(CartoonMetrics.cardCornerRadius)
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Color.black, lineWidth: 2)
+            RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
         )
         .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
     }
@@ -294,11 +297,11 @@ struct SocialCartoonButton: View {
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(iconColor)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 12)
+                .frame(height: HIGSpacing.touchTargetMin)
                 .background(Color.white)
-                .cornerRadius(12)
+                .cornerRadius(CartoonMetrics.cornerRadius)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 12)
+                    RoundedRectangle(cornerRadius: CartoonMetrics.cornerRadius)
                         .stroke(Color.black, lineWidth: 1.8)
                 )
                 .shadow(color: .black, radius: 0, x: 2, y: 2)

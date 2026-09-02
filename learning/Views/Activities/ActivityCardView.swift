@@ -11,10 +11,11 @@ struct ActivityCardView: View {
     let item: Item
     var onToggle: () -> Void
     var onDelete: () -> Void
+    var onTap: (() -> Void)? = nil
 
     var body: some View {
-        HStack(spacing: 12) {
-            // 1. Tombol Checkbox Kartun
+        HStack(spacing: HIGSpacing.sm) {
+            // 1. Tombol Checkbox Kartun (Touch target minimal 44pt via contentShape/frame)
             Button {
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                     onToggle()
@@ -25,7 +26,7 @@ struct ActivityCardView: View {
                         .fill(item.isCompleted ? Color.cartoonMint : Color.white)
                         .frame(width: 28, height: 28)
                         .overlay(
-                            Circle().stroke(Color.cartoonBorder, lineWidth: 2)
+                            Circle().stroke(Color.cartoonBorder, lineWidth: CartoonMetrics.borderWidth)
                         )
                     
                     if item.isCompleted {
@@ -34,37 +35,47 @@ struct ActivityCardView: View {
                             .foregroundColor(.cartoonTextPrimary)
                     }
                 }
+                .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
+                .contentShape(Rectangle())
             }
             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
-            // 2. Detail Konten Aktivitas
-            VStack(alignment: .leading, spacing: 5) {
-                // Judul Aktivitas
-                Text(item.title)
-                    .font(.cartoonHeadline)
-                    .foregroundColor(.cartoonTextPrimary)
-                    .strikethrough(item.isCompleted, color: .cartoonBorder)
-                    .opacity(item.isCompleted ? 0.55 : 1.0)
+            // 2. Detail Konten Aktivitas (Dapat diketuk untuk membuka modal Edit)
+            Button {
+                onTap?()
+            } label: {
+                VStack(alignment: .leading, spacing: HIGSpacing.xxs) {
+                    // Judul Aktivitas
+                    Text(item.title)
+                        .font(.cartoonHeadline)
+                        .foregroundColor(.cartoonTextPrimary)
+                        .strikethrough(item.isCompleted, color: .cartoonBorder)
+                        .opacity(item.isCompleted ? 0.55 : 1.0)
+                        .multilineTextAlignment(.leading)
 
-                // Info Waktu & Catatan
-                HStack(spacing: 8) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock.fill")
-                            .font(.system(size: 10))
-                            .foregroundColor(.secondary)
-                        Text(item.timestamp, format: Date.FormatStyle(date: .abbreviated, time: .shortened))
-                            .font(.cartoonBadge)
-                            .foregroundColor(.secondary)
+                    // Info Waktu & Catatan
+                    HStack(spacing: HIGSpacing.xs) {
+                        HStack(spacing: HIGSpacing.xxs) {
+                            Image(systemName: "clock.fill")
+                                .font(.system(size: 10))
+                                .foregroundColor(.secondary)
+                            Text(item.timestamp, format: Date.FormatStyle(date: .abbreviated, time: .shortened))
+                                .font(.cartoonBadge)
+                                .foregroundColor(.secondary)
+                        }
+
+                        // Badge Prioritas
+                        priorityBadge(for: item.priority)
                     }
-
-                    // Badge Prioritas
-                    priorityBadge(for: item.priority)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
 
             Spacer()
 
-            // 3. Tombol Hapus Mini
+            // 3. Tombol Hapus Mini (Touch target 44x44)
             Button {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                     onDelete()
@@ -73,19 +84,21 @@ struct ActivityCardView: View {
                 Image(systemName: "trash.fill")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.red.opacity(0.8))
-                    .padding(6)
+                    .padding(HIGSpacing.xs)
                     .background(Color.white)
                     .clipShape(Circle())
                     .overlay(Circle().stroke(Color.cartoonBorder, lineWidth: 1.2))
+                    .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, HIGSpacing.md)
+        .padding(.vertical, HIGSpacing.sm)
         .cartoonCard(
             bgColor: item.isCompleted ? Color.gray.opacity(0.12) : cardBgColor(for: item.priority),
-            cornerRadius: 14,
-            borderWidth: 2.0,
+            cornerRadius: CartoonMetrics.cardCornerRadius,
+            borderWidth: CartoonMetrics.borderWidth,
             shadowOffset: item.isCompleted ? 1.0 : 2.5
         )
     }
@@ -107,8 +120,8 @@ struct ActivityCardView: View {
         Text(text)
             .font(.system(size: 9, weight: .heavy, design: .rounded))
             .foregroundColor(.cartoonTextPrimary)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
+            .padding(.horizontal, HIGSpacing.xs)
+            .padding(.vertical, HIGSpacing.xxs)
             .background(color)
             .clipShape(Capsule())
             .overlay(
@@ -118,7 +131,7 @@ struct ActivityCardView: View {
 
     private func badgeData(for priority: String) -> (Color, String) {
         switch priority {
-        case "Tinggi": return (Color.cartoonPink, "Tinggi ⚡")
+        case "Tinggi": return (Color.cartoonPink, "Tinggi ⚡️")
         case "Normal": return (Color.cartoonYellow, "Normal")
         case "Rendah": return (Color.cartoonMint, "Rendah")
         default: return (Color.white, priority)
