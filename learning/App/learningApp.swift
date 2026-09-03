@@ -7,10 +7,36 @@
 
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 @main
 struct learningApp: App {
     @AppStorage("isLoggedIn") private var isLoggedIn: Bool = true
+
+    // Shared ModelContainer untuk sinkronisasi data dengan Widget Extension via App Group
+    var sharedModelContainer: ModelContainer = {
+        let schema = Schema([
+            Item.self,
+        ])
+        let appGroupIdentifier = "group.com.irmintul.learning"
+        
+        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) {
+            let storeURL = containerURL.appendingPathComponent("learning.sqlite")
+            let modelConfiguration = ModelConfiguration(schema: schema, url: storeURL)
+            do {
+                return try ModelContainer(for: schema, configurations: [modelConfiguration])
+            } catch {
+                print("Failed to initialize App Group database: \(error.localizedDescription)")
+            }
+        }
+        
+        let fallbackConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        do {
+            return try ModelContainer(for: schema, configurations: [fallbackConfig])
+        } catch {
+            fatalError("Could not create ModelContainer: \(error.localizedDescription)")
+        }
+    }()
 
     var body: some Scene {
         WindowGroup {
@@ -32,11 +58,11 @@ struct learningApp: App {
             .preferredColorScheme(.light)
             .animation(.spring(response: 0.45, dampingFraction: 0.8), value: isLoggedIn)
             .onAppear {
-                // Inisialisasi Izin Notifikasi Sistem
+                // Inisialisasi Izin Notifikasi Sistem & Refresh Widget
                 NotificationManager.shared.requestAuthorization()
+                WidgetCenter.shared.reloadAllTimelines()
             }
         }
-        
-        .modelContainer(for: Item.self)
+        .modelContainer(sharedModelContainer)
     }
 }

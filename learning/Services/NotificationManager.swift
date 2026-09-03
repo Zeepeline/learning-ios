@@ -13,7 +13,7 @@ import UserNotifications
 final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationManager()
     
-    private override init() {
+    override private init() {
         super.init()
         UNUserNotificationCenter.current().delegate = self
     }
@@ -29,7 +29,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
 
     /// Meminta izin notifikasi kepada pengguna
     func requestAuthorization(completion: ((Bool) -> Void)? = nil) {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
             DispatchQueue.main.async {
                 completion?(granted)
             }

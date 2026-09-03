@@ -26,10 +26,13 @@ final class BiometricAuthManager {
         switch context.biometryType {
         case .faceID:
             return "Face ID"
+
         case .touchID:
             return "Touch ID"
+
         case .opticID:
             return "Optic ID"
+
         default:
             return "Biometrik"
         }

@@ -17,13 +17,13 @@ final class CalendarSyncManager {
     /// Meminta izin sinkronisasi ke Kalender Apple
     func requestAccess(completion: @escaping (Bool) -> Void) {
         if #available(iOS 17.0, *) {
-            eventStore.requestFullAccessToEvents { granted, error in
+            eventStore.requestFullAccessToEvents { granted, _ in
                 DispatchQueue.main.async {
                     completion(granted)
                 }
             }
         } else {
-            eventStore.requestAccess(to: .event) { granted, error in
+            eventStore.requestAccess(to: .event) { granted, _ in
                 DispatchQueue.main.async {
                     completion(granted)
                 }
