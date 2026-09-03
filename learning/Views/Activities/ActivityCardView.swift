@@ -11,7 +11,7 @@ struct ActivityCardView: View {
     let item: Item
     var onToggle: () -> Void
     var onDelete: () -> Void
-    var onTap: (() -> Void)? = nil
+    var onTap: (() -> Void)?
 
     var body: some View {
         HStack(spacing: HIGSpacing.sm) {

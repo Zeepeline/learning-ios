@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 struct AddActivity: View {
     @Environment(\.dismiss) private var dismiss
@@ -323,6 +324,9 @@ struct AddActivity: View {
             }
 
             // 3. Efek Getaran Haptic Sukses
+            // 3. Refresh Widget Timeline di Home Screen
+            WidgetCenter.shared.reloadAllTimelines()
+
             HapticManager.shared.success()
             dismiss()
         }

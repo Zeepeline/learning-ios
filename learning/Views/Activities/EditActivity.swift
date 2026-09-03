@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 struct EditActivity: View {
     @Environment(\.dismiss) private var dismiss
@@ -14,7 +15,7 @@ struct EditActivity: View {
 
     // Binding item yang sedang diedit
     @Bindable var item: Item
-    var onDelete: (() -> Void)? = nil
+    var onDelete: (() -> Void)?
 
     // State form
     @State private var taskTitle: String = ""
@@ -306,6 +307,9 @@ struct EditActivity: View {
             } else {
                 NotificationManager.shared.cancelNotification(for: item)
             }
+
+            // Perbarui Widget di Home Screen
+            WidgetCenter.shared.reloadAllTimelines()
 
             HapticManager.shared.success()
             dismiss()

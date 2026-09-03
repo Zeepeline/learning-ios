@@ -59,7 +59,7 @@ struct CartoonTimelineCard: View {
     var isCompleted: Bool = false
     let onToggle: () -> Void
     let onDelete: () -> Void
-    var onTap: (() -> Void)? = nil
+    var onTap: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: HIGSpacing.xs) {

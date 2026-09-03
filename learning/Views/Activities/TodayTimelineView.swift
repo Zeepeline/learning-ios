@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 struct TodayTimelineView: View {
     @Environment(\.modelContext) private var modelContext
@@ -189,6 +190,7 @@ struct TodayTimelineView: View {
             )
             modelContext.insert(newItem)
             newSubtaskTitle = ""
+            WidgetCenter.shared.reloadAllTimelines()
         }
     }
 }

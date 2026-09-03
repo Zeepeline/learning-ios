@@ -216,7 +216,7 @@ struct RegisterView: View {
 struct CartoonInputField: View {
     var placeholder: String
     @Binding var text: String
-    var icon: String? = nil
+    var icon: String?
     var keyboardType: UIKeyboardType = .default
 
     var body: some View {

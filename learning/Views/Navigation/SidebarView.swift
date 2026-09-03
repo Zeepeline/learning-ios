@@ -235,7 +235,7 @@ struct SidebarView: View {
 struct CartoonMenuPill: View {
     let icon: String
     let title: String
-    var count: Int? = nil
+    var count: Int?
     var bgColor: Color
     var iconColor: Color
 

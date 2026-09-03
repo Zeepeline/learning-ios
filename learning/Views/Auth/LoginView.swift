@@ -16,7 +16,7 @@ struct LoginView: View {
     @State private var password: String = ""
     @State private var rememberMe: Bool = true
     @State private var isShowingRegister: Bool = false
-    @State private var authErrorMessage: String? = nil
+    @State private var authErrorMessage: String?
 
     var body: some View {
         NavigationStack {

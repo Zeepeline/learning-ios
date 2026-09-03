@@ -11,7 +11,7 @@ import SwiftUI
 struct CartoonHeaderView: View {
     let title: String
     let onLeadingTap: () -> Void
-    var trailingAction: (() -> Void)? = nil
+    var trailingAction: (() -> Void)?
     var trailingTitle: String = "Tambah"
     var trailingIcon: String = "plus"
     var trailingBgColor: Color = Color.cartoonYellow

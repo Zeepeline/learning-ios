@@ -10,7 +10,7 @@ import SwiftUI
 // MARK: - 🔘 Reusable Cartoon Primary CTA Button
 struct CartoonPrimaryButton: View {
     let title: String
-    var icon: String? = nil
+    var icon: String?
     var bgColor: Color = Color.cartoonCoral
     var fgColor: Color = .white
     var height: CGFloat = 54
