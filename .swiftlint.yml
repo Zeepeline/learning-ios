@@ -1,0 +1,54 @@
+# SwiftLint Configuration for iOS SwiftUI Project
+# Standar Kualitas Kode Swift
+
+disabled_rules:
+  - trailing_whitespace
+  - line_length
+  - type_name
+  - identifier_name
+
+opt_in_rules:
+  - empty_count
+  - empty_string
+  - contains_over_filter_count
+  - contains_over_filter_is_empty
+  - contains_over_range_nil_comparison
+  - fallthrough
+  - fatal_error_message
+  - file_name_no_space
+  - first_where
+  - force_unwrapping
+  - modifier_order
+  - redundant_nil_coalescing
+  - unneeded_break_in_switch
+  - vertical_whitespace_between_cases
+
+included:
+  - learning
+
+excluded:
+  - learningTests
+  - learningUITests
+  - Pods
+  - .build
+  - DerivedData
+
+# Aturan Force Cast / Unwrapping (Penyebab umum crash runtime)
+force_cast: warning
+force_unwrapping: warning
+
+# Kompleksitas Fungsi & Tipe
+cyclomatic_complexity:
+  warning: 15
+  error: 25
+
+function_body_length:
+  warning: 100
+  error: 150
+
+type_body_length:
+  warning: 400
+  error: 600
+
+# Format Pelaporan
+reporter: "xcode"
