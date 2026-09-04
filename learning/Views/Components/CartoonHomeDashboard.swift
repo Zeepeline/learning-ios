@@ -40,8 +40,6 @@ struct CartoonProgressBanner: View {
 
                 // Badge Streak Kartun
                 HStack(spacing: 4) {
-                    Text("🔥")
-                        .font(.system(size: 14))
                     Text("3 Hari")
                         .font(.system(size: 12, weight: .heavy, design: .rounded))
                         .foregroundColor(.black)

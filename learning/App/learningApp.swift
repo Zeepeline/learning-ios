@@ -8,9 +8,11 @@
 import SwiftUI
 import SwiftData
 import WidgetKit
+import GoogleSignIn
 
 @main
 struct learningApp: App {
+    @Environment(\.scenePhase) private var scenePhase
     @AppStorage("isLoggedIn") private var isLoggedIn: Bool = true
 
     // Shared ModelContainer untuk sinkronisasi data dengan Widget Extension via App Group
@@ -57,10 +59,20 @@ struct learningApp: App {
             }
             .preferredColorScheme(.light)
             .animation(.spring(response: 0.45, dampingFraction: 0.8), value: isLoggedIn)
+            .onOpenURL { url in
+                // ⬅️ Handle redirect callback login dari Google SDK di semua screen
+                GIDSignIn.sharedInstance.handle(url)
+            }
             .onAppear {
                 // Inisialisasi Izin Notifikasi Sistem & Refresh Widget
                 NotificationManager.shared.requestAuthorization()
                 WidgetCenter.shared.reloadAllTimelines()
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .background || newPhase == .inactive {
+                    try? sharedModelContainer.mainContext.save()
+                    WidgetCenter.shared.reloadAllTimelines()
+                }
             }
         }
         .modelContainer(sharedModelContainer)

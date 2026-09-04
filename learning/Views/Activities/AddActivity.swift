@@ -162,14 +162,14 @@ struct AddActivity: View {
                                     ZStack(alignment: .topLeading) {
                                         if taskDetails.isEmpty {
                                             Text("Add your task details")
-                                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                                .font(.system(size: 14, weight: .bold, design: .rounded))
                                                 .foregroundColor(.secondary.opacity(0.7))
                                                 .padding(.top, HIGSpacing.xs)
                                                 .padding(.leading, HIGSpacing.xxs)
                                         }
                                         
                                         TextEditor(text: $taskDetails)
-                                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                                            .font(.system(size: 14, weight: .bold, design: .rounded))
                                             .frame(minHeight: 110)
                                             .scrollContentBackground(.hidden)
                                             .background(Color.clear)
@@ -187,7 +187,7 @@ struct AddActivity: View {
                             .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
 
                             // Utility Icons di Bawah Text Area (Grid, Font, Attachment)
-                            HStack(spacing: HIGSpacing.sm) {
+                            HStack(spacing: 0) {
                                 Spacer()
                                 
                                 Button {
@@ -227,33 +227,31 @@ struct AddActivity: View {
                         CartoonCategoryPicker(selectedCategory: $selectedCategory)
                             .padding(.top, HIGSpacing.xxs)
 
-                        // 5. Toggles: Notifikasi & Apple Calendar Sync
+                            Spacer()
+                                .frame(height: 2)
+                        // 5. 🕹️ Toggles Kartun: Notifikasi & Apple Calendar Sync
                         VStack(spacing: HIGSpacing.xs) {
                             // 🔔 Toggle Notifikasi / Alert (UserNotifications)
-                            Toggle(isOn: $getAlert) {
-                                HStack(spacing: HIGSpacing.xs) {
-                                    Image(systemName: "bell.badge.fill")
-                                        .foregroundColor(Color.cartoonCoral)
-                                    Text("Get alert for this task")
-                                        .font(.system(size: 13, weight: .heavy, design: .rounded))
-                                        .foregroundColor(.black)
-                                }
-                            }
-                            .tint(Color.cartoonCoral)
-                            .frame(minHeight: 44)
+                            CartoonToggleRow(
+                                icon: "bell.badge.fill",
+                                iconColor: .black,
+                                iconBgColor: Color.cartoonPink,
+                                title: "Get alert for this task",
+                                subtitle: "Notifikasi lokal saat mendekati deadline",
+                                isOn: $getAlert,
+                                activeColor: Color.cartoonCoral
+                            )
 
                             // 📅 Toggle Sinkronisasi ke Apple Calendar (EventKit)
-                            Toggle(isOn: $syncToCalendar) {
-                                HStack(spacing: HIGSpacing.xs) {
-                                    Image(systemName: "calendar.badge.plus")
-                                        .foregroundColor(.blue)
-                                    Text("Sync to Apple Calendar")
-                                        .font(.system(size: 13, weight: .heavy, design: .rounded))
-                                        .foregroundColor(.black)
-                                }
-                            }
-                            .tint(Color.cartoonMint)
-                            .frame(minHeight: 44)
+                            CartoonToggleRow(
+                                icon: "calendar.badge.plus",
+                                iconColor: .black,
+                                iconBgColor: Color.cartoonBlue,
+                                title: "Sync to Apple Calendar",
+                                subtitle: "Otomatis tambahkan jadwal ke kalender",
+                                isOn: $syncToCalendar,
+                                activeColor: Color.cartoonMint
+                            )
                         }
                         .padding(.top, HIGSpacing.xxs)
 
@@ -323,8 +321,10 @@ struct AddActivity: View {
                 ) { _, _ in }
             }
 
-            // 3. Efek Getaran Haptic Sukses
-            // 3. Refresh Widget Timeline di Home Screen
+            // 3. Simpan perubahan ke SQLite shared container secara instan
+            try? modelContext.save()
+
+            // 4. Refresh Widget Timeline di Home Screen
             WidgetCenter.shared.reloadAllTimelines()
 
             HapticManager.shared.success()

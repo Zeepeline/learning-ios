@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import GoogleSignIn
 
 struct RegisterView: View {
     @Environment(\.dismiss) private var dismiss
@@ -164,18 +165,26 @@ struct RegisterView: View {
                         }
                         .padding(.vertical, HIGSpacing.xxs)
 
-                        // 7. Tombol Social Login (Google, Apple, Facebook)
-                        HStack(spacing: HIGSpacing.md) {
-                            SocialCartoonButton(icon: "g.circle.fill", iconColor: .red) {
-                                withAnimation(.spring()) { isLoggedIn = true }
-                            }
-                            
-                            SocialCartoonButton(icon: "apple.logo", iconColor: .black) {
-                                withAnimation(.spring()) { isLoggedIn = true }
-                            }
-                            
-                            SocialCartoonButton(icon: "f.circle.fill", iconColor: .blue) {
-                                withAnimation(.spring()) { isLoggedIn = true }
+                        // 7. Tombol Google Sign Up
+                        CartoonGoogleSignInButton(title: "Sign up with Google") {
+                            GoogleAuthManager.shared.signIn { result in
+                                switch result {
+                                case .success(let user):
+                                    let name = user.profile?.name ?? "Google User"
+                                    let email = user.profile?.email ?? ""
+                                    
+                                    UserDefaults.standard.set(name, forKey: "userName")
+                                    UserDefaults.standard.set(email, forKey: "userEmail")
+                                    
+                                    withAnimation {
+                                        isLoggedIn = true
+                                    }
+                                    HapticManager.shared.success()
+                                    
+                                case .failure(let error):
+                                    print("Google Sign In Error: \(error.localizedDescription)")
+                                    HapticManager.shared.warning()
+                                }
                             }
                         }
 
@@ -244,7 +253,7 @@ struct CartoonInputField: View {
     }
 }
 
-// MARK: - 🔒 Input Field Password Kartun
+// MARK: - 🔐 Input Field Password Kartun
 struct CartoonSecureInputField: View {
     var placeholder: String
     @Binding var text: String
@@ -282,31 +291,6 @@ struct CartoonSecureInputField: View {
                 .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
         )
         .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
-    }
-}
-
-// MARK: - 🌐 Tombol Social Auth Kartun
-struct SocialCartoonButton: View {
-    let icon: String
-    let iconColor: Color
-    var action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: icon)
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(iconColor)
-                .frame(maxWidth: .infinity)
-                .frame(height: HIGSpacing.touchTargetMin)
-                .background(Color.white)
-                .cornerRadius(CartoonMetrics.cornerRadius)
-                .overlay(
-                    RoundedRectangle(cornerRadius: CartoonMetrics.cornerRadius)
-                        .stroke(Color.black, lineWidth: 1.8)
-                )
-                .shadow(color: .black, radius: 0, x: 2, y: 2)
-        }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
     }
 }
 

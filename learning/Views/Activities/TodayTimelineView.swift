@@ -189,6 +189,7 @@ struct TodayTimelineView: View {
                 category: "Subtask"
             )
             modelContext.insert(newItem)
+            try? modelContext.save()
             newSubtaskTitle = ""
             WidgetCenter.shared.reloadAllTimelines()
         }

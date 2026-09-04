@@ -46,7 +46,7 @@ struct ProfileView: View {
     var body: some View {
         ZStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: HIGSpacing.lg) {
+                VStack(spacing: HIGSpacing.xl) {
                     // 1. Header Profil & Avatar Kartun
                     ProfileHeaderView(
                         userName: userName,

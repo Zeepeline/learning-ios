@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import WidgetKit
 
 struct HomeActivityListView: View {
     @Environment(\.modelContext) private var modelContext
@@ -193,7 +194,7 @@ struct HomeActivityListView: View {
     // MARK: - Zero-State Onboarding
     private var zeroStateOnboardingView: some View {
         VStack(alignment: .leading, spacing: HIGSpacing.sm) {
-            Text("Inspirasi Tugas Cepat 💡")
+            Text("Inspirasi Tugas Cepat")
                 .font(.system(size: 15, weight: .heavy, design: .rounded))
                 .foregroundColor(.black)
                 .padding(.horizontal, HIGSpacing.md)
@@ -263,6 +264,8 @@ struct HomeActivityListView: View {
                 category: category
             )
             modelContext.insert(newItem)
+            try? modelContext.save()
+            WidgetCenter.shared.reloadAllTimelines()
             HapticManager.shared.success()
         }
     }

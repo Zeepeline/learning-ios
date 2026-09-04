@@ -94,13 +94,6 @@ struct CartoonCategoryPicker: View {
                 Text("Category")
                     .font(.system(size: 15, weight: .heavy, design: .rounded))
                     .foregroundColor(.black)
-
-                Text("•")
-                    .foregroundColor(.secondary)
-
-                Text(selectedCategory)
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundColor(Color.cartoonCoral)
             }
 
             // Baris 1 Kategori

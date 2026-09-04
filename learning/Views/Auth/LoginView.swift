@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import GoogleSignIn
 
 struct LoginView: View {
     @Environment(\.dismiss) private var dismiss
@@ -182,21 +183,26 @@ struct LoginView: View {
                         }
                         .padding(.vertical, HIGSpacing.xxs)
 
-                        // 7. Tombol Social Login
-                        HStack(spacing: HIGSpacing.md) {
-                            SocialCartoonButton(icon: "g.circle.fill", iconColor: .red) {
-                                HapticManager.shared.success()
-                                withAnimation(.spring()) { isLoggedIn = true }
-                            }
-                            
-                            SocialCartoonButton(icon: "apple.logo", iconColor: .black) {
-                                HapticManager.shared.success()
-                                withAnimation(.spring()) { isLoggedIn = true }
-                            }
-                            
-                            SocialCartoonButton(icon: "f.circle.fill", iconColor: .blue) {
-                                HapticManager.shared.success()
-                                withAnimation(.spring()) { isLoggedIn = true }
+                        // 7. Tombol Google Sign In
+                        CartoonGoogleSignInButton(title: "Sign in with Google") {
+                            GoogleAuthManager.shared.signIn { result in
+                                switch result {
+                                case .success(let user):
+                                    let name = user.profile?.name ?? "Google User"
+                                    let email = user.profile?.email ?? ""
+
+                                    UserDefaults.standard.set(name, forKey: "userName")
+                                    UserDefaults.standard.set(email, forKey: "userEmail")
+
+                                    withAnimation {
+                                        isLoggedIn = true
+                                    }
+                                    HapticManager.shared.success()
+
+                                case .failure(let error):
+                                    print("Google Sign In Error: \(error.localizedDescription)")
+                                    HapticManager.shared.warning()
+                                }
                             }
                         }
 
@@ -208,7 +214,7 @@ struct LoginView: View {
                             Text("Don't have an account?")
                                 .font(.system(size: 12, weight: .medium, design: .rounded))
                                 .foregroundColor(.black)
-                            
+
                             Button {
                                 isShowingRegister = true
                             } label: {

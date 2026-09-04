@@ -308,6 +308,9 @@ struct EditActivity: View {
                 NotificationManager.shared.cancelNotification(for: item)
             }
 
+            // Simpan perubahan ke SQLite shared container secara instan
+            try? modelContext.save()
+
             // Perbarui Widget di Home Screen
             WidgetCenter.shared.reloadAllTimelines()
 

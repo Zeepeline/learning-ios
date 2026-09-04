@@ -34,9 +34,9 @@ enum HIGSpacing {
     static let touchTargetMin: CGFloat = 44
 }
 
-// MARK: - 🎨 Design System: Palet Warna Kartun & Neo-Brutalist
+// MARK: - 🎨 Design System: Palet Warna Kartun & Neo-Brutalist (Terang / Light)
 extension Color {
-    /// Warna latar belakang dasar bertema retro cream/off-white
+    /// Warna latar belakang dasar bertema retro cream/off-white terang
     static let cartoonBg = Color(red: 0.98, green: 0.96, blue: 0.92)
     
     /// Warna kartu & aksen pop pastel
@@ -91,17 +91,19 @@ struct CartoonCardModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .background(bgColor)
-            .cornerRadius(cornerRadius)
+            .background(
+                RoundedRectangle(cornerRadius: cornerRadius)
+                    .fill(bgColor)
+                    .shadow(
+                        color: Color.cartoonBorder.opacity(shadowOffset > 0 ? 1.0 : 0.0),
+                        radius: CartoonMetrics.hardShadowRadius,
+                        x: shadowOffset,
+                        y: shadowOffset
+                    )
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: cornerRadius)
                     .stroke(Color.cartoonBorder, lineWidth: borderWidth)
-            )
-            .shadow(
-                color: Color.cartoonBorder,
-                radius: CartoonMetrics.hardShadowRadius,
-                x: shadowOffset,
-                y: shadowOffset
             )
     }
 }

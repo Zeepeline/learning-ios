@@ -157,6 +157,7 @@ struct ContentView: View {
     private func toggleItemCompletion(_ item: Item) {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
             item.isCompleted.toggle()
+            try? modelContext.save()
             if item.isCompleted {
                 HapticManager.shared.success()
                 NotificationManager.shared.cancelNotification(for: item)
@@ -180,6 +181,7 @@ struct ContentView: View {
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
             NotificationManager.shared.cancelNotification(for: item)
             modelContext.delete(item)
+            try? modelContext.save()
             isShowingDeleteDialog = false
             itemToDelete = nil
             WidgetCenter.shared.reloadAllTimelines()
