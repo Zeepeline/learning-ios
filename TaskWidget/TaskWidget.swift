@@ -62,7 +62,7 @@ struct Provider: TimelineProvider {
     
     // Helper Fetch SwiftData dari Shared Container
     private func fetchTodayTasks() -> [WidgetTaskItem] {
-        let appGroupIdentifier = "group.com.irmintul.learning"
+        let appGroupIdentifier = "group.com.gmedia.xlearning"
         let schema = Schema([Item.self])
         
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) else {
@@ -160,7 +160,7 @@ struct TaskWidgetEntryView: View {
 
             if entry.todayTasks.isEmpty {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Santai! ✨")
+                    Text("Santai!")
                         .font(.system(size: 16, weight: .heavy, design: .rounded))
                         .foregroundColor(.black)
                     Text("Tidak ada tugas")
@@ -173,7 +173,7 @@ struct TaskWidgetEntryView: View {
                         .font(.system(size: 28, weight: .black, design: .rounded))
                         .foregroundColor(.black)
 
-                    Text(entry.pendingCount == 0 ? "Semua Beres! 🎉" : "Tugas Tersisa")
+                    Text(entry.pendingCount == 0 ? "Semua Beres!" : "Tugas Tersisa")
                         .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundColor(entry.pendingCount == 0 ? Color(red: 0.15, green: 0.65, blue: 0.30) : Color.black.opacity(0.65))
                 }
@@ -211,7 +211,7 @@ struct TaskWidgetEntryView: View {
                     .font(.system(size: 32, weight: .black, design: .rounded))
                     .foregroundColor(.black)
 
-                Text(entry.pendingCount == 0 ? "Semua Selesai ✨" : "Tugas Pending")
+                Text(entry.pendingCount == 0 ? "Semua Selesai" : "Tugas Pending")
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .foregroundColor(Color.black.opacity(0.7))
             }
@@ -278,18 +278,4 @@ struct TaskWidget: Widget {
         .description("Pantau daftar dan status tugas hari ini dalam gaya kartun seru.")
         .supportedFamilies([.systemSmall, .systemMedium])
     }
-}
-
-// MARK: - Preview
-#Preview(as: .systemMedium) {
-    TaskWidget()
-} timeline: {
-    TaskWidgetEntry(
-        date: Date(),
-        todayTasks: [
-            WidgetTaskItem(id: "1", title: "Desain Wireframe App", category: "Design", priority: "Tinggi", timeFormatted: "09:00", isCompleted: false),
-            WidgetTaskItem(id: "2", title: "Daily Standup Meeting", category: "Meeting", priority: "Normal", timeFormatted: "10:30", isCompleted: true),
-            WidgetTaskItem(id: "3", title: "Bug Fixing Auth", category: "Coding", priority: "Normal", timeFormatted: "14:00", isCompleted: false)
-        ]
-    )
 }

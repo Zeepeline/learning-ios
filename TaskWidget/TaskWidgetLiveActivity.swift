@@ -9,72 +9,197 @@ import ActivityKit
 import WidgetKit
 import SwiftUI
 
-struct TaskWidgetAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
-        // Dynamic stateful properties about your activity go here!
-        var emoji: String
-    }
-
-    // Fixed non-changing properties about your activity go here!
-    var name: String
-}
-
 struct TaskWidgetLiveActivity: Widget {
     var body: some WidgetConfiguration {
-        ActivityConfiguration(for: TaskWidgetAttributes.self) { context in
-            // Lock screen/banner UI goes here
-            VStack {
-                Text("Hello \(context.state.emoji)")
+        ActivityConfiguration(for: PomodoroAttributes.self) { context in
+            // MARK: - Lock Screen & StandBy Mode Banner
+            HStack(spacing: 12) {
+                // 1. Icon Badge Kartun
+                ZStack {
+                    Circle()
+                        .fill(context.state.isBreak ? Color(red: 0.84, green: 0.95, blue: 0.84) : Color(red: 0.99, green: 0.88, blue: 0.55))
+                        .frame(width: 44, height: 44)
+                        .overlay(Circle().stroke(Color.black, lineWidth: 1.8))
+                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+
+                    Image(systemName: context.attributes.categoryIcon)
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(.black)
+                }
+
+                // 2. Info Sesi & Nama Tugas
+                VStack(alignment: .leading, spacing: 3) {
+                    HStack(spacing: 6) {
+                        Text(context.state.isBreak ? "WAKTU ISTIRAHAT" : "MODE FOKUS")
+                            .font(.system(size: 9, weight: .black, design: .rounded))
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(context.state.isBreak ? Color(red: 0.84, green: 0.95, blue: 0.84) : Color(red: 1.0, green: 0.72, blue: 0.45))
+                            .cornerRadius(5)
+                            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.black, lineWidth: 1))
+
+                        if context.state.isPaused {
+                            Text("DIJEDA")
+                                .font(.system(size: 9, weight: .heavy, design: .rounded))
+                                .foregroundColor(.red)
+                        }
+                    }
+
+                    Text(context.attributes.taskName)
+                        .font(.system(size: 13, weight: .heavy, design: .rounded))
+                        .foregroundColor(.black)
+                        .lineLimit(1)
+                }
+
+                Spacer()
+
+                // 3. Countdown Timer Otomatis
+                VStack(alignment: .trailing, spacing: 2) {
+                    if context.state.isPaused {
+                        let mins = Int(context.state.remainingSecondsWhenPaused) / 60
+                        let secs = Int(context.state.remainingSecondsWhenPaused) % 60
+                        Text(String(format: "%02d:%02d", mins, secs))
+                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .foregroundColor(.black)
+                    } else {
+                        Text(timerInterval: Date()...context.state.endTime, countsDown: true)
+                            .font(.system(size: 20, weight: .black, design: .rounded))
+                            .foregroundColor(.black)
+                            .multilineTextAlignment(.trailing)
+                    }
+
+                    Text("Sisa Waktu")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .foregroundColor(.black.opacity(0.6))
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.white)
+                .cornerRadius(8)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.4))
+                .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
             }
-            .activityBackgroundTint(Color.cyan)
+            .padding(14)
+            .background(Color(red: 0.98, green: 0.96, blue: 0.92))
+            .cornerRadius(16)
+            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.black, lineWidth: 2))
+            .activityBackgroundTint(Color(red: 0.98, green: 0.96, blue: 0.92))
             .activitySystemActionForegroundColor(Color.black)
 
         } dynamicIsland: { context in
+            // MARK: - Dynamic Island
             DynamicIsland {
-                // Expanded UI goes here.  Compose the expanded UI through
-                // various regions, like leading/trailing/center/bottom
+                // Expanded Leading
                 DynamicIslandExpandedRegion(.leading) {
-                    Text("Leading")
+                    HStack(spacing: 8) {
+                        Image(systemName: context.attributes.categoryIcon)
+                            .font(.system(size: 18, weight: .bold))
+                            .foregroundColor(.white)
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(context.attributes.taskName)
+                                .font(.system(size: 13, weight: .heavy, design: .rounded))
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                            Text(context.state.isBreak ? "Istirahat" : "Fokus")
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .foregroundColor(context.state.isBreak ? .green : .orange)
+                        }
+                    }
+                    .padding(.leading, 4)
                 }
+
+                // Expanded Trailing
                 DynamicIslandExpandedRegion(.trailing) {
-                    Text("Trailing")
+                    VStack(alignment: .trailing, spacing: 1) {
+                        if context.state.isPaused {
+                            let mins = Int(context.state.remainingSecondsWhenPaused) / 60
+                            let secs = Int(context.state.remainingSecondsWhenPaused) % 60
+                            Text(String(format: "%02d:%02d", mins, secs))
+                                .font(.system(size: 18, weight: .black, design: .rounded))
+                                .foregroundColor(.yellow)
+                        } else {
+                            Text(timerInterval: Date()...context.state.endTime, countsDown: true)
+                                .font(.system(size: 18, weight: .black, design: .rounded))
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.trailing)
+                        }
+                        Text(context.state.isPaused ? "Dijeda" : "Berjalan")
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                            .foregroundColor(.gray)
+                    }
+                    .padding(.trailing, 4)
                 }
+
+                // Expanded Bottom
                 DynamicIslandExpandedRegion(.bottom) {
-                    Text("Bottom \(context.state.emoji)")
-                    // more content
+                    HStack {
+                        Label(
+                            context.state.isBreak ? "Nikmati jeda sejenak" : "Mode pengunci aplikasi aktif",
+                            systemImage: context.state.isBreak ? "cup.and.saucer.fill" : "shield.fill"
+                        )
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(.white.opacity(0.85))
+
+                        Spacer()
+
+                        Text(context.state.sessionTitle)
+                            .font(.system(size: 10, weight: .heavy, design: .rounded))
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(Color.yellow)
+                            .cornerRadius(4)
+                    }
+                    .padding(.horizontal, 6)
+                    .padding(.top, 4)
                 }
             } compactLeading: {
-                Text("L")
+                HStack(spacing: 3) {
+                    Image(systemName: context.attributes.categoryIcon)
+                        .font(.system(size: 12, weight: .bold))
+                }
             } compactTrailing: {
-                Text("T \(context.state.emoji)")
+                if context.state.isPaused {
+                    Image(systemName: "pause.fill")
+                        .font(.system(size: 11, weight: .bold))
+                } else {
+                    Text(timerInterval: Date()...context.state.endTime, countsDown: true)
+                        .font(.system(size: 12, weight: .heavy, design: .rounded))
+                        .foregroundColor(context.state.isBreak ? .green : .orange)
+                        .frame(width: 44)
+                }
             } minimal: {
-                Text(context.state.emoji)
+                Image(systemName: context.attributes.categoryIcon)
+                    .font(.system(size: 12, weight: .bold))
             }
-            .widgetURL(URL(string: "http://www.apple.com"))
-            .keylineTint(Color.red)
+            .keylineTint(context.state.isBreak ? Color.green : Color.orange)
         }
     }
 }
 
-extension TaskWidgetAttributes {
-    fileprivate static var preview: TaskWidgetAttributes {
-        TaskWidgetAttributes(name: "World")
+// MARK: - Preview Helper
+#if DEBUG
+extension PomodoroAttributes {
+    fileprivate static var preview: PomodoroAttributes {
+        PomodoroAttributes(taskName: "Belajar SwiftUI & Dynamic Island", categoryIcon: "timer")
     }
 }
 
-extension TaskWidgetAttributes.ContentState {
-    fileprivate static var smiley: TaskWidgetAttributes.ContentState {
-        TaskWidgetAttributes.ContentState(emoji: "😀")
-     }
-     
-     fileprivate static var starEyes: TaskWidgetAttributes.ContentState {
-         TaskWidgetAttributes.ContentState(emoji: "🤩")
-     }
+extension PomodoroAttributes.ContentState {
+    fileprivate static var running: PomodoroAttributes.ContentState {
+        PomodoroAttributes.ContentState(
+            endTime: Date().addingTimeInterval(25 * 60),
+            isPaused: false,
+            isBreak: false,
+            sessionTitle: "25 Min (Klasik)"
+        )
+    }
 }
 
-#Preview("Notification", as: .content, using: TaskWidgetAttributes.preview) {
-   TaskWidgetLiveActivity()
+#Preview("Live Activity", as: .content, using: PomodoroAttributes.preview) {
+    TaskWidgetLiveActivity()
 } contentStates: {
-    TaskWidgetAttributes.ContentState.smiley
-    TaskWidgetAttributes.ContentState.starEyes
+    PomodoroAttributes.ContentState.running
 }
+#endif
