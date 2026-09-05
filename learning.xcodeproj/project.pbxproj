@@ -13,6 +13,9 @@
 		D02348B03049B321005D8B1F /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = D02348AF3049B321005D8B1F /* FirebaseAuth */; };
 		D02348B63049B71E005D8B1F /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = D02348B53049B71E005D8B1F /* GoogleSignIn */; };
 		D02348B83049B71E005D8B1F /* GoogleSignInSwift in Frameworks */ = {isa = PBXBuildFile; productRef = D02348B73049B71E005D8B1F /* GoogleSignInSwift */; };
+		D02CFC20304BCBD60035BBA6 /* DeviceActivityReportExtension.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = D02CFC14304BCBD50035BBA6 /* DeviceActivityReportExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D08BDD24304C153E008C7F43 /* DeviceActivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D08BDD23304C153E008C7F43 /* DeviceActivity.framework */; };
+		D08BDD2C304C153E008C7F43 /* DeviceActivityMonitor.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D08BDD22304C153E008C7F43 /* DeviceActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,6 +40,20 @@
 			remoteGlobalIDString = D023488130492A92005D8B1F;
 			remoteInfo = TaskWidgetExtension;
 		};
+		D02CFC1E304BCBD60035BBA6 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D01F662630431930008F3AA0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D02CFC13304BCBD50035BBA6;
+			remoteInfo = DeviceActivityReportExtension;
+		};
+		D08BDD2A304C153E008C7F43 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = D01F662630431930008F3AA0 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = D08BDD21304C153E008C7F43;
+			remoteInfo = DeviceActivityMonitor;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -46,9 +63,21 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				D08BDD2C304C153E008C7F43 /* DeviceActivityMonitor.appex in Embed Foundation Extensions */,
 				D023489430492A99005D8B1F /* TaskWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D02CFC25304BCBD60035BBA6 /* Embed ExtensionKit Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(EXTENSIONS_FOLDER_PATH)";
+			dstSubfolderSpec = 16;
+			files = (
+				D02CFC20304BCBD60035BBA6 /* DeviceActivityReportExtension.appex in Embed ExtensionKit Extensions */,
+			);
+			name = "Embed ExtensionKit Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -61,6 +90,9 @@
 		D023488430492A92005D8B1F /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		D023488630492A93005D8B1F /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		D023489B30492B64005D8B1F /* TaskWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = TaskWidgetExtension.entitlements; sourceTree = "<group>"; };
+		D02CFC14304BCBD50035BBA6 /* DeviceActivityReportExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = DeviceActivityReportExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		D08BDD22304C153E008C7F43 /* DeviceActivityMonitor.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DeviceActivityMonitor.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		D08BDD23304C153E008C7F43 /* DeviceActivity.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = DeviceActivity.framework; path = System/Library/Frameworks/DeviceActivity.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -77,6 +109,20 @@
 				Info.plist,
 			);
 			target = D023488130492A92005D8B1F /* TaskWidgetExtension */;
+		};
+		D02CFC24304BCBD60035BBA6 /* Exceptions for "DeviceActivityReport" folder in "DeviceActivityReportExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D02CFC13304BCBD50035BBA6 /* DeviceActivityReportExtension */;
+		};
+		D08BDD30304C153E008C7F43 /* Exceptions for "DeviceActivityMonitor" folder in "DeviceActivityMonitor" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = D08BDD21304C153E008C7F43 /* DeviceActivityMonitor */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -105,6 +151,22 @@
 				D023489930492A99005D8B1F /* Exceptions for "TaskWidget" folder in "TaskWidgetExtension" target */,
 			);
 			path = TaskWidget;
+			sourceTree = "<group>";
+		};
+		D02CFC15304BCBD60035BBA6 /* DeviceActivityReport */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D02CFC24304BCBD60035BBA6 /* Exceptions for "DeviceActivityReport" folder in "DeviceActivityReportExtension" target */,
+			);
+			path = DeviceActivityReport;
+			sourceTree = "<group>";
+		};
+		D08BDD25304C153E008C7F43 /* DeviceActivityMonitor */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				D08BDD30304C153E008C7F43 /* Exceptions for "DeviceActivityMonitor" folder in "DeviceActivityMonitor" target */,
+			);
+			path = DeviceActivityMonitor;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -143,6 +205,21 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D02CFC11304BCBD50035BBA6 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D08BDD1F304C153E008C7F43 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D08BDD24304C153E008C7F43 /* DeviceActivity.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -154,6 +231,8 @@
 				D01F664030431933008F3AA0 /* learningTests */,
 				D01F664A30431933008F3AA0 /* learningUITests */,
 				D023488830492A93005D8B1F /* TaskWidget */,
+				D02CFC15304BCBD60035BBA6 /* DeviceActivityReport */,
+				D08BDD25304C153E008C7F43 /* DeviceActivityMonitor */,
 				D023488330492A92005D8B1F /* Frameworks */,
 				D01F662F30431930008F3AA0 /* Products */,
 			);
@@ -166,6 +245,8 @@
 				D01F663D30431933008F3AA0 /* learningTests.xctest */,
 				D01F664730431933008F3AA0 /* learningUITests.xctest */,
 				D023488230492A92005D8B1F /* TaskWidgetExtension.appex */,
+				D02CFC14304BCBD50035BBA6 /* DeviceActivityReportExtension.appex */,
+				D08BDD22304C153E008C7F43 /* DeviceActivityMonitor.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -175,6 +256,7 @@
 			children = (
 				D023488430492A92005D8B1F /* WidgetKit.framework */,
 				D023488630492A93005D8B1F /* SwiftUI.framework */,
+				D08BDD23304C153E008C7F43 /* DeviceActivity.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -190,11 +272,14 @@
 				D01F662B30431930008F3AA0 /* Frameworks */,
 				D01F662C30431930008F3AA0 /* Resources */,
 				D023489530492A99005D8B1F /* Embed Foundation Extensions */,
+				D02CFC25304BCBD60035BBA6 /* Embed ExtensionKit Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				D023489330492A99005D8B1F /* PBXTargetDependency */,
+				D02CFC1F304BCBD60035BBA6 /* PBXTargetDependency */,
+				D08BDD2B304C153E008C7F43 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				D01F663030431930008F3AA0 /* learning */,
@@ -277,6 +362,50 @@
 			productReference = D023488230492A92005D8B1F /* TaskWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		D02CFC13304BCBD50035BBA6 /* DeviceActivityReportExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D02CFC21304BCBD60035BBA6 /* Build configuration list for PBXNativeTarget "DeviceActivityReportExtension" */;
+			buildPhases = (
+				D02CFC10304BCBD50035BBA6 /* Sources */,
+				D02CFC11304BCBD50035BBA6 /* Frameworks */,
+				D02CFC12304BCBD50035BBA6 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				D02CFC15304BCBD60035BBA6 /* DeviceActivityReport */,
+			);
+			name = DeviceActivityReportExtension;
+			packageProductDependencies = (
+			);
+			productName = DeviceActivityReportExtension;
+			productReference = D02CFC14304BCBD50035BBA6 /* DeviceActivityReportExtension.appex */;
+			productType = "com.apple.product-type.extensionkit-extension";
+		};
+		D08BDD21304C153E008C7F43 /* DeviceActivityMonitor */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = D08BDD2D304C153E008C7F43 /* Build configuration list for PBXNativeTarget "DeviceActivityMonitor" */;
+			buildPhases = (
+				D08BDD1E304C153E008C7F43 /* Sources */,
+				D08BDD1F304C153E008C7F43 /* Frameworks */,
+				D08BDD20304C153E008C7F43 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				D08BDD25304C153E008C7F43 /* DeviceActivityMonitor */,
+			);
+			name = DeviceActivityMonitor;
+			packageProductDependencies = (
+			);
+			productName = DeviceActivityMonitor;
+			productReference = D08BDD22304C153E008C7F43 /* DeviceActivityMonitor.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -299,6 +428,12 @@
 						TestTargetID = D01F662D30431930008F3AA0;
 					};
 					D023488130492A92005D8B1F = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					D02CFC13304BCBD50035BBA6 = {
+						CreatedOnToolsVersion = 27.0;
+					};
+					D08BDD21304C153E008C7F43 = {
 						CreatedOnToolsVersion = 27.0;
 					};
 				};
@@ -325,6 +460,8 @@
 				D01F663C30431933008F3AA0 /* learningTests */,
 				D01F664630431933008F3AA0 /* learningUITests */,
 				D023488130492A92005D8B1F /* TaskWidgetExtension */,
+				D02CFC13304BCBD50035BBA6 /* DeviceActivityReportExtension */,
+				D08BDD21304C153E008C7F43 /* DeviceActivityMonitor */,
 			);
 		};
 /* End PBXProject section */
@@ -352,6 +489,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		D023488030492A92005D8B1F /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D02CFC12304BCBD50035BBA6 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D08BDD20304C153E008C7F43 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -389,6 +540,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		D02CFC10304BCBD50035BBA6 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D08BDD1E304C153E008C7F43 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -406,6 +571,16 @@
 			isa = PBXTargetDependency;
 			target = D023488130492A92005D8B1F /* TaskWidgetExtension */;
 			targetProxy = D023489230492A99005D8B1F /* PBXContainerItemProxy */;
+		};
+		D02CFC1F304BCBD60035BBA6 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D02CFC13304BCBD50035BBA6 /* DeviceActivityReportExtension */;
+			targetProxy = D02CFC1E304BCBD60035BBA6 /* PBXContainerItemProxy */;
+		};
+		D08BDD2B304C153E008C7F43 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = D08BDD21304C153E008C7F43 /* DeviceActivityMonitor */;
+			targetProxy = D08BDD2A304C153E008C7F43 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -463,7 +638,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -522,7 +697,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -541,7 +716,7 @@
 				CODE_SIGN_ENTITLEMENTS = learning/learning.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LBTXG3Q53T;
+				DEVELOPMENT_TEAM = 988HX38JR5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = learning/Info.plist;
@@ -550,6 +725,8 @@
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Aplikasi memerlukan akses ke Kalender untuk menyinkronkan jadwal tugas.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Aplikasi memerlukan Face ID untuk mengamankan data tugas dan mempercepat proses login.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Aplikasi memerlukan akses ke Pengingat Apple untuk menyinkronkan tugas.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "Aplikasi ini membutuhkan izin pelacakan untuk menampilkan konten yang relevan, analisis produktivitas, dan personalisasi pengalaman Anda.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -560,7 +737,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.irmintul.learning;
+				PRODUCT_BUNDLE_IDENTIFIER = com.irmintul.xlearning;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -581,7 +758,7 @@
 				CODE_SIGN_ENTITLEMENTS = learning/learning.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LBTXG3Q53T;
+				DEVELOPMENT_TEAM = 988HX38JR5;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = learning/Info.plist;
@@ -590,6 +767,8 @@
 				INFOPLIST_KEY_NSCalendarsUsageDescription = "Aplikasi memerlukan akses ke Kalender untuk menyinkronkan jadwal tugas.";
 				INFOPLIST_KEY_NSFaceIDUsageDescription = "Aplikasi memerlukan Face ID untuk mengamankan data tugas dan mempercepat proses login.";
 				INFOPLIST_KEY_NSRemindersFullAccessUsageDescription = "Aplikasi memerlukan akses ke Pengingat Apple untuk menyinkronkan tugas.";
+				INFOPLIST_KEY_NSSupportsLiveActivities = YES;
+				INFOPLIST_KEY_NSUserTrackingUsageDescription = "Aplikasi ini membutuhkan izin pelacakan untuk menampilkan konten yang relevan, analisis produktivitas, dan personalisasi pengalaman Anda.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -600,7 +779,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.irmintul.learning;
+				PRODUCT_BUNDLE_IDENTIFIER = com.irmintul.xlearning;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
@@ -707,7 +886,7 @@
 				CODE_SIGN_ENTITLEMENTS = TaskWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LBTXG3Q53T;
+				DEVELOPMENT_TEAM = 988HX38JR5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TaskWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TaskWidget;
@@ -719,7 +898,7 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.irmintul.learning.TaskWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.irmintul.xlearning.TaskWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
 				SKIP_INSTALL = YES;
@@ -740,7 +919,7 @@
 				CODE_SIGN_ENTITLEMENTS = TaskWidgetExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = LBTXG3Q53T;
+				DEVELOPMENT_TEAM = 988HX38JR5;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = TaskWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = TaskWidget;
@@ -752,9 +931,129 @@
 					"@executable_path/../../Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = com.irmintul.learning.TaskWidget;
+				PRODUCT_BUNDLE_IDENTIFIER = com.irmintul.xlearning.TaskWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D02CFC22304BCBD60035BBA6 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = DeviceActivityReport/DeviceActivityReport.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 988HX38JR5;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DeviceActivityReport/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DeviceActivityReportExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.irmintul.xlearning.DeviceActivityReportExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D02CFC23304BCBD60035BBA6 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = DeviceActivityReport/DeviceActivityReport.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 988HX38JR5;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DeviceActivityReport/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DeviceActivityReportExtension;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.irmintul.xlearning.DeviceActivityReportExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		D08BDD2E304C153E008C7F43 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = DeviceActivityMonitor/DeviceActivityMonitor.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 988HX38JR5;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DeviceActivityMonitor/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DeviceActivityMonitor;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.irmintul.xlearning.DeviceActivityMonitor;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		D08BDD2F304C153E008C7F43 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = DeviceActivityMonitor/DeviceActivityMonitor.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 988HX38JR5;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DeviceActivityMonitor/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DeviceActivityMonitor;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.irmintul.xlearning.DeviceActivityMonitor;
+				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -809,6 +1108,24 @@
 			buildConfigurations = (
 				D023489630492A99005D8B1F /* Debug */,
 				D023489730492A99005D8B1F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D02CFC21304BCBD60035BBA6 /* Build configuration list for PBXNativeTarget "DeviceActivityReportExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D02CFC22304BCBD60035BBA6 /* Debug */,
+				D02CFC23304BCBD60035BBA6 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		D08BDD2D304C153E008C7F43 /* Build configuration list for PBXNativeTarget "DeviceActivityMonitor" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				D08BDD2E304C153E008C7F43 /* Debug */,
+				D08BDD2F304C153E008C7F43 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

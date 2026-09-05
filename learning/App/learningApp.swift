@@ -20,7 +20,7 @@ struct learningApp: App {
         let schema = Schema([
             Item.self,
         ])
-        let appGroupIdentifier = "group.com.irmintul.learning"
+        let appGroupIdentifier = "group.com.gmedia.xlearning"
         
         if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) {
             let storeURL = containerURL.appendingPathComponent("learning.sqlite")
