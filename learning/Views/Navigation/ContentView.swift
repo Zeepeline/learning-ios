@@ -88,6 +88,9 @@ struct ContentView: View {
                         )
 
                     case 3:
+                        FocusHubView()
+
+                    case 4:
                         ProfileView()
 
                     default:
@@ -149,7 +152,8 @@ struct ContentView: View {
         case 0: return "Aktivitas"
         case 1: return "Hari Ini"
         case 2: return "Penting"
-        case 3: return "Profil Saya"
+        case 3: return "Fokus"
+        case 4: return "Profil Saya"
         default: return "Aktivitas"
         }
     }

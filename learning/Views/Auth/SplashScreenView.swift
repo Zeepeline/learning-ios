@@ -57,9 +57,14 @@ struct SplashScreenView: View {
                         .font(.system(size: 26, weight: .heavy, design: .rounded))
                         .foregroundColor(.cartoonTextPrimary)
 
-                    Text("Plan • Focus • Accomplish ⚡️")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 4) {
+                        Text("Plan • Focus • Accomplish")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundColor(.secondary)
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(.cartoonOrange)
+                    }
                 }
                 .offset(y: textOffset)
                 .opacity(opacity)

@@ -55,8 +55,16 @@ struct RegisterView: View {
                                     .font(.system(size: 28, weight: .heavy, design: .rounded))
                                     .foregroundColor(.black)
                                 
-                                Text("👋")
-                                    .font(.system(size: 26))
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.cartoonYellow)
+                                        .frame(width: 30, height: 30)
+                                        .overlay(Circle().stroke(Color.black, lineWidth: 1.4))
+                                        .shadow(color: .black, radius: 0, x: 1.2, y: 1.2)
+                                    Image(systemName: "hand.wave.fill")
+                                        .font(.system(size: 15, weight: .bold))
+                                        .foregroundColor(.black)
+                                }
                             }
 
                             Text("Please register on our Streamline, where you can continue using our service.")

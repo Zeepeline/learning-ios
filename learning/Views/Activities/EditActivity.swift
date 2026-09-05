@@ -87,7 +87,7 @@ struct EditActivity: View {
                                 }
 
                                 VStack(alignment: .leading, spacing: 2) {
-                                    Text(isCompleted ? "Status: Selesai ✨" : "Status: Belum Selesai ⏳")
+                                    Text(isCompleted ? "Status: Selesai" : "Status: Belum Selesai")
                                         .font(.system(size: 14, weight: .heavy, design: .rounded))
                                         .foregroundColor(.black)
 

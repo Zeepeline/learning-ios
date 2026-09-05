@@ -102,7 +102,7 @@ struct CartoonProgressBanner: View {
         if totalCount == 0 {
             return "Mulai hari ini dengan membuat tugas baru!"
         } else if completedCount == totalCount {
-            return "Luar biasa! Semua tugas selesai! 🎉"
+            return "Luar biasa! Semua tugas selesai!"
         } else {
             return "Yuk selesaikan \(totalCount - completedCount) tugas lagi hari ini!"
         }

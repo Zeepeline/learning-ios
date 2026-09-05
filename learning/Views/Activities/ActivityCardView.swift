@@ -138,7 +138,7 @@ struct ActivityCardView: View {
 
     private func badgeData(for priority: String) -> (Color, String) {
         switch priority {
-        case "Tinggi": return (Color.cartoonPink, "Tinggi ⚡️")
+        case "Tinggi": return (Color.cartoonPink, "Tinggi")
         case "Normal": return (Color.cartoonYellow, "Normal")
         case "Rendah": return (Color.cartoonMint, "Rendah")
         default: return (Color.white, priority)

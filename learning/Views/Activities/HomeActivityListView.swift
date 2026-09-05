@@ -23,7 +23,7 @@ struct HomeActivityListView: View {
         ("all", "Semua", "tray.full.fill"),
         ("pending", "Tertunda", "hourglass"),
         ("completed", "Selesai", "checkmark.circle.fill"),
-        ("high", "Tinggi ⚡️", "bolt.fill")
+        ("high", "Tinggi", "bolt.fill")
     ]
 
     private var completedCount: Int { items.filter { $0.isCompleted }.count }
@@ -157,7 +157,7 @@ struct HomeActivityListView: View {
             // Seksi 2: Tugas yang Telah Selesai
             if !doneItems.isEmpty {
                 HStack(spacing: HIGSpacing.xxs) {
-                    Text("Sudah Selesai ✨")
+                    Text("Sudah Selesai")
                         .font(.system(size: 15, weight: .heavy, design: .rounded))
                         .foregroundColor(.secondary)
 

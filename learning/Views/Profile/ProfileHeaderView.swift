@@ -69,9 +69,14 @@ struct ProfileHeaderView: View {
             // Badge XP & Level Gamifikasi Real-Time
             VStack(spacing: 6) {
                 HStack {
-                    Text("⚡️ Level \(userLevel) Explorer")
-                        .font(.system(size: 12, weight: .heavy, design: .rounded))
-                        .foregroundColor(.black)
+                    HStack(spacing: 4) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 12, weight: .black))
+                            .foregroundColor(.cartoonOrange)
+                        Text("Level \(userLevel) Explorer")
+                            .font(.system(size: 12, weight: .heavy, design: .rounded))
+                            .foregroundColor(.black)
+                    }
 
                     Spacer()
 

@@ -96,8 +96,8 @@ struct ProfileSettingsSection: View {
                         NotificationManager.shared.scheduleDailyReminder(
                             hour: 8,
                             minute: 0,
-                            title: "☀️ Semangat Pagi! Saatnya Mulai Hari",
-                            body: "Buka aplikasi untuk melihat daftar tugas yang perlu diselesaikan hari ini! 🚀",
+                            title: "Semangat Pagi! Saatnya Mulai Hari",
+                            body: "Buka aplikasi untuk melihat daftar tugas yang perlu diselesaikan hari ini!",
                             identifier: NotificationManager.morningReminderId
                         )
                     } else {
@@ -121,8 +121,8 @@ struct ProfileSettingsSection: View {
                         NotificationManager.shared.scheduleDailyReminder(
                             hour: 20,
                             minute: 0,
-                            title: "🌙 Evaluasi Malam",
-                            body: "Hebat! Cek berapa banyak tugas yang telah berhasil kamu selesaikan hari ini ⭐️",
+                            title: "Evaluasi Malam",
+                            body: "Hebat! Cek berapa banyak tugas yang telah berhasil kamu selesaikan hari ini.",
                             identifier: NotificationManager.eveningReminderId
                         )
                     } else {
@@ -135,7 +135,7 @@ struct ProfileSettingsSection: View {
             Button {
                 HapticManager.shared.impact(style: .medium)
                 isTestingNotification = true
-                testNotificationNotice = "Notifikasi akan muncul dalam 3 detik! ⏱️"
+                testNotificationNotice = "Notifikasi akan muncul dalam 3 detik!"
                 NotificationManager.shared.sendTestNotification(seconds: 3) { success in
                     isTestingNotification = false
                     if !success {
