@@ -15,7 +15,6 @@ struct ContentView: View {
 
     @State private var selectedTab: Int = 0
     @State private var isShowingAddActivity: Bool = false
-    @State private var isSidebarOpen: Bool = false
 
     // State untuk Edit & Delete Dialog
     @State private var itemToEdit: Item?
@@ -32,17 +31,14 @@ struct ContentView: View {
                 // 🎨 Reusable Custom Top Header Bar
                 CartoonHeaderView(
                     title: navigationTitleForTab,
-                    onLeadingTap: {
-                        HapticManager.shared.impact(style: .light)
-                        isSidebarOpen.toggle()
-                    },
+                  
                     trailingAction: (selectedTab == 0) ? {
                         HapticManager.shared.impact(style: .medium)
                         isShowingAddActivity = true
                     } : nil
                 )
 
-                // Tampilan Halaman Sesuai Tab
+                // Tampilan Halaman Sesuai Tab (5 Tab Utama)
                 Group {
                     switch selectedTab {
                     case 0:
@@ -74,18 +70,7 @@ struct ContentView: View {
                         )
 
                     case 2:
-                        ImportantTasksView(
-                            items: items,
-                            onEditItem: { item in
-                                itemToEdit = item
-                            },
-                            onToggleItem: { item in
-                                toggleItemCompletion(item)
-                            },
-                            onDeleteItem: { item in
-                                confirmDelete(item)
-                            }
-                        )
+                        HabitTrackerView()
 
                     case 3:
                         FocusHubView()
@@ -109,9 +94,6 @@ struct ContentView: View {
                 CustomBottomNavBar(selectedTab: $selectedTab)
             }
             .ignoresSafeArea(.keyboard, edges: .bottom)
-
-            // Custom Drawer Sidebar Melayang
-            SidebarView(isOpen: $isSidebarOpen)
 
             // 🎨 Reusable Cartoon Pop Confirmation Dialog Component
             if isShowingDeleteDialog, let item = itemToDelete {
@@ -151,7 +133,7 @@ struct ContentView: View {
         switch selectedTab {
         case 0: return "Aktivitas"
         case 1: return "Hari Ini"
-        case 2: return "Penting"
+        case 2: return "Kebiasaan"
         case 3: return "Fokus"
         case 4: return "Profil Saya"
         default: return "Aktivitas"
@@ -195,7 +177,7 @@ struct ContentView: View {
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = (try? ModelContainer(for: Item.self, configurations: config)) ?? {
+    let container = (try? ModelContainer(for: Item.self, Habit.self, configurations: config)) ?? {
         fatalError("Failed to create preview container")
     }()
     

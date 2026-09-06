@@ -10,33 +10,39 @@ import SwiftUI
 // MARK: - 🎨 Reusable Cartoon Top Header Bar
 struct CartoonHeaderView: View {
     let title: String
-    let onLeadingTap: () -> Void
-    var trailingAction: (() -> Void)?
+    var leadingAction: (() -> Void)? = nil
+    var leadingIcon: String = "person.crop.circle.fill"
+    var leadingBgColor: Color = Color.cartoonYellow
+    
+    var trailingAction: (() -> Void)? = nil
     var trailingTitle: String = "Tambah"
     var trailingIcon: String = "plus"
     var trailingBgColor: Color = Color.cartoonYellow
 
     var body: some View {
         HStack(spacing: HIGSpacing.md) {
-            // 🍔 Tombol Hamburger Menu Kartun Pop (Min 44x44 Touch Target)
-            Button {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                    onLeadingTap()
+            // Tombol Kiri (Quick Action / Profil Avatar)
+            if let leadingAction = leadingAction {
+                Button {
+                    leadingAction()
+                } label: {
+                    Image(systemName: leadingIcon)
+                        .font(.system(size: 17, weight: .bold))
+                        .foregroundColor(.black)
+                        .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
+                        .background(leadingBgColor)
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.black, lineWidth: 1.8)
+                        )
+                        .shadow(color: .black, radius: 0, x: 2, y: 2)
                 }
-            } label: {
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 14, weight: .black))
-                    .foregroundColor(.cartoonTextPrimary)
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+            } else {
+                Color.clear
                     .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
-                    .background(Color.white)
-                    .cornerRadius(10)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.black, lineWidth: 1.8)
-                    )
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
             }
-            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
 
             Spacer()
 
@@ -84,7 +90,7 @@ struct CartoonHeaderView: View {
 #Preview {
     CartoonHeaderView(
         title: "Aktivitas",
-        onLeadingTap: {},
+        leadingAction: {},
         trailingAction: {}
     )
     .padding()
