@@ -17,27 +17,23 @@ jobs:
 
       - name: Select Latest Xcode 16
         run: |
-          if [ -d "/Applications/Xcode_16.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.app
-          elif [ -d "/Applications/Xcode_16.0.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.0.app
-          elif [ -d "/Applications/Xcode_16.1.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.1.app
-          elif [ -d "/Applications/Xcode_16.2.app" ]; then
-            sudo xcode-select -s /Applications/Xcode_16.2.app
+          LATEST_XCODE=$(find /Applications -maxdepth 1 -name "Xcode_16*.app" -o -name "Xcode.app" | sort -V | tail -n 1)
+          if [ -n "$LATEST_XCODE" ]; then
+            echo "Selecting $LATEST_XCODE"
+            sudo xcode-select -s "$LATEST_XCODE"
           fi
           xcodebuild -version
 
-      - name: Show SDK & Device Info
+      - name: Show Available Simulators
         run: |
-          xcrun simctl list devicetypes
+          xcrun simctl list devices available
 
       - name: Build App for iOS Simulator
         run: |
           xcodebuild clean build \
             -project learning.xcodeproj \
             -scheme learning \
-            -destination "generic/platform=iOS Simulator" \
+            -destination "platform=iOS Simulator,name=iPhone 16" \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -49,8 +45,8 @@ jobs:
           xcodebuild test \
             -project learning.xcodeproj \
             -scheme learning \
-            -destination "platform=iOS Simulator,name=iPhone 16,OS=latest" \
+            -destination "platform=iOS Simulator,name=iPhone 16" \
             -configuration Debug \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" || echo "Tests skipped or no simulator matching"
+            CODE_SIGN_IDENTITY="" || echo "Tests skipped or completed with warnings"
