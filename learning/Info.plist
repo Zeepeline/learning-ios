@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CFBundleDisplayName</key>
+	<string>Learning</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -15,6 +17,29 @@
 	</array>
 	<key>GIDClientID</key>
 	<string>643923406936-4ao9ea9i0hc2dp3j6kdqsearcl09kre8.apps.googleusercontent.com</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Aplikasi membutuhkan izin untuk membaca data olahraga lari, langkah kaki, kalori, dan durasi tidur agar target kebiasaan dan aktivitas harian Anda tersinkronisasi otomatis.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Aplikasi menggunakan data kesehatan untuk memperbarui target kebiasaan dan kebugaran Anda.</string>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypeAdd</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Tambah Tugas Baru</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.gmedia.learning.newTask</string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypePlay</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Fokus Pomodoro (25 Min)</string>
+			<key>UIApplicationShortcutItemType</key>
+			<string>com.gmedia.learning.startPomodoro</string>
+		</dict>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

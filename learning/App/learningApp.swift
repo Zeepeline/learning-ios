@@ -9,65 +9,19 @@ import SwiftUI
 import SwiftData
 import WidgetKit
 import GoogleSignIn
+import AppIntents
 
 @main
 struct learningApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("isLoggedIn") private var isLoggedIn: Bool = true
 
-    // Shared ModelContainer dengan dukungan App Group & iCloud CloudKit
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-            Habit.self,
-        ])
-        let appGroupIdentifier = "group.com.gmedia.xlearning"
-        let cloudContainerId = "iCloud.com.gmedia.xlearning"
-        
-        // 1. Coba inisialisasi App Group Container dengan CloudKit
-        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) {
-            let storeURL = containerURL.appendingPathComponent("learning.sqlite")
-            let appGroupCloudConfig = ModelConfiguration(
-                schema: schema,
-                url: storeURL,
-                cloudKitDatabase: .private(cloudContainerId)
-            )
-            if let container = try? ModelContainer(for: schema, configurations: [appGroupCloudConfig]) {
-                return container
-            }
-            
-            // 1b. Fallback App Group Container tanpa CloudKit (jika iCloud belum aktif / simulator offline)
-            let appGroupLocalConfig = ModelConfiguration(schema: schema, url: storeURL)
-            if let container = try? ModelContainer(for: schema, configurations: [appGroupLocalConfig]) {
-                print("⚠️ Initialized local App Group container without CloudKit")
-                return container
-            }
-        }
-        
-        // 2. Coba Default Local Storage dengan CloudKit
-        let defaultCloudConfig = ModelConfiguration(
-            schema: schema,
-            isStoredInMemoryOnly: false,
-            cloudKitDatabase: .private(cloudContainerId)
-        )
-        if let container = try? ModelContainer(for: schema, configurations: [defaultCloudConfig]) {
-            return container
-        }
+    let sharedModelContainer: ModelContainer
 
-        // 3. Fallback Standard Local Storage
-        let standardConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-        if let container = try? ModelContainer(for: schema, configurations: [standardConfig]) {
-            return container
-        }
-
-        // 4. In-Memory Container Darurat
-        let inMemoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-        do {
-            return try ModelContainer(for: schema, configurations: [inMemoryConfig])
-        } catch {
-            fatalError("Could not initialize any ModelContainer: \(error.localizedDescription)")
-        }
-    }()
+    init() {
+        self.sharedModelContainer = Self.createModelContainer()
+    }
 
     var body: some Scene {
         WindowGroup {
@@ -96,6 +50,9 @@ struct learningApp: App {
                 // Inisialisasi Izin Notifikasi Sistem & Refresh Widget
                 NotificationManager.shared.requestAuthorization()
                 WidgetCenter.shared.reloadAllTimelines()
+                
+                // Daftarkan Pintasan Suara Siri ke Sistem iOS
+                LearningShortcutsProvider.updateAppShortcutParameters()
             }
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .background || newPhase == .inactive {
@@ -105,5 +62,78 @@ struct learningApp: App {
             }
         }
         .modelContainer(sharedModelContainer)
+    }
+
+    // MARK: - ModelContainer Setup & Fallbacks
+
+    private static func createModelContainer() -> ModelContainer {
+        let schema = Schema([
+            Item.self,
+            Habit.self,
+        ])
+        let appGroupIdentifier = "group.com.gmedia.xlearning"
+
+        // 1. Coba inisialisasi App Group Shared Container
+        if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) {
+            let storeURL = containerURL.appendingPathComponent("learning.sqlite")
+            let config = ModelConfiguration(schema: schema, url: storeURL)
+
+            if let container = try? ModelContainer(for: schema, configurations: [config]) {
+                if isContainerHealthy(container) {
+                    return container
+                } else {
+                    print("⚠️ SQLite lama tidak memiliki tabel baru (ZHABIT). Memulihkan database...")
+                    cleanCorruptStore(at: containerURL)
+                    if let freshContainer = try? ModelContainer(for: schema, configurations: [config]),
+                       isContainerHealthy(freshContainer) {
+                        print("✅ Berhasil membuat ulang SQLite database dengan skema lengkap (Item & Habit).")
+                        return freshContainer
+                    }
+                }
+            } else {
+                cleanCorruptStore(at: containerURL)
+                if let freshContainer = try? ModelContainer(for: schema, configurations: [config]) {
+                    return freshContainer
+                }
+            }
+        }
+
+        // 2. Fallback Standard Local Storage
+        let standardConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        if let container = try? ModelContainer(for: schema, configurations: [standardConfig]),
+           isContainerHealthy(container) {
+            return container
+        }
+
+        // 3. In-Memory Container Darurat
+        let inMemoryConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        do {
+            return try ModelContainer(for: schema, configurations: [inMemoryConfig])
+        } catch {
+            fatalError("Could not initialize any ModelContainer: \(error.localizedDescription)")
+        }
+    }
+
+    private static func cleanCorruptStore(at containerURL: URL) {
+        let fileManager = FileManager.default
+        let storeURL = containerURL.appendingPathComponent("learning.sqlite")
+        let shmURL = containerURL.appendingPathComponent("learning.sqlite-shm")
+        let walURL = containerURL.appendingPathComponent("learning.sqlite-wal")
+        try? fileManager.removeItem(at: storeURL)
+        try? fileManager.removeItem(at: shmURL)
+        try? fileManager.removeItem(at: walURL)
+    }
+
+    @MainActor
+    private static func isContainerHealthy(_ container: ModelContainer) -> Bool {
+        let context = ModelContext(container)
+        do {
+            _ = try context.fetch(FetchDescriptor<Item>())
+            _ = try context.fetch(FetchDescriptor<Habit>())
+            return true
+        } catch {
+            print("⚠️ SwiftData health probe failed: \(error.localizedDescription)")
+            return false
+        }
     }
 }
