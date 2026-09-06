@@ -39,13 +39,15 @@ struct FocusHubView: View {
                 }
             }
             .padding(4)
-            .background(Color.white)
-            .cornerRadius(12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.white)
+                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Color.black, lineWidth: 1.8)
             )
-            .shadow(color: .black, radius: 0, x: 2, y: 2)
             .padding(.horizontal, HIGSpacing.md)
             .padding(.top, HIGSpacing.xs)
             .padding(.bottom, HIGSpacing.sm)

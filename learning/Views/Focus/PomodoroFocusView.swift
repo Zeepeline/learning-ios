@@ -63,8 +63,10 @@ struct PomodoroMainTimerCard: View {
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color.white)
-                .cornerRadius(8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.white)
+                )
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
 
                 Spacer()
@@ -75,8 +77,10 @@ struct PomodoroMainTimerCard: View {
                     .foregroundColor(.black)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(pomodoro.selectedPreset.themeColor)
-                    .cornerRadius(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(pomodoro.selectedPreset.themeColor)
+                    )
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
             }
 
@@ -137,8 +141,10 @@ struct PomodoroMainTimerCard: View {
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(Color.cartoonCoral.opacity(0.35))
-                .cornerRadius(8)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.cartoonCoral.opacity(0.35))
+                )
                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.1))
             }
         }
@@ -183,13 +189,15 @@ struct PomodoroPresetSelector: View {
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 8)
-                        .background(isSelected ? preset.themeColor : Color.white)
-                        .cornerRadius(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(isSelected ? preset.themeColor : Color.white)
+                                .shadow(color: .black, radius: 0, x: isSelected ? 2 : 1, y: isSelected ? 2 : 1)
+                        )
                         .overlay(
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(Color.black, lineWidth: isSelected ? 1.8 : 1.1)
                         )
-                        .shadow(color: .black, radius: 0, x: isSelected ? 1.5 : 1, y: isSelected ? 1.5 : 1)
                     }
                     .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                     .disabled(pomodoro.state != .idle)
@@ -231,8 +239,10 @@ struct FocusSessionSettingsCard: View {
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 8)
-            .background(Color.white)
-            .cornerRadius(8)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color.white)
+            )
             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
 
             // Auto Shield Toggle Row (Menggunakan CartoonToggleSwitch)
@@ -282,12 +292,14 @@ struct FocusActionControls: View {
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 13)
-                    .background(Color.cartoonYellow)
-                    .cornerRadius(12)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(Color.cartoonYellow)
+                            .shadow(color: .black, radius: 0, x: 2, y: 2)
+                    )
                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: CartoonMetrics.borderWidth))
-                    .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
                 }
-                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.5))
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
             case .running:
                 Button {
@@ -302,12 +314,14 @@ struct FocusActionControls: View {
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Color.cartoonLavender)
-                    .cornerRadius(10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.cartoonLavender)
+                            .shadow(color: .black, radius: 0, x: 2, y: 2)
+                    )
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.8))
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
                 }
-                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
                 Button {
                     pomodoro.resetTimer()
@@ -321,12 +335,14 @@ struct FocusActionControls: View {
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Color.cartoonCoral)
-                    .cornerRadius(10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.cartoonCoral)
+                            .shadow(color: .black, radius: 0, x: 2, y: 2)
+                    )
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.8))
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
                 }
-                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
             case .paused:
                 Button {
@@ -341,12 +357,14 @@ struct FocusActionControls: View {
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Color.cartoonMint)
-                    .cornerRadius(10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.cartoonMint)
+                            .shadow(color: .black, radius: 0, x: 2, y: 2)
+                    )
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.8))
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
                 }
-                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
                 Button {
                     pomodoro.resetTimer()
@@ -360,12 +378,14 @@ struct FocusActionControls: View {
                     .foregroundColor(.black)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 12)
-                    .background(Color.white)
-                    .cornerRadius(10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.white)
+                            .shadow(color: .black, radius: 0, x: 2, y: 2)
+                    )
                     .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.8))
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
                 }
-                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
             }
         }
     }
@@ -389,8 +409,10 @@ struct FocusSessionStatsCard: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(Color.white)
-            .cornerRadius(10)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.white)
+            )
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.2))
 
             // Preset Aktif Info
@@ -405,8 +427,10 @@ struct FocusSessionStatsCard: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 10)
-            .background(Color.white)
-            .cornerRadius(10)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.white)
+            )
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.2))
         }
     }

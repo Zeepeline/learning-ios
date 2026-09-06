@@ -129,10 +129,12 @@ struct ScreenTimeAuthPromptCard: View {
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 9)
-                .background(Color.cartoonYellow)
-                .cornerRadius(10)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.cartoonYellow)
+                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                )
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.5))
-                .shadow(color: .black, radius: 0, x: 2, y: 2)
             }
             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
             .disabled(isRequestingAuth)
@@ -180,8 +182,10 @@ struct ScreenTimeShieldManagerCard: View {
                 }
                 .padding(.horizontal, 7)
                 .padding(.vertical, 3)
-                .background(manager.isShieldActive ? Color.cartoonCoral.opacity(0.3) : Color.cartoonMint.opacity(0.3))
-                .cornerRadius(6)
+                .background(
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(manager.isShieldActive ? Color.cartoonCoral.opacity(0.3) : Color.cartoonMint.opacity(0.3))
+                )
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1))
             }
 
@@ -242,16 +246,20 @@ struct ScreenTimeShieldManagerCard: View {
                     .foregroundColor(.black)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 6)
-                    .background(Color.white)
-                    .cornerRadius(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color.white)
+                            .shadow(color: .black, radius: 0, x: 2, y: 2)
+                    )
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
                 }
                 .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
             }
             .padding(9)
-            .background(Color.white.opacity(0.7))
-            .cornerRadius(10)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.white.opacity(0.7))
+            )
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.2))
 
             // Action: Tombol Kunci / Buka Cepat
@@ -273,10 +281,12 @@ struct ScreenTimeShieldManagerCard: View {
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
-                .background(manager.isShieldActive ? Color.cartoonCoral : Color.cartoonMint)
-                .cornerRadius(10)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(manager.isShieldActive ? Color.cartoonCoral : Color.cartoonMint)
+                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                )
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.6))
-                .shadow(color: .black, radius: 0, x: 2, y: 2)
             }
             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
         }
@@ -339,13 +349,15 @@ struct ScreenTimeDailyLimitCard: View {
                                 .foregroundColor(.black)
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 6.5)
-                                .background(isSelected ? Color.cartoonYellow : Color.white)
-                                .cornerRadius(8)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(isSelected ? Color.cartoonYellow : Color.white)
+                                        .shadow(color: .black, radius: 0, x: isSelected ? 2 : 1, y: isSelected ? 2 : 1)
+                                )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
                                         .stroke(Color.black, lineWidth: isSelected ? 1.6 : 1.0)
                                 )
-                                .shadow(color: .black, radius: 0, x: isSelected ? 1.5 : 1, y: isSelected ? 1.5 : 1)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                     }
@@ -390,8 +402,10 @@ struct ScreenTimeReportCardView: View {
                 .foregroundColor(.secondary)
 
             // Extension Report View Apple (Hanya menghitung durasi aplikasi yang dipilih)
+            // allowsHitTesting(false) memungkinkan sentuhan/scroll diteruskan ke parent ScrollView tanpa terblokir
             DeviceActivityReport(.totalActivity, filter: filter)
                 .frame(height: reportHeight)
+                .allowsHitTesting(false)
         }
         .padding(HIGSpacing.md)
         .cartoonCard()
@@ -443,7 +457,7 @@ struct SelectedAppsBottomSheet: View {
                                 .fill(Color.cartoonLavender)
                                 .frame(width: 32, height: 32)
                                 .overlay(Circle().stroke(Color.black, lineWidth: 1.3))
-                                .shadow(color: .black, radius: 0, x: 1.2, y: 1.2)
+                                .shadow(color: .black, radius: 0, x: 1, y: 1)
 
                             Image(systemName: "apps.iphone")
                                 .font(.system(size: 14, weight: .black))
@@ -506,10 +520,12 @@ struct SelectedAppsBottomSheet: View {
                                     }
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 7)
-                                    .background(Color.white)
-                                    .cornerRadius(8)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.white)
+                                            .shadow(color: .black, radius: 0, x: 1, y: 1)
+                                    )
                                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.1))
-                                    .shadow(color: .black, radius: 0, x: 1, y: 1)
                                 }
                             }
                         }
@@ -559,10 +575,12 @@ struct SelectedAppsBottomSheet: View {
                                     }
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 7)
-                                    .background(Color.white)
-                                    .cornerRadius(8)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .fill(Color.white)
+                                            .shadow(color: .black, radius: 0, x: 1, y: 1)
+                                    )
                                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.1))
-                                    .shadow(color: .black, radius: 0, x: 1, y: 1)
                                 }
                             }
                         }
@@ -586,10 +604,12 @@ struct SelectedAppsBottomSheet: View {
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .background(Color.cartoonYellow)
-                        .cornerRadius(10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10)
+                                .fill(Color.cartoonYellow)
+                                .shadow(color: .black, radius: 0, x: 2, y: 2)
+                        )
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.5))
-                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
                     }
                     .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                     .padding(.top, 2)
