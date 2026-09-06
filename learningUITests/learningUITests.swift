@@ -6,6 +6,9 @@
 //
 
 import XCTest
+#if canImport(UIKit)
+import UIKit
+#endif
 
 final class learningUITests: XCTestCase {
 
@@ -13,7 +16,7 @@ final class learningUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    /// UI Test Otomatis untuk Mengambil Screenshot Semua Halaman dan menulis langsung ke file docs/screenshots/*.png
+    /// UI Test Otomatis untuk Mengambil Screenshot Semua Halaman dan menulis langsung ke file docs/screenshots/*.png dalam ukuran mobile
     @MainActor
     func testTakeAllScreenshots() throws {
         let app = XCUIApplication()
@@ -74,11 +77,34 @@ final class learningUITests: XCTestCase {
     @MainActor
     private func saveToFile(name: String) {
         let fullScreenshot = XCUIScreen.main.screenshot()
-        let pngData = fullScreenshot.pngRepresentation
+        let image = fullScreenshot.image
 
-        // Path folder project docs/screenshots
+        #if canImport(UIKit)
+        let targetWidth: CGFloat = 393
+        let scaleFactor = targetWidth / max(1, image.size.width)
+        let targetHeight = image.size.height * scaleFactor
+        let targetSize = CGSize(width: targetWidth, height: targetHeight)
+
+        // PERBAIKAN: Pakai format dengan scale sesuai gambar asli (biasanya @2x atau @3x)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = image.scale // Mengunci rasio retina agar tidak melar/lebar
+
+        let renderer = UIGraphicsImageRenderer(size: targetSize, format: format)
+        let resizedImage = renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: targetSize))
+        }
+        let pngData = resizedImage.pngData()
+        #else
+        let pngData = fullScreenshot.pngRepresentation
+        #endif
+
+        // Buat folder otomatis jika belum ada di direktori tujuan
         let projectScreenshotDir = "/Users/herlambang/Documents/learning/ios/learning/docs/screenshots"
+        let fileManager = FileManager.default
+        try? fileManager.createDirectory(atPath: projectScreenshotDir, withIntermediateDirectories: true, attributes: nil)
+        
         let fileURL = URL(fileURLWithPath: projectScreenshotDir).appendingPathComponent(name)
-        try? pngData.write(to: fileURL)
+        try? pngData?.write(to: fileURL)
     }
+
 }

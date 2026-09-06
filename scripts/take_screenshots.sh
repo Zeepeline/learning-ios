@@ -31,9 +31,9 @@ echo "✅ Menggunakan Simulator iPhone: $DEVICE_NAME ($BOOTED_DEVICE)"
 
 echo ""
 echo "================================================================="
-echo "📸 PANDUAN CEPAT PENGAMBILAN SCREENSHOT IPHONE:"
+echo "📸 PANDUAN CEPAT PENGAMBILAN SCREENSHOT IPHONE (UKURAN MOBILE 393px):"
 echo "1. Buka halaman yang diinginkan di Simulator iPhone."
-echo "2. Ketik nomor di bawah lalu tekan Enter untuk langsung menjepret layar perangkat:"
+echo "2. Ketik nomor di bawah lalu tekan Enter untuk langsung menjepret layar:"
 echo "================================================================="
 echo ""
 
@@ -43,7 +43,10 @@ capture() {
     local path="$OUTPUT_DIR/$filename"
     echo "📸 Mengambil screenshot iPhone untuk: $desc..."
     xcrun simctl io "$BOOTED_DEVICE" screenshot --mask black "$path" || xcrun simctl io "$BOOTED_DEVICE" screenshot "$path"
-    echo "✅ Berhasil disimpan ke: docs/screenshots/$filename"
+    
+    # Otomatis resize ke resolusi mobile standar iPhone (lebar 393px)
+    sips --resampleWidth 393 "$path" > /dev/null 2>&1 || true
+    echo "✅ Berhasil disimpan dalam ukuran mobile ke: docs/screenshots/$filename"
 }
 
 while true; do
