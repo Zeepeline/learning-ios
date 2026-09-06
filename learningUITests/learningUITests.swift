@@ -10,32 +10,71 @@ import XCTest
 final class learningUITests: XCTestCase {
 
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
     }
 
-    override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
-    }
-
+    /// UI Test Otomatis untuk Mengambil Screenshot Semua Halaman ke folder docs/screenshots/
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testTakeAllScreenshots() throws {
         let app = XCUIApplication()
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        // 1. Tab Aktivitas & Tugas (Default Home)
+        saveScreen(name: "01_tasks")
+
+        // 2. Tab Hari Ini
+        let todayTab = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Hari Ini'")).firstMatch
+        if todayTab.waitForExistence(timeout: 3) {
+            todayTab.tap()
+            sleep(1)
+            saveScreen(name: "02_today")
+        }
+
+        // 3. Tab Kebiasaan
+        let habitTab = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Kebiasaan'")).firstMatch
+        if habitTab.waitForExistence(timeout: 3) {
+            habitTab.tap()
+            sleep(1)
+            saveScreen(name: "03_habits")
+        }
+
+        // 4. Tab Fokus (Pomodoro)
+        let focusTab = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Fokus'")).firstMatch
+        if focusTab.waitForExistence(timeout: 3) {
+            focusTab.tap()
+            sleep(1)
+            saveScreen(name: "04_focus")
+        }
+
+        // 5. Tab Profil
+        let profileTab = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Profil'")).firstMatch
+        if profileTab.waitForExistence(timeout: 3) {
+            profileTab.tap()
+            sleep(1)
+            saveScreen(name: "05_profile")
+
+            // 6. Buka Edit Profil modal jika ada tombol pensil
+            let editButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'pencil' OR label CONTAINS[c] 'Edit'")).firstMatch
+            if editButton.waitForExistence(timeout: 2) {
+                editButton.tap()
+                sleep(1)
+                saveScreen(name: "06_edit_profile")
+                
+                // Tutup sheet
+                let batalButton = app.buttons["Batal"]
+                if batalButton.exists {
+                    batalButton.tap()
+                }
+            }
+        }
     }
 
     @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+    private func saveScreen(name: String) {
+        let fullScreenshot = XCUIScreen.main.screenshot()
+        let attachment = XCTAttachment(screenshot: fullScreenshot)
+        attachment.lifetime = .keepAlways
+        attachment.name = name
+        add(attachment)
     }
 }
