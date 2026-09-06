@@ -11,6 +11,7 @@ struct ProfileStatsView: View {
     let completedTasksCount: Int
     let allItemsCount: Int
     let importantCompletedCount: Int
+    var maxHabitStreak: Int = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: HIGSpacing.xs) {
@@ -28,8 +29,8 @@ struct ProfileStatsView: View {
                 )
                 ProfileStatCard(
                     icon: "flame.fill",
-                    title: "Streak Hari",
-                    value: "3 Hari",
+                    title: "Streak Kebiasaan",
+                    value: "\(maxHabitStreak) Hari",
                     bgColor: .cartoonOrange,
                     iconColor: .red
                 )

@@ -10,6 +10,7 @@ import SwiftData
 
 struct ProfileView: View {
     @Query private var allItems: [Item]
+    @Query private var allHabits: [Habit]
     @AppStorage("isLoggedIn") private var isLoggedIn: Bool = true
     @AppStorage("userName") private var userName: String = "Bruce Wayne"
     @AppStorage("userEmail") private var userEmail: String = "brucewayne27@suarasa.com"
@@ -30,8 +31,12 @@ struct ProfileView: View {
         allItems.filter { $0.priority == "Tinggi" && $0.isCompleted }.count
     }
 
+    private var maxHabitStreak: Int {
+        allHabits.map { $0.currentStreak }.max() ?? 0
+    }
+
     private var totalXP: Int {
-        completedTasksCount * 50
+        (completedTasksCount * 50) + (maxHabitStreak * 25)
     }
 
     private var userLevel: Int {
@@ -60,7 +65,8 @@ struct ProfileView: View {
                     ProfileStatsView(
                         completedTasksCount: completedTasksCount,
                         allItemsCount: allItems.count,
-                        importantCompletedCount: importantCompletedCount
+                        importantCompletedCount: importantCompletedCount,
+                        maxHabitStreak: maxHabitStreak
                     )
 
                     // 3. Pengaturan & Preferensi

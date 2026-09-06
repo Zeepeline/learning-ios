@@ -19,6 +19,7 @@ struct learningApp: App {
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,
+            Habit.self,
         ])
         let appGroupIdentifier = "group.com.gmedia.xlearning"
         
