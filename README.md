@@ -6,21 +6,17 @@ A playful, feature-packed iOS Productivity, Habit Tracker & Focus application bu
 
 ## 📸 App Previews & Screenshots
 
-<div align="center">
+<p align="center">
+  <img src="docs/screenshots/01_tasks.png" width="180" style="border-radius: 16px; margin: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);" alt="Daftar Aktivitas"/>
+  <img src="docs/screenshots/02_today.png" width="180" style="border-radius: 16px; margin: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);" alt="Hari Ini Timeline"/>
+  <img src="docs/screenshots/03_habits.png" width="180" style="border-radius: 16px; margin: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);" alt="Habit Tracker"/>
+  <img src="docs/screenshots/04_focus.png" width="180" style="border-radius: 16px; margin: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);" alt="Timer Pomodoro"/>
+  <img src="docs/screenshots/05_profile.png" width="180" style="border-radius: 16px; margin: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.12);" alt="Profil Gamifikasi"/>
+</p>
 
-| 📋 Aktivitas & Tugas | ☀️ Timeline Hari Ini | 🔥 Habit Tracker |
-| :---: | :---: | :---: |
-| <img src="docs/screenshots/01_tasks.png" width="240" style="border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" alt="Daftar Aktivitas"/> | <img src="docs/screenshots/02_today.png" width="240" style="border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" alt="Hari Ini Timeline"/> | <img src="docs/screenshots/03_habits.png" width="240" style="border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" alt="Habit Tracker"/> |
-
-| ⏱️ Fokus & Pomodoro | 👤 Profil & Statistik | ✏️ Edit Profil |
-| :---: | :---: | :---: |
-| <img src="docs/screenshots/04_focus.png" width="240" style="border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" alt="Timer Pomodoro"/> | <img src="docs/screenshots/05_profile.png" width="240" style="border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" alt="Profil Gamifikasi"/> | <img src="docs/screenshots/06_edit_profile.png" width="240" style="border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" alt="Edit Profil"/> |
-
-| 📊 Screen Time & Shield | 📱 Live Activity & Dynamic Island | 🧩 Home Screen Widget |
-| :---: | :---: | :---: |
-| <img src="docs/screenshots/07_screentime.png" width="240" style="border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" alt="Screen Time Tracking"/> | <img src="docs/screenshots/08_live_activity.png" width="240" style="border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" alt="Live Activity"/> | <img src="docs/screenshots/09_widget.png" width="240" style="border-radius: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.15);" alt="WidgetKit Extension"/> |
-
-</div>
+<p align="center">
+  <sub><b>📋 Aktivitas</b> &nbsp;•&nbsp; <b>☀️ Timeline</b> &nbsp;•&nbsp; <b>🔥 Habits</b> &nbsp;•&nbsp; <b>⏱️ Focus Hub</b> &nbsp;•&nbsp; <b>👤 Profil</b></sub>
+</p>
 
 ---
 
