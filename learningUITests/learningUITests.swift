@@ -23,40 +23,40 @@ final class learningUITests: XCTestCase {
         // 1. Tab Aktivitas & Tugas (Default Home)
         saveToFile(name: "01_tasks.png")
 
-        // 2. Tab Hari Ini
-        let todayTab = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Hari Ini'")).firstMatch
-        if todayTab.waitForExistence(timeout: 4) {
+        // 2. Tab Hari Ini (Index 1)
+        let todayTab = app.buttons["tab_1"]
+        if todayTab.waitForExistence(timeout: 3) {
             todayTab.tap()
             sleep(1)
             saveToFile(name: "02_today.png")
         }
 
-        // 3. Tab Kebiasaan
-        let habitTab = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Kebiasaan'")).firstMatch
-        if habitTab.waitForExistence(timeout: 4) {
+        // 3. Tab Kebiasaan (Index 2)
+        let habitTab = app.buttons["tab_2"]
+        if habitTab.waitForExistence(timeout: 3) {
             habitTab.tap()
             sleep(1)
             saveToFile(name: "03_habits.png")
         }
 
-        // 4. Tab Fokus (Pomodoro)
-        let focusTab = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Fokus'")).firstMatch
-        if focusTab.waitForExistence(timeout: 4) {
+        // 4. Tab Fokus (Pomodoro - Index 3)
+        let focusTab = app.buttons["tab_3"]
+        if focusTab.waitForExistence(timeout: 3) {
             focusTab.tap()
             sleep(1)
             saveToFile(name: "04_focus.png")
         }
 
-        // 5. Tab Profil
-        let profileTab = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Profil'")).firstMatch
-        if profileTab.waitForExistence(timeout: 4) {
+        // 5. Tab Profil (Index 4)
+        let profileTab = app.buttons["tab_4"]
+        if profileTab.waitForExistence(timeout: 3) {
             profileTab.tap()
             sleep(1)
             saveToFile(name: "05_profile.png")
 
             // 6. Buka Edit Profil modal jika ada tombol pensil
             let editButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'pencil' OR label CONTAINS[c] 'Edit'")).firstMatch
-            if editButton.waitForExistence(timeout: 3) {
+            if editButton.waitForExistence(timeout: 2) {
                 editButton.tap()
                 sleep(1)
                 saveToFile(name: "06_edit_profile.png")
@@ -75,12 +75,6 @@ final class learningUITests: XCTestCase {
     private func saveToFile(name: String) {
         let fullScreenshot = XCUIScreen.main.screenshot()
         let pngData = fullScreenshot.pngRepresentation
-        
-        // Simpan sebagai attachment Xcode Test
-        let attachment = XCTAttachment(screenshot: fullScreenshot)
-        attachment.lifetime = .keepAlways
-        attachment.name = name
-        add(attachment)
 
         // Path folder project docs/screenshots
         let projectScreenshotDir = "/Users/herlambang/Documents/learning/ios/learning/docs/screenshots"

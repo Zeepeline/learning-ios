@@ -86,6 +86,8 @@ struct CartoonTabButton: View {
             )
             .contentShape(Rectangle())
         }
+        .accessibilityIdentifier("tab_\(index)")
+        .accessibilityLabel(title)
         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
     }
 }
