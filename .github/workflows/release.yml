@@ -1,0 +1,99 @@
+name: Create GitHub Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag name (e.g. v1.0.0)"
+        required: true
+        default: "v1.0.0"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select Latest Xcode 16
+        run: |
+          LATEST_XCODE=$(find /Applications -maxdepth 1 -name "Xcode_16*.app" -o -name "Xcode.app" | sort -V | tail -n 1)
+          if [ -n "$LATEST_XCODE" ]; then
+            echo "Selecting $LATEST_XCODE"
+            sudo xcode-select -s "$LATEST_XCODE"
+          fi
+          xcodebuild -version
+
+      - name: Determine Version Tag
+        id: vars
+        run: |
+          if [ -n "${{ github.event.inputs.tag_name }}" ]; then
+            TAG="${{ github.event.inputs.tag_name }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "TAG=$TAG" >> $GITHUB_OUTPUT
+          echo "Building for tag: $TAG"
+
+      - name: Build App for iOS Simulator
+        run: |
+          mkdir -p build-output
+          xcodebuild build \
+            -project learning.xcodeproj \
+            -scheme learning \
+            -destination "platform=iOS Simulator,name=iPhone 16" \
+            -configuration Release \
+            -derivedDataPath build/DerivedData \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            COMPILER_INDEX_STORE_ENABLE=NO
+
+          # Compress the built .app for iOS Simulator
+          cd build/DerivedData/Build/Products/Release-iphonesimulator
+          zip -r -y ../../../../../build-output/learning-${{ steps.vars.outputs.TAG }}-Simulator.zip learning.app
+          cd -
+
+      - name: Build Unsigned IPA for Device / Testing
+        run: |
+          xcodebuild build \
+            -project learning.xcodeproj \
+            -scheme learning \
+            -destination "generic/platform=iOS" \
+            -configuration Release \
+            -derivedDataPath build/DerivedDataDevice \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            COMPILER_INDEX_STORE_ENABLE=NO
+
+          # Create unsigned IPA structure
+          mkdir -p build/Payload
+          cp -r build/DerivedDataDevice/Build/Products/Release-iphoneos/learning.app build/Payload/
+          cd build
+          zip -r -y ../build-output/learning-${{ steps.vars.outputs.TAG }}-unsigned.ipa Payload
+          cd -
+
+      - name: Create GitHub Release and Upload Assets
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.vars.outputs.TAG }}
+          name: "Release ${{ steps.vars.outputs.TAG }}"
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            build-output/learning-*.zip
+            build-output/learning-*.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
