@@ -13,68 +13,78 @@ final class learningUITests: XCTestCase {
         continueAfterFailure = false
     }
 
-    /// UI Test Otomatis untuk Mengambil Screenshot Semua Halaman ke folder docs/screenshots/
+    /// UI Test Otomatis untuk Mengambil Screenshot Semua Halaman dan menulis langsung ke file docs/screenshots/*.png
     @MainActor
     func testTakeAllScreenshots() throws {
         let app = XCUIApplication()
         app.launch()
+        sleep(2) // Tunggu splash screen selesai
 
         // 1. Tab Aktivitas & Tugas (Default Home)
-        saveScreen(name: "01_tasks")
+        saveToFile(name: "01_tasks.png")
 
         // 2. Tab Hari Ini
         let todayTab = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Hari Ini'")).firstMatch
-        if todayTab.waitForExistence(timeout: 3) {
+        if todayTab.waitForExistence(timeout: 4) {
             todayTab.tap()
             sleep(1)
-            saveScreen(name: "02_today")
+            saveToFile(name: "02_today.png")
         }
 
         // 3. Tab Kebiasaan
         let habitTab = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Kebiasaan'")).firstMatch
-        if habitTab.waitForExistence(timeout: 3) {
+        if habitTab.waitForExistence(timeout: 4) {
             habitTab.tap()
             sleep(1)
-            saveScreen(name: "03_habits")
+            saveToFile(name: "03_habits.png")
         }
 
         // 4. Tab Fokus (Pomodoro)
         let focusTab = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Fokus'")).firstMatch
-        if focusTab.waitForExistence(timeout: 3) {
+        if focusTab.waitForExistence(timeout: 4) {
             focusTab.tap()
             sleep(1)
-            saveScreen(name: "04_focus")
+            saveToFile(name: "04_focus.png")
         }
 
         // 5. Tab Profil
         let profileTab = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Profil'")).firstMatch
-        if profileTab.waitForExistence(timeout: 3) {
+        if profileTab.waitForExistence(timeout: 4) {
             profileTab.tap()
             sleep(1)
-            saveScreen(name: "05_profile")
+            saveToFile(name: "05_profile.png")
 
             // 6. Buka Edit Profil modal jika ada tombol pensil
             let editButton = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'pencil' OR label CONTAINS[c] 'Edit'")).firstMatch
-            if editButton.waitForExistence(timeout: 2) {
+            if editButton.waitForExistence(timeout: 3) {
                 editButton.tap()
                 sleep(1)
-                saveScreen(name: "06_edit_profile")
+                saveToFile(name: "06_edit_profile.png")
                 
                 // Tutup sheet
                 let batalButton = app.buttons["Batal"]
                 if batalButton.exists {
                     batalButton.tap()
+                    sleep(1)
                 }
             }
         }
     }
 
     @MainActor
-    private func saveScreen(name: String) {
+    private func saveToFile(name: String) {
         let fullScreenshot = XCUIScreen.main.screenshot()
+        let pngData = fullScreenshot.pngRepresentation
+        
+        // Simpan sebagai attachment Xcode Test
         let attachment = XCTAttachment(screenshot: fullScreenshot)
         attachment.lifetime = .keepAlways
         attachment.name = name
         add(attachment)
+
+        // Path folder project docs/screenshots
+        let projectScreenshotDir = "/Users/herlambang/Documents/learning/ios/learning/docs/screenshots"
+        let fileURL = URL(fileURLWithPath: projectScreenshotDir).appendingPathComponent(name)
+        try? pngData.write(to: fileURL)
     }
 }
