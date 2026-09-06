@@ -11,13 +11,13 @@ import SwiftUI
 
 @Model
 final class Habit {
-    var title: String
-    var icon: String
-    var colorHex: String
-    var category: String
-    var targetFrequency: String // "Harian", "Hari Kerja", "Akhir Pekan"
-    var completedDates: [Date]
-    var createdAt: Date
+    var title: String = "Kebiasaan Baru"
+    var icon: String = "flame.fill"
+    var colorHex: String = "#FFD166"
+    var category: String = "Produktivitas"
+    var targetFrequency: String = "Harian" // "Harian", "Hari Kerja", "Akhir Pekan"
+    var completedDates: [Date] = []
+    var createdAt: Date = Date()
     
     init(
         title: String = "Kebiasaan Baru",

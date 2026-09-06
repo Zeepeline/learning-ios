@@ -10,12 +10,12 @@ import SwiftData
 
 @Model
 final class Item {
-    var title: String
-    var notes: String
-    var timestamp: Date
-    var isCompleted: Bool
-    var priority: String
-    var category: String
+    var title: String = "Aktivitas Baru"
+    var notes: String = ""
+    var timestamp: Date = Date()
+    var isCompleted: Bool = false
+    var priority: String = "Normal"
+    var category: String = "Design"
     
     init(
         title: String = "Aktivitas Baru",
