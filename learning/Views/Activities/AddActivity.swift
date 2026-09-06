@@ -80,13 +80,15 @@ struct AddActivity: View {
                                 .id(FormField.title)
                                 .padding(.horizontal, HIGSpacing.md)
                                 .frame(height: 50)
-                                .background(Color.white)
-                                .cornerRadius(CartoonMetrics.cardCornerRadius)
+                                .background(
+                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                        .fill(Color.white)
+                                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                                )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                         .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                                 )
-                                .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
 
                                 // Field 2: Date Picker Selector
                                 Button {
@@ -116,13 +118,15 @@ struct AddActivity: View {
                                     }
                                     .padding(.horizontal, HIGSpacing.md)
                                     .frame(height: 50)
-                                    .background(Color.white)
-                                    .cornerRadius(CartoonMetrics.cardCornerRadius)
+                                    .background(
+                                        RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                            .fill(Color.white)
+                                            .shadow(color: .black, radius: 0, x: 2, y: 2)
+                                    )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                             .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                                     )
-                                    .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
                                 }
                                 .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
@@ -149,13 +153,15 @@ struct AddActivity: View {
                                 .id(FormField.assignee)
                                 .padding(.horizontal, HIGSpacing.md)
                                 .frame(height: 50)
-                                .background(Color.white)
-                                .cornerRadius(CartoonMetrics.cardCornerRadius)
+                                .background(
+                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                        .fill(Color.white)
+                                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                                )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                         .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                                 )
-                                .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
 
                                 // Field 4: Large Task Details Area
                                 VStack(alignment: .leading, spacing: HIGSpacing.xxs) {
@@ -177,154 +183,159 @@ struct AddActivity: View {
                                     }
                                 }
                                 .id(FormField.details)
-                            .padding(HIGSpacing.sm)
-                            .background(Color.white)
-                            .cornerRadius(CartoonMetrics.cardCornerRadius)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                                    .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-                            )
-                            .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
+                                .padding(HIGSpacing.sm)
+                                .background(
+                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                        .fill(Color.white)
+                                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                        .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+                                )
 
-                            // Utility Icons di Bawah Text Area (Grid, Font, Attachment)
-                            HStack(spacing: 0) {
-                                Spacer()
-                                
-                                Button {
-                                    HapticManager.shared.impact(style: .light)
-                                } label: {
-                                    Image(systemName: "square.grid.2x2")
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(.black)
-                                        .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
-                                        .contentShape(Rectangle())
+                                // Utility Icons di Bawah Text Area (Grid, Font, Attachment)
+                                HStack(spacing: 0) {
+                                    Spacer()
+                                    
+                                    Button {
+                                        HapticManager.shared.impact(style: .light)
+                                    } label: {
+                                        Image(systemName: "square.grid.2x2")
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundColor(.black)
+                                            .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
+                                            .contentShape(Rectangle())
+                                    }
+                                    
+                                    Button {
+                                        HapticManager.shared.impact(style: .light)
+                                    } label: {
+                                        Image(systemName: "textformat")
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundColor(.black)
+                                            .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
+                                            .contentShape(Rectangle())
+                                    }
+                                    
+                                    Button {
+                                        HapticManager.shared.impact(style: .light)
+                                    } label: {
+                                        Image(systemName: "paperclip")
+                                            .font(.system(size: 15, weight: .semibold))
+                                            .foregroundColor(.black)
+                                            .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
+                                            .contentShape(Rectangle())
+                                    }
                                 }
-                                
-                                Button {
-                                    HapticManager.shared.impact(style: .light)
-                                } label: {
-                                    Image(systemName: "textformat")
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(.black)
-                                        .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
-                                        .contentShape(Rectangle())
-                                }
-                                
-                                Button {
-                                    HapticManager.shared.impact(style: .light)
-                                } label: {
-                                    Image(systemName: "paperclip")
-                                        .font(.system(size: 15, weight: .semibold))
-                                        .foregroundColor(.black)
-                                        .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
-                                        .contentShape(Rectangle())
-                                }
+                                .padding(.top, -HIGSpacing.xxs)
                             }
-                            .padding(.top, -HIGSpacing.xxs)
-                        }
 
-                        // 4. 🎨 Reusable Category Picker Component
-                        CartoonCategoryPicker(selectedCategory: $selectedCategory)
-                            .padding(.top, HIGSpacing.xxs)
+                            // 4. 🎨 Reusable Category Picker Component
+                            CartoonCategoryPicker(selectedCategory: $selectedCategory)
+                                .padding(.top, HIGSpacing.xxs)
 
                             Spacer()
                                 .frame(height: 2)
-                        // 5. 🕹️ Toggles Kartun: Notifikasi & Apple Calendar Sync
-                        VStack(spacing: HIGSpacing.xs) {
-                            // 🔔 Toggle Notifikasi / Alert (UserNotifications)
-                            CartoonToggleRow(
-                                icon: "bell.badge.fill",
-                                iconColor: .black,
-                                iconBgColor: Color.cartoonPink,
-                                title: "Get alert for this task",
-                                subtitle: "Notifikasi lokal saat mendekati deadline",
-                                isOn: $getAlert,
-                                activeColor: Color.cartoonCoral
-                            )
 
-                            // 📅 Toggle Sinkronisasi ke Apple Calendar (EventKit)
-                            CartoonToggleRow(
-                                icon: "calendar.badge.plus",
-                                iconColor: .black,
-                                iconBgColor: Color.cartoonBlue,
-                                title: "Sync to Apple Calendar",
-                                subtitle: "Otomatis tambahkan jadwal ke kalender",
-                                isOn: $syncToCalendar,
-                                activeColor: Color.cartoonMint
-                            )
-                        }
-                        .padding(.top, HIGSpacing.xxs)
+                            // 5. 🕹️ Toggles Kartun: Notifikasi & Apple Calendar Sync
+                            VStack(spacing: HIGSpacing.xs) {
+                                // 🔔 Toggle Notifikasi / Alert (UserNotifications)
+                                CartoonToggleRow(
+                                    icon: "bell.badge.fill",
+                                    iconColor: .black,
+                                    iconBgColor: Color.cartoonPink,
+                                    title: "Get alert for this task",
+                                    subtitle: "Notifikasi lokal saat mendekati deadline",
+                                    isOn: $getAlert,
+                                    activeColor: Color.cartoonCoral
+                                )
 
-                        // 6. 🔘 Reusable Primary Button ("Create Task")
-                        CartoonPrimaryButton(
-                            title: "Create Task",
-                            isEnabled: !taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        ) {
-                            createTask()
+                                // 📅 Toggle Sinkronisasi ke Apple Calendar (EventKit)
+                                CartoonToggleRow(
+                                    icon: "calendar.badge.plus",
+                                    iconColor: .black,
+                                    iconBgColor: Color.cartoonBlue,
+                                    title: "Sync to Apple Calendar",
+                                    subtitle: "Otomatis tambahkan jadwal ke kalender",
+                                    isOn: $syncToCalendar,
+                                    activeColor: Color.cartoonMint
+                                )
+                            }
+                            .padding(.top, HIGSpacing.xxs)
+
+                            // 6. 🔘 Reusable Primary Button ("Create Task")
+                            CartoonPrimaryButton(
+                                title: "Create Task",
+                                isEnabled: !taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            ) {
+                                createTask()
+                            }
+                            .padding(.top, HIGSpacing.xs)
+                            .padding(.bottom, 60)
                         }
-                        .padding(.top, HIGSpacing.xs)
-                        .padding(.bottom, 60)
+                        .padding(.horizontal, HIGSpacing.lg)
                     }
-                    .padding(.horizontal, HIGSpacing.lg)
-                }
-                .scrollDismissesKeyboard(.interactively)
-                .onChange(of: focusedField) { _, newField in
-                    if let newField = newField {
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                            // Anchor y: 0.25 memposisikan field di area 25% atas layar (banyak ruang lega di bawahnya)
-                            proxy.scrollTo(newField, anchor: UnitPoint(x: 0.5, y: 0.25))
+                    .scrollDismissesKeyboard(.interactively)
+                    .onChange(of: focusedField) { _, newField in
+                        if let newField = newField {
+                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                                // Anchor y: 0.25 memposisikan field di area 25% atas layar (banyak ruang lega di bawahnya)
+                                proxy.scrollTo(newField, anchor: UnitPoint(x: 0.5, y: 0.25))
+                            }
                         }
                     }
                 }
-            }
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Selesai") {
-                        focusedField = nil
+                .toolbar {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+                        Button("Selesai") {
+                            focusedField = nil
+                        }
+                        .font(.system(.subheadline, design: .rounded).weight(.bold))
+                        .foregroundColor(.black)
                     }
-                    .font(.system(.subheadline, design: .rounded).weight(.bold))
-                    .foregroundColor(.black)
                 }
             }
         }
     }
-}
 
-    // Aksi Simpan Tugas
+    // MARK: - Helper Simpan Data
     private func createTask() {
-        let trimmedTitle = taskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedTitle.isEmpty else { return }
+        guard !taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
 
-        withAnimation {
-            let newItem = Item(
-                title: trimmedTitle,
-                notes: taskDetails,
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+            let item = Item(
+                title: taskTitle.trimmingCharacters(in: .whitespacesAndNewlines),
+                notes: taskDetails.trimmingCharacters(in: .whitespacesAndNewlines),
                 timestamp: dueDate,
                 isCompleted: false,
                 priority: "Normal",
                 category: selectedCategory
             )
-            modelContext.insert(newItem)
 
-            // 1. Jadwalkan Pengingat Notifikasi Lokal (UserNotifications)
-            if getAlert {
-                NotificationManager.shared.scheduleNotification(for: newItem)
-            }
-
-            // 2. Sinkronkan ke Apple Calendar (EventKit)
-            if syncToCalendar {
-                CalendarSyncManager.shared.addEventToCalendar(
-                    title: newItem.title,
-                    startDate: newItem.timestamp,
-                    notes: newItem.notes
-                ) { _, _ in }
-            }
-
-            // 3. Simpan perubahan ke SQLite shared container secara instan
+            modelContext.insert(item)
             try? modelContext.save()
 
-            // 4. Refresh Widget Timeline di Home Screen
+            // 🔔 Jadwalkan Local Notification jika user memilih "Get alert"
+            if getAlert {
+                NotificationManager.shared.scheduleNotification(for: item)
+            }
+
+            // 📅 Sinkronisasi ke Apple Calendar jika diaktifkan
+            if syncToCalendar {
+                CalendarSyncManager.shared.addEventToCalendar(
+                    title: item.title,
+                    startDate: item.timestamp,
+                    notes: item.notes
+                ) { success, _ in
+                    if success {
+                        print("✅ Tugas berhasil disinkronkan ke Apple Calendar.")
+                    }
+                }
+            }
+
+            // 🔄 Muat ulang widget
             WidgetCenter.shared.reloadAllTimelines()
 
             HapticManager.shared.success()

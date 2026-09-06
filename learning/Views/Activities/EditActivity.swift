@@ -76,8 +76,8 @@ struct EditActivity: View {
                                     Circle()
                                         .fill(isCompleted ? Color.cartoonMint : Color.white)
                                         .frame(width: 32, height: 32)
+                                        .shadow(color: .black, radius: 0, x: 1, y: 1)
                                         .overlay(Circle().stroke(Color.black, lineWidth: 2))
-                                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
 
                                     if isCompleted {
                                         Image(systemName: "checkmark")
@@ -99,13 +99,15 @@ struct EditActivity: View {
                                 Spacer()
                             }
                             .padding(HIGSpacing.md)
-                            .background(isCompleted ? Color.cartoonMint.opacity(0.3) : Color.white)
-                            .cornerRadius(CartoonMetrics.cardCornerRadius)
+                            .background(
+                                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                    .fill(isCompleted ? Color.cartoonMint.opacity(0.3) : Color.white)
+                                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                            )
                             .overlay(
                                 RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                     .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                             )
-                            .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
@@ -122,13 +124,15 @@ struct EditActivity: View {
                             }
                             .padding(.horizontal, HIGSpacing.md)
                             .frame(height: 50)
-                            .background(Color.white)
-                            .cornerRadius(CartoonMetrics.cardCornerRadius)
+                            .background(
+                                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                    .fill(Color.white)
+                                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                            )
                             .overlay(
                                 RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                     .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                             )
-                            .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
 
                             // Field 2: Date Picker Selector
                             Button {
@@ -158,13 +162,15 @@ struct EditActivity: View {
                                 }
                                 .padding(.horizontal, HIGSpacing.md)
                                 .frame(height: 50)
-                                .background(Color.white)
-                                .cornerRadius(CartoonMetrics.cardCornerRadius)
+                                .background(
+                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                        .fill(Color.white)
+                                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                                )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                         .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                                 )
-                                .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
                             }
                             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
@@ -193,13 +199,15 @@ struct EditActivity: View {
                                 }
                             }
                             .padding(HIGSpacing.sm)
-                            .background(Color.white)
-                            .cornerRadius(CartoonMetrics.cardCornerRadius)
+                            .background(
+                                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                    .fill(Color.white)
+                                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                            )
                             .overlay(
                                 RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                     .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                             )
-                            .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
                         }
 
                         // 4. Prioritas Selector Kartun (Tinggi, Normal, Rendah)
@@ -227,13 +235,15 @@ struct EditActivity: View {
                                         .foregroundColor(.black)
                                         .frame(maxWidth: .infinity)
                                         .padding(.vertical, 10)
-                                        .background(priorityBgColor(for: priority, isSelected: isSelected))
-                                        .cornerRadius(10)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 10)
+                                                .fill(priorityBgColor(for: priority, isSelected: isSelected))
+                                                .shadow(color: .black, radius: 0, x: isSelected ? 2 : 1, y: isSelected ? 2 : 1)
+                                        )
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 10)
                                                 .stroke(Color.black, lineWidth: isSelected ? 2.0 : 1.4)
                                         )
-                                        .shadow(color: .black, radius: 0, x: isSelected ? 2 : 1, y: isSelected ? 2 : 1)
                                     }
                                     .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                                 }
