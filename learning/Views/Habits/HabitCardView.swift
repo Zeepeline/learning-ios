@@ -37,9 +37,9 @@ struct HabitCardView: View {
                 ZStack {
                     RoundedRectangle(cornerRadius: 10)
                         .fill(habit.color)
+                        .shadow(color: .black, radius: 0, x: 2, y: 2)
                         .frame(width: 40, height: 40)
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.6))
-                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
                     
                     Image(systemName: habit.icon)
                         .font(.system(size: 17, weight: .black))
@@ -58,8 +58,10 @@ struct HabitCardView: View {
                             .font(.system(size: 9.5, weight: .bold, design: .rounded))
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1.5)
-                            .background(Color.cartoonBg)
-                            .cornerRadius(5)
+                            .background(
+                                RoundedRectangle(cornerRadius: 5)
+                                    .fill(Color.cartoonBg)
+                            )
                             .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.black, lineWidth: 0.8))
                         
                         // Streak Counter Kartun
@@ -84,9 +86,9 @@ struct HabitCardView: View {
                     ZStack {
                         Circle()
                             .fill(habit.isCompletedToday ? Color.cartoonMint : Color.white)
+                            .shadow(color: .black, radius: 0, x: 2, y: 2)
                             .frame(width: 38, height: 38)
                             .overlay(Circle().stroke(Color.black, lineWidth: 1.8))
-                            .shadow(color: .black, radius: 0, x: 2, y: 2)
                         
                         if habit.isCompletedToday {
                             Image(systemName: "checkmark")
@@ -99,7 +101,7 @@ struct HabitCardView: View {
                         }
                     }
                 }
-                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
             }
             
             // Weekly Heatmap 7 Hari Terakhir
@@ -147,13 +149,15 @@ struct HabitCardView: View {
                             }
                             .frame(maxWidth: .infinity)
                         }
-                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
+                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                     }
                 }
             }
             .padding(8)
-            .background(Color.white.opacity(0.6))
-            .cornerRadius(10)
+            .background(
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.white.opacity(0.6))
+            )
             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.0))
         }
         .padding(HIGSpacing.md)
@@ -181,6 +185,4 @@ struct HabitCardView: View {
         onToggleDate: { _ in },
         onDelete: {}
     )
-    .padding()
-    .background(Color.cartoonBg)
 }

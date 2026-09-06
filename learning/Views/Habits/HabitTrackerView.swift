@@ -68,13 +68,15 @@ struct HabitTrackerView: View {
                                             .foregroundColor(.black)
                                             .padding(.horizontal, 12)
                                             .padding(.vertical, 6.5)
-                                            .background(isSelected ? Color.cartoonYellow : Color.white)
-                                            .cornerRadius(8)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(isSelected ? Color.cartoonYellow : Color.white)
+                                                    .shadow(color: .black, radius: 0, x: isSelected ? 2 : 1, y: isSelected ? 2 : 1)
+                                            )
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 8)
                                                     .stroke(Color.black, lineWidth: isSelected ? 1.8 : 1.1)
                                             )
-                                            .shadow(color: .black, radius: 0, x: isSelected ? 1.5 : 1, y: isSelected ? 1.5 : 1)
                                     }
                                     .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                                 }
@@ -98,12 +100,14 @@ struct HabitTrackerView: View {
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 11)
-                        .background(Color.cartoonYellow)
-                        .cornerRadius(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(Color.cartoonYellow)
+                                .shadow(color: .black, radius: 0, x: 2, y: 2)
+                        )
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.6))
-                        .shadow(color: .black, radius: 0, x: 2, y: 2)
                     }
-                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                     
                     // 4. Daftar Kartu Kebiasaan (Habits List)
                     if filteredHabits.isEmpty {
@@ -158,6 +162,59 @@ struct HabitTrackerView: View {
                 .presentationDetents([.fraction(0.88), .large])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(22)
+        }
+        .task {
+            // Sinkronisasi otomatis kebiasaan berdasarkan data Apple Health / Zepp
+            if HealthKitManager.shared.isAuthorized {
+                await HealthKitManager.shared.fetchAllTodayHealthData()
+                autoSyncHealthHabits()
+            }
+        }
+    }
+    
+    // MARK: - 🔄 Auto-Sync Kebiasaan dengan Data Apple Health / Smartwatch
+    private func autoSyncHealthHabits() {
+        let summary = HealthKitManager.shared.todaySummary
+        var didChange = false
+        
+        for habit in habits {
+            let lowerTitle = habit.title.lowercased()
+            let lowerCategory = habit.category.lowercased()
+            
+            // 1. Cek Sesi Workout / Lari (misal dari Zepp / Apple Watch)
+            if !summary.recentWorkouts.isEmpty {
+                if lowerTitle.contains("lari") || lowerTitle.contains("jogging") || lowerTitle.contains("olahraga") || lowerTitle.contains("workout") || lowerCategory.contains("olahraga") {
+                    if !habit.isCompletedToday {
+                        habit.toggleCompletion(on: Date())
+                        didChange = true
+                    }
+                }
+            }
+            
+            // 2. Cek Langkah Harian (Steps >= 5000)
+            if summary.steps >= 5000 {
+                if lowerTitle.contains("langkah") || lowerTitle.contains("jalan") || lowerTitle.contains("step") {
+                    if !habit.isCompletedToday {
+                        habit.toggleCompletion(on: Date())
+                        didChange = true
+                    }
+                }
+            }
+            
+            // 3. Cek Tidur Nyenyak (Sleep >= 6 jam)
+            if summary.sleepDurationHours >= 6.0 {
+                if lowerTitle.contains("tidur") || lowerTitle.contains("sleep") || lowerTitle.contains("istirahat") {
+                    if !habit.isCompletedToday {
+                        habit.toggleCompletion(on: Date())
+                        didChange = true
+                    }
+                }
+            }
+        }
+        
+        if didChange {
+            try? modelContext.save()
+            WidgetCenter.shared.reloadAllTimelines()
         }
     }
     
@@ -224,89 +281,122 @@ struct HabitDashboardSummaryCard: View {
                     .frame(width: 58, height: 58)
                 
                 Text("\(percentage)%")
-                    .font(.system(size: 13, weight: .black, design: .rounded))
+                    .font(.system(size: 13.5, weight: .heavy, design: .rounded))
                     .foregroundColor(.black)
             }
             
             VStack(alignment: .leading, spacing: 3) {
-                Text("KEBIASAAN HARI INI")
-                    .font(.system(size: 9.5, weight: .heavy, design: .rounded))
-                    .foregroundColor(.secondary)
-                
-                Text("\(completedCount) dari \(totalHabits) Selesai")
-                    .font(.system(size: 14.5, weight: .heavy, design: .rounded))
+                Text("Target Kebiasaan Hari Ini")
+                    .font(.system(size: 13.5, weight: .heavy, design: .rounded))
                     .foregroundColor(.black)
                 
-                // Max Streak Badge
-                HStack(spacing: 4) {
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(.orange)
-                    
-                    Text("Streak Tertinggi: \(maxStreak) Hari berturut-turut")
-                        .font(.system(size: 10, weight: .bold, design: .rounded))
-                        .foregroundColor(.black.opacity(0.8))
-                }
+                Text("\(completedCount) dari \(totalHabits) kebiasaan telah selesai")
+                    .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                    .foregroundColor(.secondary)
             }
             
             Spacer()
+            
+            // Streak Terpanjang
+            VStack(spacing: 2) {
+                HStack(spacing: 3) {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 12, weight: .black))
+                        .foregroundColor(Color.cartoonOrange)
+                    Text("\(maxStreak)")
+                        .font(.system(size: 15, weight: .heavy, design: .rounded))
+                        .foregroundColor(.black)
+                }
+                
+                Text("Hari Streak")
+                    .font(.system(size: 9, weight: .bold, design: .rounded))
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(Color(red: 0.98, green: 0.94, blue: 0.88))
+            )
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.1))
         }
         .padding(HIGSpacing.md)
         .cartoonCard()
     }
 }
 
-// MARK: - 2. Empty State View
+// MARK: - 2. Tampilan Empty State Kebiasaan
 struct HabitEmptyStateView: View {
-    let onAddTap: () -> Void
+    var onAddHabit: () -> Void
     
     var body: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: HIGSpacing.md) {
             ZStack {
                 Circle()
-                    .fill(Color.cartoonPink.opacity(0.4))
-                    .frame(width: 60, height: 60)
-                    .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
+                    .fill(Color.cartoonYellow)
+                    .frame(width: 64, height: 64)
+                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                    .overlay(Circle().stroke(Color.black, lineWidth: 2))
                 
                 Image(systemName: "sparkles")
-                    .font(.system(size: 24, weight: .bold))
+                    .font(.system(size: 28, weight: .bold))
                     .foregroundColor(.black)
             }
+            .padding(.top, HIGSpacing.md)
             
-            VStack(spacing: 3) {
+            VStack(spacing: HIGSpacing.xxs) {
                 Text("Belum Ada Kebiasaan")
-                    .font(.system(size: 14, weight: .heavy, design: .rounded))
+                    .font(.system(size: 16.5, weight: .heavy, design: .rounded))
                     .foregroundColor(.black)
                 
-                Text("Bangun kebiasaan positif setiap hari untuk tingkatkan produktivitas!")
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                Text("Mulai bangun rutinitas positif harianmu sekarang!")
+                    .font(.system(size: 12.5, weight: .medium, design: .rounded))
                     .foregroundColor(.secondary)
                     .multilineTextAlignment(.center)
-                    .padding(.horizontal, 16)
             }
             
             Button {
-                onAddTap()
+                HapticManager.shared.impact(style: .medium)
+                onAddHabit()
             } label: {
-                Text("Mulai Buat Kebiasaan")
-                    .font(.system(size: 12, weight: .heavy, design: .rounded))
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(Color.cartoonYellow)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.3))
-                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                HStack(spacing: 6) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 13, weight: .bold))
+                    Text("Buat Kebiasaan Pertama")
+                        .font(.system(size: 12.5, weight: .heavy, design: .rounded))
+                }
+                .foregroundColor(.black)
+                .padding(.horizontal, HIGSpacing.lg)
+                .frame(height: 42)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.cartoonMint)
+                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                )
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.8))
             }
             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
         }
-        .padding(24)
         .frame(maxWidth: .infinity)
-        .cartoonCard()
+        .padding(.vertical, HIGSpacing.lg)
     }
 }
 
 #Preview {
-    HabitTrackerView()
-        .modelContainer(for: Habit.self, inMemory: true)
+    let config = ModelConfiguration(isStoredInMemoryOnly: true)
+    let container = (try? ModelContainer(for: Habit.self, configurations: config)) ?? {
+        fatalError("Failed to create preview container")
+    }()
+    
+    let sampleHabits = [
+        Habit(title: "Lari Pagi 20 Menit", icon: "figure.run", colorHex: "#FF6B6B", category: "Olahraga", targetFrequency: "Harian", completedDates: [Date()]),
+        Habit(title: "Minum Air 2 Liter", icon: "drop.fill", colorHex: "#4ECDC4", category: "Kesehatan", targetFrequency: "Harian", completedDates: []),
+        Habit(title: "Belajar Swift 30 Menit", icon: "swift", colorHex: "#FFD166", category: "Belajar", targetFrequency: "Hari Kerja", completedDates: [])
+    ]
+    for habit in sampleHabits {
+        container.mainContext.insert(habit)
+    }
+    
+    return HabitTrackerView()
+        .modelContainer(container)
 }

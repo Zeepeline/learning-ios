@@ -53,9 +53,9 @@ struct AddHabitView: View {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 12)
                                     .fill(Color(hex: selectedColorHex))
+                                    .shadow(color: .black, radius: 0, x: 2, y: 2)
                                     .frame(width: 46, height: 46)
                                     .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.8))
-                                    .shadow(color: .black, radius: 0, x: 2, y: 2)
                                 
                                 Image(systemName: selectedIcon)
                                     .font(.system(size: 20, weight: .black))
@@ -86,10 +86,12 @@ struct AddHabitView: View {
                             Spacer()
                         }
                         .padding(12)
-                        .background(Color.white)
-                        .cornerRadius(14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.white)
+                                .shadow(color: .black, radius: 0, x: 2, y: 2)
+                        )
                         .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.black, lineWidth: 1.8))
-                        .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
                     }
                     .padding(.horizontal, HIGSpacing.md)
                     
@@ -103,10 +105,12 @@ struct AddHabitView: View {
                             .font(.system(size: 13.5, weight: .bold, design: .rounded))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 10)
-                            .background(Color.white)
-                            .cornerRadius(10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.white)
+                                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                            )
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.5))
-                            .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
                     }
                     .padding(.horizontal, HIGSpacing.md)
                     
@@ -126,12 +130,12 @@ struct AddHabitView: View {
                                     ZStack {
                                         RoundedRectangle(cornerRadius: 10)
                                             .fill(isSelected ? Color.cartoonYellow : Color.white)
+                                            .shadow(color: .black, radius: 0, x: isSelected ? 2 : 1, y: isSelected ? 2 : 1)
                                             .frame(height: 44)
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 10)
                                                     .stroke(Color.black, lineWidth: isSelected ? 2.0 : 1.2)
                                             )
-                                            .shadow(color: .black, radius: 0, x: isSelected ? 2 : 1, y: isSelected ? 2 : 1)
                                         
                                         Image(systemName: icon)
                                             .font(.system(size: 16, weight: .black))
@@ -159,6 +163,7 @@ struct AddHabitView: View {
                                 } label: {
                                     Circle()
                                         .fill(Color(hex: hex))
+                                        .shadow(color: .black, radius: 0, x: isSelected ? 2 : 1, y: isSelected ? 2 : 1)
                                         .frame(width: 36, height: 36)
                                         .overlay(
                                             Circle()
@@ -171,7 +176,6 @@ struct AddHabitView: View {
                                                 .foregroundColor(.black)
                                             : nil
                                         )
-                                        .shadow(color: .black, radius: 0, x: isSelected ? 2 : 1, y: isSelected ? 2 : 1)
                                 }
                                 .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                             }
@@ -198,13 +202,15 @@ struct AddHabitView: View {
                                             .foregroundColor(.black)
                                             .padding(.horizontal, 12)
                                             .padding(.vertical, 7)
-                                            .background(isSelected ? Color.cartoonMint : Color.white)
-                                            .cornerRadius(8)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 8)
+                                                    .fill(isSelected ? Color.cartoonMint : Color.white)
+                                                    .shadow(color: .black, radius: 0, x: isSelected ? 2 : 1, y: isSelected ? 2 : 1)
+                                            )
                                             .overlay(
                                                 RoundedRectangle(cornerRadius: 8)
                                                     .stroke(Color.black, lineWidth: isSelected ? 1.8 : 1.1)
                                             )
-                                            .shadow(color: .black, radius: 0, x: isSelected ? 1.5 : 1, y: isSelected ? 1.5 : 1)
                                     }
                                     .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                                 }
@@ -228,12 +234,14 @@ struct AddHabitView: View {
                         .foregroundColor(.black)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 13)
-                        .background(title.trimmingCharacters(in: .whitespaces).isEmpty ? Color.gray.opacity(0.3) : Color.cartoonYellow)
-                        .cornerRadius(12)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(title.trimmingCharacters(in: .whitespaces).isEmpty ? Color.gray.opacity(0.3) : Color.cartoonYellow)
+                                .shadow(color: .black, radius: 0, x: 2, y: 2)
+                        )
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.8))
-                        .shadow(color: .black, radius: 0, x: 2, y: 2)
                     }
-                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                     .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
                     .padding(.horizontal, HIGSpacing.md)
                     .padding(.top, 6)
@@ -248,7 +256,7 @@ struct AddHabitView: View {
                     Button("Batal") {
                         dismiss()
                     }
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .font(.system(.body, design: .rounded).weight(.bold))
                     .foregroundColor(.black)
                 }
             }
@@ -256,28 +264,28 @@ struct AddHabitView: View {
     }
     
     private func saveHabit() {
-        let cleanTitle = title.trimmingCharacters(in: .whitespaces)
-        guard !cleanTitle.isEmpty else { return }
+        guard !title.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         
-        let newHabit = Habit(
-            title: cleanTitle,
-            icon: selectedIcon,
-            colorHex: selectedColorHex,
-            category: selectedCategory,
-            targetFrequency: selectedFrequency,
-            completedDates: [],
-            createdAt: Date()
-        )
-        
-        modelContext.insert(newHabit)
-        try? modelContext.save()
-        
-        HapticManager.shared.success()
-        WidgetCenter.shared.reloadAllTimelines()
-        dismiss()
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+            let newHabit = Habit(
+                title: title.trimmingCharacters(in: .whitespaces),
+                icon: selectedIcon,
+                colorHex: selectedColorHex,
+                category: selectedCategory,
+                targetFrequency: selectedFrequency
+            )
+            
+            modelContext.insert(newHabit)
+            try? modelContext.save()
+            
+            WidgetCenter.shared.reloadAllTimelines()
+            HapticManager.shared.success()
+            dismiss()
+        }
     }
 }
 
 #Preview {
     AddHabitView()
+        .modelContainer(for: Habit.self, inMemory: true)
 }
