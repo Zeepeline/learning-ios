@@ -19,7 +19,7 @@ struct SplashScreenView: View {
 
     var body: some View {
         ZStack {
-            // Latar Belakang Kartun Retro
+            // Latar Belakang Kartun Retro Terang
             Color.cartoonBg
                 .ignoresSafeArea()
 
@@ -70,6 +70,7 @@ struct SplashScreenView: View {
                 .opacity(opacity)
             }
         }
+        .preferredColorScheme(.light)
         .onAppear {
             // Animasi Masuk: Logo membal (Spring Animation)
             withAnimation(.spring(response: 0.65, dampingFraction: 0.6, blendDuration: 0)) {

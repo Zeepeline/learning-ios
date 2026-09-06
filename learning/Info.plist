@@ -15,6 +15,8 @@
 	</array>
 	<key>GIDClientID</key>
 	<string>643923406936-4ao9ea9i0hc2dp3j6kdqsearcl09kre8.apps.googleusercontent.com</string>
+	<key>UIUserInterfaceStyle</key>
+	<string>Light</string>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
