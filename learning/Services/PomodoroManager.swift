@@ -13,10 +13,10 @@ import UserNotifications
 
 // MARK: - ⏱️ Pomodoro Preset Modes
 enum PomodoroPreset: String, CaseIterable, Identifiable, Sendable {
-    case focus25 = "25 Min (Klasik)"
-    case deepWork50 = "50 Min (Deep Work)"
-    case shortBreak5 = "5 Min (Istirahat)"
-    case longBreak15 = "15 Min (Rehat)"
+    case focus25 = "25 Min"
+    case deepWork50 = "50 Min"
+    case shortBreak5 = "5 Min"
+    case longBreak15 = "15 Min"
 
     var id: String { rawValue }
 

@@ -54,7 +54,7 @@ struct ScreenTimeView: View {
                 // 3. Batas Durasi Harian Otomatis (Threshold Lock)
                 ScreenTimeDailyLimitCard(manager: manager)
 
-                // 4. Laporan Durasi Layar Resmi Apple
+                // 4. Laporan Durasi Penggunaan Aplikasi Dibatasi (Bukan Total Layar Nyala)
                 ScreenTimeReportCardView(manager: manager)
             }
             .padding(.horizontal, HIGSpacing.md)
@@ -312,12 +312,13 @@ struct ScreenTimeDailyLimitCard: View {
 
                 Spacer()
 
-                Toggle("", isOn: Binding(
-                    get: { manager.isDailyLimitEnabled },
-                    set: { manager.toggleDailyLimit($0) }
-                ))
-                .labelsHidden()
-                .tint(Color.cartoonCoral)
+                CartoonToggleSwitch(
+                    isOn: Binding(
+                        get: { manager.isDailyLimitEnabled },
+                        set: { manager.toggleDailyLimit($0) }
+                    ),
+                    activeColor: Color.cartoonCoral
+                )
             }
 
             Text("Otomatis kunci aplikasi terpilih jika total pemakaian harian melewati batas waktu.")
@@ -357,7 +358,7 @@ struct ScreenTimeDailyLimitCard: View {
     }
 }
 
-// MARK: - 4. ScreenTimeReportCardView
+// MARK: - 4. ScreenTimeReportCardView (Laporan Penggunaan Aplikasi yang Dibatasi)
 struct ScreenTimeReportCardView: View {
     @ObservedObject var manager: ScreenTimeManager
     @State private var filter: DeviceActivityFilter = DeviceActivityFilter(
@@ -368,22 +369,36 @@ struct ScreenTimeReportCardView: View {
         devices: .init([.iPhone, .iPad])
     )
 
+    private var reportHeight: CGFloat {
+        let appCount = manager.activitySelection.applicationTokens.count
+        let categoryCount = manager.activitySelection.categoryTokens.count
+        let totalCount = appCount + categoryCount
+        
+        if totalCount == 0 {
+            // Header summary card (70) + spacing (10) + empty hint message (35) + padding
+            return 130
+        } else {
+            // Header summary card (70) + spacing (10) + section title (25) + rows (totalCount * 50) + padding
+            return CGFloat(120 + max(totalCount, 1) * 52)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: HIGSpacing.sm) {
-            Label("LAPORAN AKTIVITAS PERANGKAT", systemImage: "chart.bar.xaxis")
+            Label("PENGGUNAAN APLIKASI DIBATASI HARI INI", systemImage: "chart.bar.xaxis")
                 .font(.system(size: 10, weight: .heavy, design: .rounded))
                 .foregroundColor(.secondary)
 
-            // Extension Report View Apple
+            // Extension Report View Apple (Hanya menghitung durasi aplikasi yang dipilih)
             DeviceActivityReport(.totalActivity, filter: filter)
-                .frame(minHeight: 70)
+                .frame(height: reportHeight)
         }
         .padding(HIGSpacing.md)
         .cartoonCard()
         .onAppear {
             updateFilter()
         }
-        .onChange(of: manager.activitySelection) { _ in
+        .onChange(of: manager.activitySelection) {
             updateFilter()
         }
     }
@@ -411,7 +426,7 @@ struct ScreenTimeReportCardView: View {
     }
 }
 
-// MARK: - 5. BottomSheet: Daftar Aplikasi & Kategori Terpilih dengan Ikon & Font Pas
+// MARK: - 5. BottomSheet: Daftar Aplikasi & Kategori Terpilih dengan Ikon & Nama Aplikasi Pas
 struct SelectedAppsBottomSheet: View {
     @ObservedObject var manager: ScreenTimeManager
     let onOpenPicker: () -> Void
@@ -449,7 +464,7 @@ struct SelectedAppsBottomSheet: View {
                     .padding(HIGSpacing.sm)
                     .cartoonCard()
 
-                    // Seksi 1: Aplikasi Spesifik dengan Label & Icon Proporsional
+                    // Seksi 1: Aplikasi Spesifik dengan Icon Box & Nama Aplikasi di Sampingnya
                     if !manager.activitySelection.applicationTokens.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack(spacing: 5) {
@@ -460,20 +475,33 @@ struct SelectedAppsBottomSheet: View {
                                     .foregroundColor(.secondary)
                             }
 
-                            VStack(spacing: 5) {
+                            VStack(spacing: 6) {
                                 ForEach(Array(manager.activitySelection.applicationTokens), id: \.self) { token in
-                                    HStack(spacing: 8) {
+                                    HStack(spacing: 10) {
+                                        // Badge / Frame Ikon Aplikasi
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 7)
+                                                .fill(Color.cartoonLavender.opacity(0.4))
+                                                .frame(width: 30, height: 30)
+                                                .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.black, lineWidth: 1.1))
+
+                                            Label(token)
+                                                .labelStyle(.iconOnly)
+                                                .scaleEffect(0.85)
+                                        }
+
+                                        // Tulisan Nama Aplikasi di samping ikon
                                         Label(token)
-                                            .labelStyle(.titleAndIcon)
-                                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                                            .imageScale(.small)
+                                            .labelStyle(.titleOnly)
+                                            .font(.system(size: 12.5, weight: .heavy, design: .rounded))
                                             .foregroundColor(.black)
                                             .lineLimit(1)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
 
                                         Spacer()
 
                                         Image(systemName: "lock.fill")
-                                            .font(.system(size: 10, weight: .bold))
+                                            .font(.system(size: 11, weight: .bold))
                                             .foregroundColor(.secondary)
                                     }
                                     .padding(.horizontal, 10)
@@ -489,7 +517,7 @@ struct SelectedAppsBottomSheet: View {
                         .cartoonCard()
                     }
 
-                    // Seksi 2: Kategori Aplikasi
+                    // Seksi 2: Kategori Aplikasi dengan Icon & Nama Kategori
                     if !manager.activitySelection.categoryTokens.isEmpty {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack(spacing: 5) {
@@ -500,20 +528,33 @@ struct SelectedAppsBottomSheet: View {
                                     .foregroundColor(.secondary)
                             }
 
-                            VStack(spacing: 5) {
+                            VStack(spacing: 6) {
                                 ForEach(Array(manager.activitySelection.categoryTokens), id: \.self) { token in
-                                    HStack(spacing: 8) {
+                                    HStack(spacing: 10) {
+                                        // Badge / Frame Ikon Kategori
+                                        ZStack {
+                                            RoundedRectangle(cornerRadius: 7)
+                                                .fill(Color.cartoonYellow.opacity(0.4))
+                                                .frame(width: 30, height: 30)
+                                                .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.black, lineWidth: 1.1))
+
+                                            Label(token)
+                                                .labelStyle(.iconOnly)
+                                                .scaleEffect(0.85)
+                                        }
+
+                                        // Tulisan Nama Kategori di samping ikon
                                         Label(token)
-                                            .labelStyle(.titleAndIcon)
-                                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                                            .imageScale(.small)
+                                            .labelStyle(.titleOnly)
+                                            .font(.system(size: 12.5, weight: .heavy, design: .rounded))
                                             .foregroundColor(.black)
                                             .lineLimit(1)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
 
                                         Spacer()
 
                                         Image(systemName: "lock.fill")
-                                            .font(.system(size: 10, weight: .bold))
+                                            .font(.system(size: 11, weight: .bold))
                                             .foregroundColor(.secondary)
                                     }
                                     .padding(.horizontal, 10)
