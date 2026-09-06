@@ -9,9 +9,8 @@ import SwiftUI
 import GoogleSignIn
 
 struct LoginView: View {
-    @Environment(\.dismiss) private var dismiss
     @AppStorage("isLoggedIn") private var isLoggedIn: Bool = false
-    
+
     // Form States
     @State private var email: String = ""
     @State private var password: String = ""
@@ -120,15 +119,17 @@ struct LoginView: View {
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 52)
-                                .background(Color.cartoonCoral)
-                                .cornerRadius(CartoonMetrics.cardCornerRadius)
+                                .background(
+                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                        .fill(Color.cartoonCoral)
+                                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                                )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                         .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                                 )
-                                .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
                         }
-                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.5))
+                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                         .disabled(email.isEmpty || password.isEmpty)
                         .opacity((email.isEmpty || password.isEmpty) ? 0.6 : 1.0)
                         .padding(.top, HIGSpacing.xs)
@@ -155,15 +156,17 @@ struct LoginView: View {
                                 .foregroundColor(.black)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 48)
-                                .background(Color.cartoonMint)
-                                .cornerRadius(CartoonMetrics.cardCornerRadius)
+                                .background(
+                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                        .fill(Color.cartoonMint)
+                                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                                )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                         .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                                 )
-                                .shadow(color: .black, radius: 0, x: 2.0, y: 2.0)
                             }
-                            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+                            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                         }
 
                         // 6. Pembatas "Or"

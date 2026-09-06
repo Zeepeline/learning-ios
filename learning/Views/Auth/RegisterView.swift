@@ -37,13 +37,15 @@ struct RegisterView: View {
                                 .font(.system(size: 15, weight: .bold))
                                 .foregroundColor(.black)
                                 .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
-                                .background(Color.white)
-                                .cornerRadius(CartoonMetrics.cornerRadius)
+                                .background(
+                                    RoundedRectangle(cornerRadius: CartoonMetrics.cornerRadius)
+                                        .fill(Color.white)
+                                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                                )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: CartoonMetrics.cornerRadius)
                                         .stroke(Color.black, lineWidth: 1.5)
                                 )
-                                .shadow(color: .black, radius: 0, x: 2, y: 2)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                         .padding(.top, HIGSpacing.xs)
@@ -59,8 +61,8 @@ struct RegisterView: View {
                                     Circle()
                                         .fill(Color.cartoonYellow)
                                         .frame(width: 30, height: 30)
+                                        .shadow(color: .black, radius: 0, x: 1, y: 1)
                                         .overlay(Circle().stroke(Color.black, lineWidth: 1.4))
-                                        .shadow(color: .black, radius: 0, x: 1.2, y: 1.2)
                                     Image(systemName: "hand.wave.fill")
                                         .font(.system(size: 15, weight: .bold))
                                         .foregroundColor(.black)
@@ -143,15 +145,17 @@ struct RegisterView: View {
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
                                 .frame(height: 52)
-                                .background(Color.cartoonCoral)
-                                .cornerRadius(CartoonMetrics.cardCornerRadius)
+                                .background(
+                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                        .fill(Color.cartoonCoral)
+                                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                                )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                         .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                                 )
-                                .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
                         }
-                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.5))
+                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                         .disabled(!isAgreed || fullName.isEmpty || email.isEmpty || password.isEmpty)
                         .opacity((!isAgreed || fullName.isEmpty || email.isEmpty || password.isEmpty) ? 0.6 : 1.0)
                         .padding(.top, HIGSpacing.xs)
@@ -251,13 +255,15 @@ struct CartoonInputField: View {
         }
         .padding(.horizontal, HIGSpacing.md)
         .frame(minHeight: 48)
-        .background(Color.white)
-        .cornerRadius(CartoonMetrics.cardCornerRadius)
+        .background(
+            RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                .fill(Color.white)
+                .shadow(color: .black, radius: 0, x: 2, y: 2)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                 .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
         )
-        .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
     }
 }
 
@@ -292,13 +298,15 @@ struct CartoonSecureInputField: View {
         }
         .padding(.horizontal, HIGSpacing.md)
         .frame(minHeight: 48)
-        .background(Color.white)
-        .cornerRadius(CartoonMetrics.cardCornerRadius)
+        .background(
+            RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                .fill(Color.white)
+                .shadow(color: .black, radius: 0, x: 2, y: 2)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                 .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
         )
-        .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
     }
 }
 

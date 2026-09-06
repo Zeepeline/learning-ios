@@ -12,9 +12,7 @@ import WidgetKit
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
-
-    @State private var selectedTab: Int = 0
-    @State private var isShowingAddActivity: Bool = false
+    @ObservedObject private var quickActionManager = QuickActionManager.shared
 
     // State untuk Edit & Delete Dialog
     @State private var itemToEdit: Item?
@@ -31,16 +29,15 @@ struct ContentView: View {
                 // 🎨 Reusable Custom Top Header Bar
                 CartoonHeaderView(
                     title: navigationTitleForTab,
-                  
-                    trailingAction: (selectedTab == 0) ? {
+                    trailingAction: (quickActionManager.selectedTab == 0) ? {
                         HapticManager.shared.impact(style: .medium)
-                        isShowingAddActivity = true
+                        quickActionManager.isShowingAddActivity = true
                     } : nil
                 )
 
                 // Tampilan Halaman Sesuai Tab (5 Tab Utama)
                 Group {
-                    switch selectedTab {
+                    switch quickActionManager.selectedTab {
                     case 0:
                         HomeActivityListView(
                             items: items,
@@ -91,7 +88,7 @@ struct ContentView: View {
             // Floating Bottom Navigation Bar
             VStack {
                 Spacer()
-                CustomBottomNavBar(selectedTab: $selectedTab)
+                CustomBottomNavBar(selectedTab: $quickActionManager.selectedTab)
             }
             .ignoresSafeArea(.keyboard, edges: .bottom)
 
@@ -113,7 +110,7 @@ struct ContentView: View {
                 )
             }
         }
-        .sheet(isPresented: $isShowingAddActivity) {
+        .sheet(isPresented: $quickActionManager.isShowingAddActivity) {
             AddActivity()
                 .presentationDetents([.fraction(0.92), .large])
                 .presentationDragIndicator(.visible)
@@ -130,7 +127,7 @@ struct ContentView: View {
     }
 
     private var navigationTitleForTab: String {
-        switch selectedTab {
+        switch quickActionManager.selectedTab {
         case 0: return "Aktivitas"
         case 1: return "Hari Ini"
         case 2: return "Kebiasaan"
@@ -183,13 +180,13 @@ struct ContentView: View {
     
     let sampleItems = [
         Item(title: "Desain Wireframe App", notes: "Selesaikan flow onboarding", timestamp: Date(), isCompleted: false, priority: "Tinggi", category: "Design"),
-        Item(title: "Daily Standup Meeting", notes: "Sync bersama tim iOS", timestamp: Date(), isCompleted: true, priority: "Normal", category: "Meeting"),
-        Item(title: "Bug Fixing Auth", notes: "Perbaiki validasi password", timestamp: Date(), isCompleted: false, priority: "Normal", category: "Coding")
+        Item(title: "Rapat Tim Mobile", notes: "Sprint review fitur widget", timestamp: Date().addingTimeInterval(3600 * 2), isCompleted: false, priority: "Normal", category: "Meeting"),
+        Item(title: "Review Pull Request", notes: "Cek perbaikan dark mode", timestamp: Date().addingTimeInterval(3600 * 4), isCompleted: true, priority: "Rendah", category: "Code")
     ]
     for item in sampleItems {
         container.mainContext.insert(item)
     }
-    
+
     return ContentView()
         .modelContainer(container)
 }

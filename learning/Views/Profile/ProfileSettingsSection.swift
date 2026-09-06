@@ -14,6 +14,7 @@ struct ProfileSettingsSection: View {
     @Binding var isEveningReminderEnabled: Bool
     @Binding var isHapticEnabled: Bool
     @AppStorage("isICloudSyncEnabled") private var isICloudSyncEnabled: Bool = true
+    @ObservedObject private var healthManager = HealthKitManager.shared
 
     @State private var isTestingNotification: Bool = false
     @State private var testNotificationNotice: String?
@@ -37,7 +38,10 @@ struct ProfileSettingsSection: View {
                     activeColor: Color.cartoonBlue
                 )
 
-                // 2. 🔐 Toggle Face ID / Biometrik Kartun
+                // 2. 🏃 Integrasi Apple Health & Smartwatch (Zepp/Amazfit)
+                healthKitIntegrationRow
+
+                // 3. 🔐 Toggle Face ID / Biometrik Kartun
                 if BiometricAuthManager.shared.canEvaluateBiometrics() {
                     CartoonToggleRow(
                         icon: "faceid",
@@ -50,7 +54,7 @@ struct ProfileSettingsSection: View {
                     )
                 }
 
-                // 3. 🔔 Toggle Master Notifikasi Tugas Kartun
+                // 4. 🔔 Toggle Master Notifikasi Tugas Kartun
                 CartoonToggleRow(
                     icon: "bell.badge.fill",
                     iconColor: .black,
@@ -67,7 +71,7 @@ struct ProfileSettingsSection: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 
-                // 4. 📳 Toggle Getaran Haptik Kartun
+                // 5. 📳 Toggle Getaran Haptik Kartun
                 CartoonToggleRow(
                     icon: "hand.tap.fill",
                     iconColor: .black,
@@ -80,6 +84,75 @@ struct ProfileSettingsSection: View {
             }
             .padding(.horizontal, HIGSpacing.md)
         }
+    }
+
+    // MARK: - Baris Integrasi Apple Health & Zepp
+    private var healthKitIntegrationRow: some View {
+        HStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(Color.cartoonPink)
+                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                    .frame(width: 44, height: 44)
+                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.6))
+
+                Image(systemName: "heart.fill")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.white)
+            }
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Apple Health & Smartwatch")
+                    .font(.system(size: 13.5, weight: .heavy, design: .rounded))
+                    .foregroundColor(.black)
+
+                Text(healthManager.isAuthorized ? "Terhubung (Auto-sync Zepp & Watch)" : "Sinkronkan lari, langkah & tidur")
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundColor(healthManager.isAuthorized ? Color(red: 0.1, green: 0.6, blue: 0.3) : .secondary)
+            }
+
+            Spacer()
+
+            if healthManager.isAuthorized {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundColor(Color(red: 0.1, green: 0.6, blue: 0.3))
+                    Text("Aktif")
+                        .font(.system(size: 11, weight: .heavy, design: .rounded))
+                        .foregroundColor(.black)
+                }
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Color.cartoonMint.opacity(0.4))
+                .cornerRadius(6)
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
+            } else {
+                Button {
+                    HapticManager.shared.impact(style: .medium)
+                    healthManager.requestAuthorization { success in
+                        if success {
+                            HapticManager.shared.success()
+                        }
+                    }
+                } label: {
+                    Text("Hubungkan")
+                        .font(.system(size: 10.5, weight: .heavy, design: .rounded))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8)
+                                .fill(Color.cartoonYellow)
+                                .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                        )
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
+                }
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+            }
+        }
+        .padding(HIGSpacing.md)
+        .cartoonCard()
     }
 
     // MARK: - Sub-seksi Pengingat Rutin Harian Kartun
@@ -164,13 +237,15 @@ struct ProfileSettingsSection: View {
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
-                .background(Color.cartoonMint)
-                .cornerRadius(10)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(Color.cartoonMint)
+                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: 10)
                         .stroke(Color.black, lineWidth: 1.6)
                 )
-                .shadow(color: .black, radius: 0, x: 2, y: 2)
             }
             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
