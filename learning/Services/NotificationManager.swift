@@ -137,6 +137,11 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         print("Pengingat (\(identifier)) berhasil dibatalkan")
     }
 
+    /// Membatalkan pending notifikasi berdasarkan identifier string
+    func cancelPendingNotification(identifier: String) {
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
+    }
+
     /// Membatalkan notifikasi untuk tugas yang dihapus / selesai
     func cancelNotification(for item: Item) {
         let identifier = String(describing: item.persistentModelID)

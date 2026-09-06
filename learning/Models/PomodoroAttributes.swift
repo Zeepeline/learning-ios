@@ -6,9 +6,9 @@
 //
 
 import Foundation
-@preconcurrency import ActivityKit
+import ActivityKit
 
-public struct PomodoroAttributes: ActivityAttributes, Sendable {
+public nonisolated struct PomodoroAttributes: ActivityAttributes, Sendable {
     public struct ContentState: Codable, Hashable, Sendable {
         public var endTime: Date
         public var isPaused: Bool

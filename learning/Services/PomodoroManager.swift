@@ -102,121 +102,130 @@ final class PomodoroManager: ObservableObject {
         selectedPreset = preset
         totalDuration = preset.duration
         timeRemaining = preset.duration
-        HapticManager.shared.impact(style: .light)
     }
 
     func startTimer() {
         guard state != .running else { return }
 
-        let target = Date().addingTimeInterval(timeRemaining)
-        self.targetEndTime = target
-        self.state = .running
+        HapticManager.shared.impact(style: .medium)
+        state = .running
 
-        // Haptic feedback
-        HapticManager.shared.success()
+        let endTime = Date().addingTimeInterval(timeRemaining)
+        targetEndTime = endTime
 
-        // Otomatis aktifkan App Shielding jika diaktifkan dan bukan sesi break
-        if isAutoShieldEnabled && !selectedPreset.isBreak {
+        // Aktifkan App Shield jika diaktifkan user
+        if isAutoShieldEnabled {
             ScreenTimeManager.shared.enableAppShield()
         }
 
-        // Jalankan Timer Loop
-        startInternalTimer()
-
-        // Mulai atau perbarui Live Activity
+        // Mulai atau Perbarui Live Activity
         if liveActivity == nil {
-            startLiveActivity(endTime: target)
+            startLiveActivity(endTime: endTime)
         } else {
-            updateLiveActivity(isPaused: false, endTime: target)
+            updateLiveActivity(isPaused: false, endTime: endTime)
         }
 
-        // Jadwalkan Notifikasi Selesai
+        // Jadwalkan Notifikasi Lokal
         scheduleCompletionNotification(in: timeRemaining)
+
+        // Setup Combine Timer
+        timerSubscription?.cancel()
+        timerSubscription = Timer.publish(every: 1.0, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                self.tick()
+            }
     }
 
     func pauseTimer() {
         guard state == .running else { return }
 
+        HapticManager.shared.impact(style: .light)
+        state = .paused
         timerSubscription?.cancel()
         timerSubscription = nil
-        state = .paused
 
-        HapticManager.shared.impact(style: .medium)
-
-        // Buka shield saat jeda
-        if isAutoShieldEnabled {
-            ScreenTimeManager.shared.disableAppShield()
-        }
-
-        // Perbarui Live Activity status Dijeda
+        NotificationManager.shared.cancelPendingNotification(identifier: notificationId)
         updateLiveActivity(isPaused: true)
-
-        // Batalkan Notifikasi terjadwal
-        cancelCompletionNotification()
     }
 
     func resumeTimer() {
         guard state == .paused else { return }
-        startTimer()
-    }
 
-    func resetTimer() {
-        timerSubscription?.cancel()
-        timerSubscription = nil
+        HapticManager.shared.impact(style: .light)
+        state = .running
 
-        state = .idle
-        timeRemaining = selectedPreset.duration
-        totalDuration = selectedPreset.duration
-        targetEndTime = nil
+        let endTime = Date().addingTimeInterval(timeRemaining)
+        targetEndTime = endTime
 
-        HapticManager.shared.impact(style: .heavy)
+        scheduleCompletionNotification(in: timeRemaining)
+        updateLiveActivity(isPaused: false, endTime: endTime)
 
-        // Matikan Shield
-        if isAutoShieldEnabled {
-            ScreenTimeManager.shared.disableAppShield()
-        }
-
-        // Batalkan Notifikasi
-        cancelCompletionNotification()
-
-        // Akhiri Live Activity
-        endLiveActivity()
-    }
-
-    func skipToNextPreset() {
-        resetTimer()
-        if selectedPreset.isBreak {
-            selectedPreset = .focus25
-        } else {
-            completedSessionsCount += 1
-            selectedPreset = (completedSessionsCount % 4 == 0) ? .longBreak15 : .shortBreak5
-        }
-        totalDuration = selectedPreset.duration
-        timeRemaining = selectedPreset.duration
-    }
-
-    // MARK: - Internal Timer Loop
-    private func startInternalTimer() {
         timerSubscription?.cancel()
         timerSubscription = Timer.publish(every: 1.0, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
-                guard let self = self, let target = self.targetEndTime else { return }
-
-                let remaining = target.timeIntervalSinceNow
-                if remaining <= 0 {
-                    self.timeRemaining = 0
-                    self.timerCompleted()
-                } else {
-                    self.timeRemaining = remaining
-                }
+                guard let self = self else { return }
+                self.tick()
             }
+    }
+
+    func resetTimer() {
+        HapticManager.shared.impact(style: .heavy)
+        state = .idle
+        timerSubscription?.cancel()
+        timerSubscription = nil
+        targetEndTime = nil
+        timeRemaining = selectedPreset.duration
+        totalDuration = selectedPreset.duration
+
+        // Matikan Shield jika aktif
+        if isAutoShieldEnabled {
+            ScreenTimeManager.shared.disableAppShield()
+        }
+
+        // Batalkan Notifikasi & Akhiri Live Activity
+        NotificationManager.shared.cancelPendingNotification(identifier: notificationId)
+        endLiveActivity()
+    }
+
+    func skipSession() {
+        resetTimer()
+        // Switch preset otomatis
+        if selectedPreset.isBreak {
+            selectPreset(.focus25)
+        } else {
+            selectPreset(.shortBreak5)
+        }
+    }
+
+    // MARK: - Tick Handler
+    private func tick() {
+        guard let endTime = targetEndTime else {
+            if timeRemaining > 0 {
+                timeRemaining -= 1
+            } else {
+                timerCompleted()
+            }
+            return
+        }
+
+        let remaining = endTime.timeIntervalSinceNow
+        if remaining <= 0 {
+            timeRemaining = 0
+            timerCompleted()
+        } else {
+            timeRemaining = remaining
+        }
     }
 
     private func timerCompleted() {
         timerSubscription?.cancel()
         timerSubscription = nil
+        targetEndTime = nil
         state = .idle
+        timeRemaining = selectedPreset.duration
 
         HapticManager.shared.success()
 
@@ -280,7 +289,7 @@ final class PomodoroManager: ObservableObject {
         )
 
         let content = ActivityContent(state: updatedState, staleDate: currentEndTime.addingTimeInterval(60))
-        Task { @MainActor in
+        Task {
             await activity.update(content)
         }
     }
@@ -297,7 +306,7 @@ final class PomodoroManager: ObservableObject {
         )
 
         let content = ActivityContent(state: finalState, staleDate: nil)
-        Task { @MainActor in
+        Task {
             await activity.end(content, dismissalPolicy: .immediate)
         }
         self.liveActivity = nil
@@ -321,13 +330,9 @@ final class PomodoroManager: ObservableObject {
 
             UNUserNotificationCenter.current().add(request) { error in
                 if let error = error {
-                    print("Gagal menjadwalkan notifikasi Pomodoro: \(error.localizedDescription)")
+                    print("Gagal membuat notifikasi lokal: \(error.localizedDescription)")
                 }
             }
         }
-    }
-
-    private func cancelCompletionNotification() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [notificationId])
     }
 }
