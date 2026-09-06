@@ -11,11 +11,15 @@ import SwiftUI
 struct CartoonDayCell: Identifiable {
     let id: String
     let dayNumber: Int?
+    let date: Date?
 }
 
 // MARK: - 📅 Custom Cartoon Neo-Brutalist Calendar & Time Picker (Reusable)
 struct CartoonCalendarView: View {
     @Binding var selectedDate: Date
+    var showTimePicker: Bool = true
+    var taskCountForDate: ((Date) -> (total: Int, completed: Int))? = nil
+    
     @State private var currentMonth: Date = Date()
 
     private let calendar = Calendar.current
@@ -37,11 +41,14 @@ struct CartoonCalendarView: View {
         let leadingOffset = firstWeekday - 1 // 0..6 sel kosong
 
         for i in 0..<leadingOffset {
-            cells.append(CartoonDayCell(id: "leading-\(i)", dayNumber: nil))
+            cells.append(CartoonDayCell(id: "leading-\(i)", dayNumber: nil, date: nil))
         }
 
         for day in range {
-            cells.append(CartoonDayCell(id: "day-\(day)", dayNumber: day))
+            var dayComponents = components
+            dayComponents.day = day
+            let date = calendar.date(from: dayComponents)
+            cells.append(CartoonDayCell(id: "day-\(day)", dayNumber: day, date: date))
         }
 
         return cells
@@ -67,13 +74,14 @@ struct CartoonCalendarView: View {
 
                 // Shortcut "Hari Ini"
                 Button {
+                    HapticManager.shared.impact(style: .light)
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         selectedDate = Date()
                         currentMonth = Date()
                     }
                 } label: {
                     Text("Hari Ini")
-                        .font(.system(size: 10, weight: .heavy, design: .rounded))
+                        .font(.system(size: 11, weight: .heavy, design: .rounded))
                         .foregroundColor(.black)
                         .padding(.horizontal, HIGSpacing.xs)
                         .padding(.vertical, 4)
@@ -83,8 +91,9 @@ struct CartoonCalendarView: View {
                 }
                 .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
-                // Tombol Bulan Sebelumnya < (44pt Hit Area)
+                // Tombol Bulan Sebelumnya <
                 Button {
+                    HapticManager.shared.impact(style: .light)
                     changeMonth(by: -1)
                 } label: {
                     Image(systemName: "chevron.left")
@@ -97,8 +106,9 @@ struct CartoonCalendarView: View {
                 }
                 .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
-                // Tombol Bulan Selanjutnya > (44pt Hit Area)
+                // Tombol Bulan Selanjutnya >
                 Button {
+                    HapticManager.shared.impact(style: .light)
                     changeMonth(by: 1)
                 } label: {
                     Image(systemName: "chevron.right")
@@ -113,7 +123,7 @@ struct CartoonCalendarView: View {
             }
             .padding(.horizontal, HIGSpacing.xxs)
 
-            // 2. Baris Nama-Nama Hari (SUN, MON, TUE...) dengan SF Pro Rounded
+            // 2. Baris Nama-Nama Hari (SUN, MON, TUE...)
             LazyVGrid(columns: columns, spacing: 0) {
                 ForEach(weekdays, id: \.self) { day in
                     Text(day)
@@ -126,33 +136,55 @@ struct CartoonCalendarView: View {
             // 3. Grid Angka Tanggal Kalender
             LazyVGrid(columns: columns, spacing: HIGSpacing.xs) {
                 ForEach(calendarDays) { cell in
-                    if let dayNumber = cell.dayNumber {
+                    if let dayNumber = cell.dayNumber, let cellDate = cell.date {
                         let isSelected = isDaySelected(dayNumber)
                         let isToday = isDayToday(dayNumber)
+                        let taskStats = taskCountForDate?(cellDate) ?? (total: 0, completed: 0)
 
                         Button {
+                            HapticManager.shared.selection()
                             selectDay(dayNumber)
                         } label: {
-                            ZStack {
-                                if isSelected {
-                                    Circle()
-                                        .fill(Color.cartoonCoral)
-                                        .frame(width: 34, height: 34)
-                                        .overlay(Circle().stroke(Color.black, lineWidth: 1.8))
-                                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-                                } else if isToday {
-                                    Circle()
-                                        .stroke(Color.black, lineWidth: 1.5)
-                                        .background(Circle().fill(Color.cartoonYellow.opacity(0.4)))
-                                        .frame(width: 34, height: 34)
-                                }
-
+                            VStack(spacing: 2) {
                                 Text("\(dayNumber)")
-                                    .font(.system(size: 14, weight: isSelected ? .heavy : .bold, design: .rounded))
+                                    .font(.system(size: 13, weight: isSelected ? .heavy : .bold, design: .rounded))
                                     .foregroundColor(isSelected ? .white : .black)
+
+                                // Task Dot Indicator
+                                if taskStats.total > 0 {
+                                    Circle()
+                                        .fill(
+                                            isSelected
+                                                ? Color.white
+                                                : (taskStats.completed == taskStats.total ? Color.cartoonMint : Color.cartoonCoral)
+                                        )
+                                        .frame(width: 4.5, height: 4.5)
+                                } else {
+                                    Circle()
+                                        .fill(Color.clear)
+                                        .frame(width: 4.5, height: 4.5)
+                                }
                             }
                             .frame(width: 36, height: 36)
-                            .contentShape(Rectangle())
+                            .background(
+                                isSelected
+                                    ? Color.cartoonCoral
+                                    : (isToday ? Color.cartoonYellow.opacity(0.4) : Color.clear)
+                            )
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(
+                                        Color.black,
+                                        lineWidth: isSelected ? 1.8 : (isToday ? 1.4 : 0)
+                                    )
+                            )
+                            .shadow(
+                                color: isSelected ? .black : .clear,
+                                radius: 0,
+                                x: 1.5,
+                                y: 1.5
+                            )
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                     } else {
@@ -163,31 +195,33 @@ struct CartoonCalendarView: View {
                 }
             }
 
-            Divider()
-                .padding(.vertical, HIGSpacing.xxs)
+            // 4. Baris Pengaturan Waktu (Jika Diaktifkan)
+            if showTimePicker {
+                Divider()
+                    .padding(.vertical, HIGSpacing.xxs)
 
-            // 4. Baris Pengaturan Waktu (Time Picker Bergaya Kartun)
-            HStack {
-                Text("Time")
-                    .font(.system(size: 15, weight: .heavy, design: .rounded))
-                    .foregroundColor(.black)
+                HStack {
+                    Text("Waktu")
+                        .font(.system(size: 15, weight: .heavy, design: .rounded))
+                        .foregroundColor(.black)
 
-                Spacer()
+                    Spacer()
 
-                DatePicker("", selection: $selectedDate, displayedComponents: .hourAndMinute)
-                    .labelsHidden()
-                    .tint(Color.cartoonCoral)
-                    .fontDesign(.rounded)
-                    .environment(\.font, .system(size: 13, weight: .heavy, design: .rounded))
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 4)
-                    .background(Color(red: 0.94, green: 0.94, blue: 0.96))
-                    .cornerRadius(10)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(Color.black, lineWidth: 1.5)
-                    )
-                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                    DatePicker("", selection: $selectedDate, displayedComponents: .hourAndMinute)
+                        .labelsHidden()
+                        .tint(Color.cartoonCoral)
+                        .fontDesign(.rounded)
+                        .environment(\.font, .system(size: 13, weight: .heavy, design: .rounded))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 4)
+                        .background(Color(red: 0.94, green: 0.94, blue: 0.96))
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.black, lineWidth: 1.5)
+                        )
+                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                }
             }
         }
         .padding(HIGSpacing.md)
@@ -200,6 +234,13 @@ struct CartoonCalendarView: View {
         .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
         .onAppear {
             currentMonth = selectedDate
+        }
+        .onChange(of: selectedDate) { _, newDate in
+            let currentComponents = calendar.dateComponents([.year, .month], from: currentMonth)
+            let newComponents = calendar.dateComponents([.year, .month], from: newDate)
+            if currentComponents.year != newComponents.year || currentComponents.month != newComponents.month {
+                currentMonth = newDate
+            }
         }
     }
 
@@ -223,7 +264,7 @@ struct CartoonCalendarView: View {
         let selectedComponents = calendar.dateComponents([.year, .month, .day], from: selectedDate)
         return targetComponents.year == selectedComponents.year &&
                targetComponents.month == selectedComponents.month &&
-               selectedComponents.day == dayNumber
+               targetComponents.day == dayNumber
     }
 
     private func isDayToday(_ dayNumber: Int) -> Bool {

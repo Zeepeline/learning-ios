@@ -11,6 +11,7 @@ import SwiftUI
 struct CartoonWeeklyStrip: View {
     @Binding var selectedDate: Date
     let weekDays: [Date]
+    var taskCountForDate: ((Date) -> (total: Int, completed: Int))? = nil
 
     private let calendar = Calendar.current
 
@@ -18,31 +19,71 @@ struct CartoonWeeklyStrip: View {
         HStack(spacing: HIGSpacing.xs) {
             ForEach(weekDays, id: \.self) { date in
                 let isSelected = calendar.isDate(date, inSameDayAs: selectedDate)
-                
+                let isToday = calendar.isDateInToday(date)
+                let taskStats = taskCountForDate?(date) ?? (total: 0, completed: 0)
+
                 Button {
+                    HapticManager.shared.selection()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                         selectedDate = date
                     }
                 } label: {
-                    VStack(spacing: 6) {
-                        // Nama Hari (Mon, Tue, Wed...)
-                        Text(date.formatted(.dateTime.weekday(.abbreviated)))
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                    VStack(spacing: 4) {
+                        // Nama Hari (SEN, SEL, RAB / MON, TUE, WED...)
+                        Text(date.formatted(.dateTime.weekday(.abbreviated)).uppercased())
+                            .font(.system(size: 10, weight: .heavy, design: .rounded))
                             .foregroundColor(isSelected ? .white : .secondary)
 
                         // Angka Tanggal (14, 15, 17...)
                         Text(date.formatted(.dateTime.day()))
                             .font(.system(size: 15, weight: .heavy, design: .rounded))
                             .foregroundColor(isSelected ? .white : .black)
+
+                        // Indikator Titik Tugas (Task Dots)
+                        HStack(spacing: 3) {
+                            if taskStats.total > 0 {
+                                Circle()
+                                    .fill(
+                                        isSelected
+                                            ? Color.white
+                                            : (taskStats.completed == taskStats.total ? Color.cartoonMint : Color.cartoonCoral)
+                                    )
+                                    .frame(width: 5, height: 5)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.black, lineWidth: isSelected ? 0.8 : 0.8)
+                                    )
+                            } else {
+                                // Spacer dot transparan untuk menjaga tinggi konsisten
+                                Circle()
+                                    .fill(Color.clear)
+                                    .frame(width: 5, height: 5)
+                            }
+                        }
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 10)
-                    .background(isSelected ? Color.cartoonCoral : Color.clear)
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule().stroke(Color.black, lineWidth: isSelected ? 1.8 : 0)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(
+                                isSelected
+                                    ? Color.cartoonCoral
+                                    : (isToday ? Color.cartoonYellow.opacity(0.35) : Color.white)
+                            )
+                            .shadow(
+                                color: isSelected ? .black : (isToday ? Color.black.opacity(0.15) : Color.black.opacity(0.08)),
+                                radius: 0,
+                                x: isSelected ? 2 : 1,
+                                y: isSelected ? 2 : 1
+                            )
                     )
-                    .shadow(color: isSelected ? .black : .clear, radius: 0, x: 2, y: 2)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(
+                                Color.black,
+                                lineWidth: isSelected ? 2.0 : (isToday ? 1.5 : 1.2)
+                            )
+                    )
                 }
                 .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
             }
@@ -110,8 +151,10 @@ struct CartoonTimelineCard: View {
                     .foregroundColor(.black)
                     .padding(.horizontal, HIGSpacing.sm)
                     .padding(.vertical, 5)
-                    .background(Color(red: 0.94, green: 0.94, blue: 0.94))
-                    .cornerRadius(8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(Color(red: 0.94, green: 0.94, blue: 0.94))
+                    )
                     .padding(.top, 2)
             }
 
@@ -126,13 +169,15 @@ struct CartoonTimelineCard: View {
         }
         .padding(HIGSpacing.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(isCompleted ? Color.gray.opacity(0.12) : Color.white)
-        .cornerRadius(18)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(isCompleted ? Color.gray.opacity(0.12) : Color.white)
+                .shadow(color: .black, radius: 0, x: 2, y: 2)
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 18)
                 .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
         )
-        .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
     }
 }
 
@@ -176,13 +221,15 @@ struct CartoonQuickAddBar: View {
             .padding(.horizontal, HIGSpacing.md)
             .padding(.vertical, 10)
             .frame(minHeight: 48)
-            .background(Color.white)
-            .cornerRadius(14)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.white)
+                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
                     .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
             )
-            .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
         }
     }
 }

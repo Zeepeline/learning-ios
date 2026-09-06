@@ -32,15 +32,17 @@ struct CartoonPrimaryButton: View {
             .foregroundColor(fgColor)
             .frame(maxWidth: .infinity)
             .frame(height: height)
-            .background(bgColor)
-            .cornerRadius(CartoonMetrics.cardCornerRadius)
+            .background(
+                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                    .fill(bgColor)
+                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                     .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
             )
-            .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
         }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.5))
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
         .disabled(!isEnabled)
         .opacity(isEnabled ? 1.0 : 0.6)
     }
@@ -62,13 +64,15 @@ struct CartoonIconButton: View {
                 .font(.system(size: 14, weight: .black))
                 .foregroundColor(iconColor)
                 .frame(width: size, height: size)
-                .background(bgColor)
-                .cornerRadius(CartoonMetrics.cornerRadius)
+                .background(
+                    RoundedRectangle(cornerRadius: CartoonMetrics.cornerRadius)
+                        .fill(bgColor)
+                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                )
                 .overlay(
                     RoundedRectangle(cornerRadius: CartoonMetrics.cornerRadius)
                         .stroke(Color.black, lineWidth: 1.8)
                 )
-                .shadow(color: .black, radius: 0, x: 2, y: 2)
         }
         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
     }
@@ -160,15 +164,17 @@ struct CartoonGoogleSignInButton: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: height)
-            .background(Color.white)
-            .cornerRadius(CartoonMetrics.cardCornerRadius)
+            .background(
+                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                    .fill(Color.white)
+                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+            )
             .overlay(
                 RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                     .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
             )
-            .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
         }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.5))
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
     }
 }
 
