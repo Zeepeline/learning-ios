@@ -13,6 +13,7 @@ struct ProfileSettingsSection: View {
     @Binding var isMorningReminderEnabled: Bool
     @Binding var isEveningReminderEnabled: Bool
     @Binding var isHapticEnabled: Bool
+    @AppStorage("isICloudSyncEnabled") private var isICloudSyncEnabled: Bool = true
 
     @State private var isTestingNotification: Bool = false
     @State private var testNotificationNotice: String?
@@ -25,7 +26,18 @@ struct ProfileSettingsSection: View {
                 .padding(.horizontal, HIGSpacing.md)
 
             VStack(spacing: HIGSpacing.sm) {
-                // 1. 🔐 Toggle Face ID / Biometrik Kartun
+                // 1. ☁️ Toggle Sinkronisasi iCloud Kartun
+                CartoonToggleRow(
+                    icon: "icloud.fill",
+                    iconColor: .black,
+                    iconBgColor: Color.cartoonBlue,
+                    title: "Sinkronisasi iCloud",
+                    subtitle: "Cadangkan tugas & kebiasaan otomatis",
+                    isOn: $isICloudSyncEnabled,
+                    activeColor: Color.cartoonBlue
+                )
+
+                // 2. 🔐 Toggle Face ID / Biometrik Kartun
                 if BiometricAuthManager.shared.canEvaluateBiometrics() {
                     CartoonToggleRow(
                         icon: "faceid",
@@ -38,7 +50,7 @@ struct ProfileSettingsSection: View {
                     )
                 }
 
-                // 2. 🔔 Toggle Master Notifikasi Tugas Kartun
+                // 3. 🔔 Toggle Master Notifikasi Tugas Kartun
                 CartoonToggleRow(
                     icon: "bell.badge.fill",
                     iconColor: .black,
@@ -55,11 +67,11 @@ struct ProfileSettingsSection: View {
                         .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 
-                // 3. 📳 Toggle Getaran Haptik Kartun
+                // 4. 📳 Toggle Getaran Haptik Kartun
                 CartoonToggleRow(
                     icon: "hand.tap.fill",
                     iconColor: .black,
-                    iconBgColor: Color.cartoonBlue,
+                    iconBgColor: Color.cartoonPink,
                     title: "Sensasi Getaran Haptik",
                     subtitle: "Umpan balik sentuhan responsif",
                     isOn: $isHapticEnabled,

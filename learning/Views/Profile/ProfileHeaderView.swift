@@ -10,9 +10,13 @@ import SwiftUI
 struct ProfileHeaderView: View {
     let userName: String
     let userEmail: String
+    let userBio: String
+    let avatarIcon: String
+    let avatarColorHex: String
     let totalXP: Int
     let userLevel: Int
     let xpProgressInCurrentLevel: Double
+    let onEditTap: () -> Void
 
     var body: some View {
         VStack(spacing: HIGSpacing.sm) {
@@ -20,23 +24,24 @@ struct ProfileHeaderView: View {
                 // Avatar Bulat Kartun
                 ZStack {
                     Circle()
-                        .fill(Color.cartoonYellow)
+                        .fill(Color(hex: avatarColorHex))
                         .frame(width: 88, height: 88)
                         .overlay(
                             Circle().stroke(Color.black, lineWidth: CartoonMetrics.thickBorderWidth)
                         )
                         .shadow(color: .black, radius: 0, x: 3, y: 3)
                     
-                    Image(systemName: "person.crop.circle.fill")
+                    Image(systemName: avatarIcon)
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 56, height: 56)
+                        .frame(width: 52, height: 52)
                         .foregroundColor(.black)
                 }
 
                 // Badge Edit Pensil Mini
                 Button {
                     HapticManager.shared.impact(style: .light)
+                    onEditTap()
                 } label: {
                     Image(systemName: "pencil")
                         .font(.system(size: 12, weight: .black))
@@ -57,7 +62,7 @@ struct ProfileHeaderView: View {
                     .font(.system(size: 22, weight: .heavy, design: .rounded))
                     .foregroundColor(.black)
 
-                Text("Productivity Master")
+                Text(userBio)
                     .font(.system(size: 13, weight: .bold, design: .rounded))
                     .foregroundColor(.secondary)
 

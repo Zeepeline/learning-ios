@@ -14,6 +14,9 @@ struct ProfileView: View {
     @AppStorage("isLoggedIn") private var isLoggedIn: Bool = true
     @AppStorage("userName") private var userName: String = "Bruce Wayne"
     @AppStorage("userEmail") private var userEmail: String = "brucewayne27@suarasa.com"
+    @AppStorage("userBio") private var userBio: String = "Productivity Master"
+    @AppStorage("userAvatarIcon") private var userAvatarIcon: String = "person.crop.circle.fill"
+    @AppStorage("userAvatarColor") private var userAvatarColor: String = "#FFD166"
     @AppStorage("useBiometrics") private var useBiometrics: Bool = true
     @AppStorage("isNotificationEnabled") private var isNotificationEnabled: Bool = true
     @AppStorage("isMorningReminderEnabled") private var isMorningReminderEnabled: Bool = false
@@ -21,6 +24,7 @@ struct ProfileView: View {
     @AppStorage("isHapticEnabled") private var isHapticEnabled: Bool = true
 
     @State private var isShowingLogoutDialog: Bool = false
+    @State private var isShowingEditProfileSheet: Bool = false
 
     // Perhitungan Statistik Real-Time dari SwiftData
     private var completedTasksCount: Int {
@@ -56,9 +60,15 @@ struct ProfileView: View {
                     ProfileHeaderView(
                         userName: userName,
                         userEmail: userEmail,
+                        userBio: userBio,
+                        avatarIcon: userAvatarIcon,
+                        avatarColorHex: userAvatarColor,
                         totalXP: totalXP,
                         userLevel: userLevel,
-                        xpProgressInCurrentLevel: xpProgressInCurrentLevel
+                        xpProgressInCurrentLevel: xpProgressInCurrentLevel,
+                        onEditTap: {
+                            isShowingEditProfileSheet = true
+                        }
                     )
 
                     // 2. Statistik Aktivitas Kartun (Grid 2 Kolom Real-Time)
@@ -140,6 +150,12 @@ struct ProfileView: View {
                     }
                 )
             }
+        }
+        .sheet(isPresented: $isShowingEditProfileSheet) {
+            EditProfileView()
+                .presentationDetents([.fraction(0.88), .large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(24)
         }
     }
 }
