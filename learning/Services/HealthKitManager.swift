@@ -88,11 +88,12 @@ final class HealthKitManager: ObservableObject {
         HKHealthStore.isHealthDataAvailable()
     }
     
-    // MARK: - 1. Request Izin Akses HealthKit
-    func requestAuthorization(completion: (@Sendable (Bool) -> Void)? = nil) {
+    // MARK: - 1. Request Izin Akses HealthKit (Async/Await)
+    @discardableResult
+    func requestAuthorization() async -> Bool {
         guard let healthStore = healthStore else {
-            completion?(false)
-            return
+            self.authorizationError = "HealthKit tidak tersedia di perangkat ini."
+            return false
         }
         
         // Tipe data yang ingin dibaca dari Apple Health (termasuk sync dari Zepp/Amazfit)
@@ -116,19 +117,15 @@ final class HealthKitManager: ObservableObject {
             readTypes.insert(sleepType)
         }
         
-        healthStore.requestAuthorization(toShare: nil, read: readTypes) { [weak self] success, error in
-            Task { @MainActor in
-                guard let self = self else { return }
-                if success {
-                    self.isAuthorized = true
-                    self.authorizationError = nil
-                    await self.fetchAllTodayHealthData()
-                    completion?(true)
-                } else {
-                    self.authorizationError = error?.localizedDescription ?? "Izin HealthKit ditolak."
-                    completion?(false)
-                }
-            }
+        do {
+            try await healthStore.requestAuthorization(toShare: [], read: readTypes)
+            self.isAuthorized = true
+            self.authorizationError = nil
+            await self.fetchAllTodayHealthData()
+            return true
+        } catch {
+            self.authorizationError = error.localizedDescription
+            return false
         }
     }
     
@@ -369,7 +366,7 @@ final class HealthKitManager: ObservableObject {
     }
     
     // MARK: - Helper Pemetaan Icon & Nama Aktivitas Kartun
-    private static func title(for type: HKWorkoutActivityType) -> String {
+    nonisolated private static func title(for type: HKWorkoutActivityType) -> String {
         switch type {
         case .running: return "Lari"
         case .walking: return "Jalan Santai"
@@ -385,7 +382,7 @@ final class HealthKitManager: ObservableObject {
         }
     }
     
-    private static func icon(for type: HKWorkoutActivityType) -> String {
+    nonisolated private static func icon(for type: HKWorkoutActivityType) -> String {
         switch type {
         case .running: return "figure.run"
         case .walking: return "figure.walk"

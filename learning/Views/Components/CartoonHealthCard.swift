@@ -296,7 +296,8 @@ struct CartoonHealthCard: View {
             
             Button {
                 HapticManager.shared.impact(style: .medium)
-                healthManager.requestAuthorization { success in
+                Task {
+                    let success = await healthManager.requestAuthorization()
                     if success {
                         HapticManager.shared.success()
                     }
