@@ -56,7 +56,7 @@ struct CartoonTabButton: View {
 
     var body: some View {
         Button {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.72)) {
+            withAnimation(.spring(response: 0.26, dampingFraction: 0.8)) {
                 selectedTab = index
             }
         } label: {
@@ -68,16 +68,13 @@ struct CartoonTabButton: View {
                     Text(title)
                         .font(.system(size: 11, weight: .heavy, design: .rounded))
                         .lineLimit(1)
-                        .transition(.asymmetric(
-                            insertion: .scale(scale: 0.8).combined(with: .opacity),
-                            removal: .opacity
-                        ))
+                        .transition(.scale(scale: 0.85).combined(with: .opacity))
                 }
             }
             .foregroundColor(.cartoonTextPrimary)
             .padding(.vertical, 8)
             .padding(.horizontal, isSelected ? 10 : 8)
-            .frame(maxWidth: isSelected ? .infinity : nil) // Full width expanding saat isSelected
+            .frame(maxWidth: isSelected ? .infinity : nil)
             .frame(minHeight: 40)
             .background(isSelected ? activeColor : Color.clear)
             .clipShape(Capsule())

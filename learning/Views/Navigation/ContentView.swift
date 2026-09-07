@@ -35,49 +35,59 @@ struct ContentView: View {
                     } : nil
                 )
 
-                // Tampilan Halaman Sesuai Tab (5 Tab Utama)
-                Group {
-                    switch quickActionManager.selectedTab {
-                    case 0:
-                        HomeActivityListView(
-                            items: items,
-                            onEditItem: { item in
-                                itemToEdit = item
-                            },
-                            onToggleItem: { item in
-                                toggleItemCompletion(item)
-                            },
-                            onDeleteItem: { item in
-                                confirmDelete(item)
-                            }
-                        )
+                // ⚡ Cached Indexed Tab Content Stack (0ms Latency, Zero View Teardown)
+                ZStack {
+                    // Tab 0: Daftar Tugas / Aktivitas
+                    HomeActivityListView(
+                        items: items,
+                        onEditItem: { item in
+                            itemToEdit = item
+                        },
+                        onToggleItem: { item in
+                            toggleItemCompletion(item)
+                        },
+                        onDeleteItem: { item in
+                            confirmDelete(item)
+                        }
+                    )
+                    .opacity(quickActionManager.selectedTab == 0 ? 1 : 0)
+                    .allowsHitTesting(quickActionManager.selectedTab == 0)
+                    .zIndex(quickActionManager.selectedTab == 0 ? 1 : 0)
 
-                    case 1:
-                        TodayTimelineView(
-                            onDeleteItem: { item in
-                                confirmDelete(item)
-                            },
-                            onToggleItem: { item in
-                                toggleItemCompletion(item)
-                            },
-                            onEditItem: { item in
-                                HapticManager.shared.impact(style: .light)
-                                itemToEdit = item
-                            }
-                        )
+                    // Tab 1: Timeline Hari Ini & Kalender
+                    TodayTimelineView(
+                        onDeleteItem: { item in
+                            confirmDelete(item)
+                        },
+                        onToggleItem: { item in
+                            toggleItemCompletion(item)
+                        },
+                        onEditItem: { item in
+                            HapticManager.shared.impact(style: .light)
+                            itemToEdit = item
+                        }
+                    )
+                    .opacity(quickActionManager.selectedTab == 1 ? 1 : 0)
+                    .allowsHitTesting(quickActionManager.selectedTab == 1)
+                    .zIndex(quickActionManager.selectedTab == 1 ? 1 : 0)
 
-                    case 2:
-                        HabitTrackerView()
+                    // Tab 2: Habit Tracker
+                    HabitTrackerView()
+                        .opacity(quickActionManager.selectedTab == 2 ? 1 : 0)
+                        .allowsHitTesting(quickActionManager.selectedTab == 2)
+                        .zIndex(quickActionManager.selectedTab == 2 ? 1 : 0)
 
-                    case 3:
-                        FocusHubView()
+                    // Tab 3: Fokus Hub (Pomodoro & Screen Time)
+                    FocusHubView()
+                        .opacity(quickActionManager.selectedTab == 3 ? 1 : 0)
+                        .allowsHitTesting(quickActionManager.selectedTab == 3)
+                        .zIndex(quickActionManager.selectedTab == 3 ? 1 : 0)
 
-                    case 4:
-                        ProfileView()
-
-                    default:
-                        EmptyView()
-                    }
+                    // Tab 4: Profil Saya
+                    ProfileView()
+                        .opacity(quickActionManager.selectedTab == 4 ? 1 : 0)
+                        .allowsHitTesting(quickActionManager.selectedTab == 4)
+                        .zIndex(quickActionManager.selectedTab == 4 ? 1 : 0)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
@@ -160,7 +170,6 @@ struct ContentView: View {
     }
 
     private func deleteItem(_ item: Item) {
-        HapticManager.shared.warning()
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
             NotificationManager.shared.cancelNotification(for: item)
             modelContext.delete(item)
@@ -174,14 +183,14 @@ struct ContentView: View {
 
 #Preview {
     let config = ModelConfiguration(isStoredInMemoryOnly: true)
-    let container = (try? ModelContainer(for: Item.self, Habit.self, configurations: config)) ?? {
+    let container = (try? ModelContainer(for: Item.self, configurations: config)) ?? {
         fatalError("Failed to create preview container")
     }()
-    
+
     let sampleItems = [
-        Item(title: "Desain Wireframe App", notes: "Selesaikan flow onboarding", timestamp: Date(), isCompleted: false, priority: "Tinggi", category: "Design"),
-        Item(title: "Rapat Tim Mobile", notes: "Sprint review fitur widget", timestamp: Date().addingTimeInterval(3600 * 2), isCompleted: false, priority: "Normal", category: "Meeting"),
-        Item(title: "Review Pull Request", notes: "Cek perbaikan dark mode", timestamp: Date().addingTimeInterval(3600 * 4), isCompleted: true, priority: "Rendah", category: "Code")
+        Item(title: "Desain Wireframe App", notes: "Selesaikan figma", timestamp: Date(), isCompleted: false, priority: "Tinggi", category: "Design"),
+        Item(title: "Daily Standup", notes: "Via Zoom", timestamp: Date(), isCompleted: true, priority: "Normal", category: "Meeting"),
+        Item(title: "Review Pull Request", notes: "Cek code PR #42", timestamp: Date(), isCompleted: false, priority: "Rendah", category: "Coding")
     ]
     for item in sampleItems {
         container.mainContext.insert(item)
