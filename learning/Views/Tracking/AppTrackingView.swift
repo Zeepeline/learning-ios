@@ -243,7 +243,9 @@ struct AppTrackingView: View {
             // Tombol Minta Izin
             Button {
                 HapticManager.shared.impact(style: .medium)
-                trackingManager.requestTrackingAuthorization()
+                Task {
+                    await trackingManager.requestTrackingAuthorization()
+                }
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: "bell.badge.fill")

@@ -54,24 +54,28 @@ final class AppTrackingManager: ObservableObject {
         }
     }
 
-    /// Meminta izin pelacakan resmi melalui dialog sistem Apple
-    func requestTrackingAuthorization(completion: ((ATTrackingManager.AuthorizationStatus) -> Void)? = nil) {
+    /// Meminta izin pelacakan resmi melalui dialog sistem Apple (Async/Await)
+    @discardableResult
+    func requestTrackingAuthorization() async -> ATTrackingManager.AuthorizationStatus {
         guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else {
             checkTrackingStatus()
-            completion?(self.trackingStatus)
-            return
+            return self.trackingStatus
         }
 
         isRequesting = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
-            ATTrackingManager.requestTrackingAuthorization { [weak self] status in
-                DispatchQueue.main.async {
-                    self?.isRequesting = false
-                    self?.checkTrackingStatus()
-                    completion?(status)
-                }
+        defer { isRequesting = false }
+
+        // Delay singkat agar UI siap memunculkan prompt dialog sistem
+        try? await Task.sleep(nanoseconds: 300_000_000)
+
+        let status = await withCheckedContinuation { continuation in
+            ATTrackingManager.requestTrackingAuthorization { status in
+                continuation.resume(returning: status)
             }
         }
+
+        self.checkTrackingStatus()
+        return status
     }
 
     /// Membuka halaman Pengaturan iOS jika izin ditolak
