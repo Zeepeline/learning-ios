@@ -14,7 +14,7 @@ struct ProfileSettingsSection: View {
     @Binding var isEveningReminderEnabled: Bool
     @Binding var isHapticEnabled: Bool
     @AppStorage("isICloudSyncEnabled") private var isICloudSyncEnabled: Bool = true
-    @ObservedObject private var healthManager = HealthKitManager.shared
+    var healthManager = HealthKitManager.shared
 
     @State private var isTestingNotification: Bool = false
     @State private var testNotificationNotice: String?
@@ -156,72 +156,64 @@ struct ProfileSettingsSection: View {
         .cartoonCard()
     }
 
-    // MARK: - Sub-seksi Pengingat Rutin Harian Kartun
+    // MARK: - Sub-seksi Pengingat Rutin Harian
     private var dailyRemindersSection: some View {
-        VStack(spacing: HIGSpacing.sm) {
-            VStack(alignment: .leading, spacing: HIGSpacing.xs) {
-                Text("JADWAL PENGINGAT RUTIN (BACKGROUND)")
-                    .font(.system(size: 10, weight: .heavy, design: .rounded))
-                    .foregroundColor(.secondary)
-                    .padding(.horizontal, 4)
-                    .padding(.top, 2)
-
-                // Pengingat Pagi (08:00)
-                CartoonToggleRow(
-                    icon: "sun.max.fill",
-                    iconColor: .black,
-                    iconBgColor: Color.cartoonYellow,
-                    title: "Pengingat Pagi (08:00)",
-                    subtitle: "Cek target & tugas hari ini",
-                    isOn: $isMorningReminderEnabled,
-                    activeColor: Color.cartoonYellow
-                )
-                .onChange(of: isMorningReminderEnabled) { _, isEnabled in
-                    HapticManager.shared.selection()
-                    if isEnabled {
-                        Task {
-                            await NotificationManager.shared.scheduleDailyReminder(
-                                hour: 8,
-                                minute: 0,
-                                title: "Semangat Pagi! Saatnya Mulai Hari",
-                                body: "Buka aplikasi untuk melihat daftar tugas yang perlu diselesaikan hari ini!",
-                                identifier: NotificationManager.morningReminderId
-                            )
-                        }
-                    } else {
-                        NotificationManager.shared.cancelReminder(identifier: NotificationManager.morningReminderId)
+        VStack(spacing: HIGSpacing.xs) {
+            // Pengingat Pagi
+            CartoonToggleRow(
+                icon: "sun.max.fill",
+                iconColor: .black,
+                iconBgColor: Color.cartoonYellow,
+                title: "Pengingat Pagi (08:00)",
+                subtitle: "Semangat rencana tugas hari ini",
+                isOn: $isMorningReminderEnabled,
+                activeColor: Color.cartoonYellow
+            )
+            .onChange(of: isMorningReminderEnabled) { _, isEnabled in
+                HapticManager.shared.selection()
+                if isEnabled {
+                    Task {
+                        await NotificationManager.shared.scheduleDailyReminder(
+                            hour: 8,
+                            minute: 0,
+                            title: "Semangat Pagi! Saatnya Mulai Hari",
+                            body: "Buka aplikasi untuk melihat daftar tugas yang perlu diselesaikan hari ini!",
+                            identifier: NotificationManager.morningReminderId
+                        )
                     }
-                }
-
-                // Pengingat Malam (20:00)
-                CartoonToggleRow(
-                    icon: "moon.stars.fill",
-                    iconColor: .black,
-                    iconBgColor: Color.cartoonLavender,
-                    title: "Pengingat Malam (20:00)",
-                    subtitle: "Evaluasi pencapaian tugas",
-                    isOn: $isEveningReminderEnabled,
-                    activeColor: Color.cartoonLavender
-                )
-                .onChange(of: isEveningReminderEnabled) { _, isEnabled in
-                    HapticManager.shared.selection()
-                    if isEnabled {
-                        Task {
-                            await NotificationManager.shared.scheduleDailyReminder(
-                                hour: 20,
-                                minute: 0,
-                                title: "Evaluasi Malam",
-                                body: "Hebat! Cek berapa banyak tugas yang telah berhasil kamu selesaikan hari ini.",
-                                identifier: NotificationManager.eveningReminderId
-                            )
-                        }
-                    } else {
-                        NotificationManager.shared.cancelReminder(identifier: NotificationManager.eveningReminderId)
-                    }
+                } else {
+                    NotificationManager.shared.cancelReminder(identifier: NotificationManager.morningReminderId)
                 }
             }
 
-            // Tombol Tes Notifikasi Lokal
+            // Pengingat Malam
+            CartoonToggleRow(
+                icon: "moon.stars.fill",
+                iconColor: .black,
+                iconBgColor: Color.cartoonLavender,
+                title: "Pengingat Malam (20:00)",
+                subtitle: "Evaluasi & review capaian harian",
+                isOn: $isEveningReminderEnabled,
+                activeColor: Color.cartoonLavender
+            )
+            .onChange(of: isEveningReminderEnabled) { _, isEnabled in
+                HapticManager.shared.selection()
+                if isEnabled {
+                    Task {
+                        await NotificationManager.shared.scheduleDailyReminder(
+                            hour: 20,
+                            minute: 0,
+                            title: "Evaluasi Malam",
+                            body: "Hebat! Cek berapa banyak tugas yang telah berhasil kamu selesaikan hari ini.",
+                            identifier: NotificationManager.eveningReminderId
+                        )
+                    }
+                } else {
+                    NotificationManager.shared.cancelReminder(identifier: NotificationManager.eveningReminderId)
+                }
+            }
+
+            // Tombol Uji Coba Notifikasi Cepat
             Button {
                 HapticManager.shared.impact(style: .medium)
                 isTestingNotification = true
@@ -237,43 +229,29 @@ struct ProfileSettingsSection: View {
                 }
             } label: {
                 HStack(spacing: 6) {
-                    Image(systemName: "paperplane.fill")
-                        .font(.system(size: 11, weight: .black))
-                    Text(isTestingNotification ? "Menjadwalkan Tes..." : "Tes Notifikasi Lokal (3 Detik)")
-                        .font(.system(size: 12, weight: .heavy, design: .rounded))
+                    Image(systemName: "bell.and.waves.left.and.right.fill")
+                        .font(.system(size: 11, weight: .bold))
+                    Text(isTestingNotification ? "Mengirim Notifikasi..." : "Kirim Notifikasi Uji Coba (3 Detik)")
+                        .font(.system(size: 11.5, weight: .heavy, design: .rounded))
                 }
                 .foregroundColor(.black)
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, 10)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.cartoonMint)
-                        .shadow(color: .black, radius: 0, x: 2, y: 2)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.black, lineWidth: 1.6)
-                )
+                .padding(.vertical, 8)
+                .background(Color.white)
+                .cornerRadius(8)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
+                .shadow(color: .black, radius: 0, x: 1, y: 1)
             }
             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+            .disabled(isTestingNotification)
 
             if let notice = testNotificationNotice {
                 Text(notice)
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
                     .foregroundColor(.secondary)
-                    .padding(.horizontal, 4)
-                    .transition(.opacity)
+                    .padding(.top, 2)
             }
         }
-        .padding(HIGSpacing.sm)
-        .background(
-            RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                .fill(Color(red: 0.95, green: 0.93, blue: 0.89))
-                .shadow(color: .black, radius: 0, x: 2, y: 2)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-        )
+        .padding(.leading, 12)
     }
 }

@@ -10,7 +10,7 @@ import HealthKit
 
 // MARK: - 🏃 Kartu Ringkasan Kebugaran & Olahraga Kartun Neo-Brutalist
 struct CartoonHealthCard: View {
-    @ObservedObject var healthManager = HealthKitManager.shared
+    var healthManager = HealthKitManager.shared
     @State private var isShowingAuthAlert: Bool = false
     
     var body: some View {

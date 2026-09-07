@@ -8,7 +8,7 @@
 import Foundation
 import HealthKit
 import SwiftUI
-import Combine
+import Observation
 
 // MARK: - 🏃 Model Data Sesi Olahraga / Workout (Zepp, Apple Watch, dll.)
 struct HealthWorkoutItem: Identifiable, Sendable {
@@ -68,16 +68,17 @@ struct TodayHealthSummary: Sendable {
 }
 
 // MARK: - 🩺 HealthKit Service Layer Manager
+@Observable
 @MainActor
-final class HealthKitManager: ObservableObject {
+final class HealthKitManager {
     static let shared = HealthKitManager()
     
-    private let healthStore: HKHealthStore? = HKHealthStore.isHealthDataAvailable() ? HKHealthStore() : nil
+    @ObservationIgnored private let healthStore: HKHealthStore? = HKHealthStore.isHealthDataAvailable() ? HKHealthStore() : nil
     
-    @Published var isAuthorized: Bool = false
-    @Published var isLoading: Bool = false
-    @Published var todaySummary: TodayHealthSummary = TodayHealthSummary()
-    @Published var authorizationError: String? = nil
+    var isAuthorized: Bool = false
+    var isLoading: Bool = false
+    var todaySummary: TodayHealthSummary = TodayHealthSummary()
+    var authorizationError: String? = nil
     
     private init() {
         checkAuthorizationStatus()
