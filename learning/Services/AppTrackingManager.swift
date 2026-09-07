@@ -9,17 +9,18 @@ import Foundation
 import AppTrackingTransparency
 import AdSupport
 import SwiftUI
-import Combine
+import Observation
 
 // MARK: - 📊 AppTrackingTransparency Manager
+@Observable
 @MainActor
-final class AppTrackingManager: ObservableObject {
+final class AppTrackingManager {
     static let shared = AppTrackingManager()
 
-    @Published var trackingStatus: ATTrackingManager.AuthorizationStatus = .notDetermined
-    @Published var idfaString: String = "Belum Ada Izin"
-    @Published var isAuthorized: Bool = false
-    @Published var isRequesting: Bool = false
+    var trackingStatus: ATTrackingManager.AuthorizationStatus = .notDetermined
+    var idfaString: String = "Belum Ada Izin"
+    var isAuthorized: Bool = false
+    var isRequesting: Bool = false
 
     private init() {
         checkTrackingStatus()

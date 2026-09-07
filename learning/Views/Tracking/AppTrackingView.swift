@@ -10,7 +10,7 @@ import AppTrackingTransparency
 import AdSupport
 
 struct AppTrackingView: View {
-    @ObservedObject private var trackingManager = AppTrackingManager.shared
+    var trackingManager = AppTrackingManager.shared
     @State private var copiedToast: Bool = false
     @State private var isAnimatingRadar: Bool = false
 
