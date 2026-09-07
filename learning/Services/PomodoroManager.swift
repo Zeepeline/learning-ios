@@ -2,306 +2,313 @@
 //  PomodoroManager.swift
 //  learning
 //
-//  Created by macbook on 9/5/26.
+//  Created by macbook on 8/31/26.
 //
 
-import Foundation
 import SwiftUI
-import Combine
 import ActivityKit
 import UserNotifications
+import Combine
 
-// MARK: - ⏱️ Pomodoro Preset Modes
-enum PomodoroPreset: String, CaseIterable, Identifiable, Sendable {
-    case focus25 = "25 Min"
-    case deepWork50 = "50 Min"
-    case shortBreak5 = "5 Min"
-    case longBreak15 = "15 Min"
+// MARK: - ⏱️ Enum Preset Pomodoro Kartun
+enum PomodoroPreset: String, CaseIterable, Identifiable {
+    case quickFocus = "Fokus Cepat"
+    case deepWork = "Deep Work"
+    case shortBreak = "Rehat Singkat"
+    case longBreak = "Rehat Panjang"
 
     var id: String { rawValue }
 
-    var duration: TimeInterval {
+    var minutes: Int {
         switch self {
-        case .focus25: return 25 * 60
-        case .deepWork50: return 50 * 60
-        case .shortBreak5: return 5 * 60
-        case .longBreak15: return 15 * 60
+        case .quickFocus: return 25
+        case .deepWork: return 45
+        case .shortBreak: return 5
+        case .longBreak: return 15
         }
     }
 
-    var isBreak: Bool {
-        switch self {
-        case .focus25, .deepWork50: return false
-        case .shortBreak5, .longBreak15: return true
-        }
+    var duration: TimeInterval {
+        TimeInterval(minutes * 60)
     }
 
     var iconName: String {
         switch self {
-        case .focus25: return "timer"
-        case .deepWork50: return "bolt.fill"
-        case .shortBreak5: return "cup.and.saucer.fill"
-        case .longBreak15: return "sun.max.fill"
+        case .quickFocus: return "brain.head.profile"
+        case .deepWork: return "flame.fill"
+        case .shortBreak: return "cup.and.saucer.fill"
+        case .longBreak: return "sparkles"
         }
     }
 
     var themeColor: Color {
         switch self {
-        case .focus25: return Color.cartoonCoral
-        case .deepWork50: return Color.cartoonOrange
-        case .shortBreak5: return Color.cartoonMint
-        case .longBreak15: return Color.cartoonBlue
+        case .quickFocus: return Color.cartoonYellow
+        case .deepWork: return Color.cartoonPink
+        case .shortBreak: return Color.cartoonMint
+        case .longBreak: return Color.cartoonBlue
+        }
+    }
+
+    var colorHex: String {
+        switch self {
+        case .quickFocus: return "#FFD166"
+        case .deepWork: return "#FF99C8"
+        case .shortBreak: return "#6EE7B7"
+        case .longBreak: return "#A0C4FF"
+        }
+    }
+
+    var isBreak: Bool {
+        switch self {
+        case .quickFocus, .deepWork: return false
+        case .shortBreak, .longBreak: return true
         }
     }
 }
 
-enum PomodoroState: Sendable {
+// MARK: - 🍅 Status Pomodoro Timer
+enum PomodoroState {
     case idle
     case running
     case paused
 }
 
-// MARK: - Pomodoro Focus Timer & Live Activity Manager
+// MARK: - 🍅 Pomodoro Timer State & Live Activity Controller
 @MainActor
 final class PomodoroManager: ObservableObject {
     static let shared = PomodoroManager()
 
-    // Published State
-    @Published var selectedPreset: PomodoroPreset = .focus25
+    // MARK: - State Properties
+    @Published var selectedPreset: PomodoroPreset = .quickFocus
+    @Published var remainingSeconds: Int = 25 * 60
+    @Published var totalDuration: Int = 25 * 60
     @Published var state: PomodoroState = .idle
-    @Published var timeRemaining: TimeInterval = 25 * 60
-    @Published var totalDuration: TimeInterval = 25 * 60
     @Published var taskTitle: String = ""
-    @Published var isAutoShieldEnabled: Bool = true
+    @Published var isAutoShieldEnabled: Bool = false
     @Published var completedSessionsCount: Int = 0
 
-    // Internal Properties
-    private var timerSubscription: AnyCancellable?
-    private var targetEndTime: Date?
-    private var liveActivity: Activity<PomodoroAttributes>?
-
-    var progress: Double {
-        guard totalDuration > 0 else { return 0 }
-        return 1.0 - (timeRemaining / totalDuration)
+    var isRunning: Bool {
+        state == .running
     }
 
-    var formattedTime: String {
-        let minutes = Int(timeRemaining) / 60
-        let seconds = Int(timeRemaining) % 60
-        return String(format: "%02d:%02d", minutes, seconds)
+    var isPaused: Bool {
+        state == .paused
     }
+
+    // Live Activity Reference
+    private var liveActivity: Activity<PomodoroAttributes>? = nil
+    private var timerCancellable: AnyCancellable? = nil
+    private var targetEndTime: Date? = nil
 
     private init() {
-        self.timeRemaining = selectedPreset.duration
-        self.totalDuration = selectedPreset.duration
+        self.totalDuration = selectedPreset.minutes * 60
+        self.remainingSeconds = selectedPreset.minutes * 60
     }
 
-    // MARK: - Timer Controls
+    // MARK: - Timer Actions
+
+    /// Memilih preset durasi pomodoro
     func selectPreset(_ preset: PomodoroPreset) {
         guard state == .idle else { return }
-        selectedPreset = preset
-        totalDuration = preset.duration
-        timeRemaining = preset.duration
+        self.selectedPreset = preset
+        self.totalDuration = preset.minutes * 60
+        self.remainingSeconds = preset.minutes * 60
     }
 
+    /// Memulai Timer
     func startTimer() {
-        guard state != .running else { return }
+        guard state == .idle else { return }
 
-        HapticManager.shared.impact(style: .medium)
-        state = .running
+        HapticManager.shared.impact(style: .heavy)
+        HapticManager.shared.success()
 
-        let endTime = Date().addingTimeInterval(timeRemaining)
-        targetEndTime = endTime
+        self.state = .running
+        self.targetEndTime = Date().addingTimeInterval(TimeInterval(remainingSeconds))
 
-        // Aktifkan App Shield jika diaktifkan user
         if isAutoShieldEnabled {
             ScreenTimeManager.shared.enableAppShield()
         }
 
-        // Mulai atau Perbarui Live Activity
-        if liveActivity == nil {
-            startLiveActivity(endTime: endTime)
-        } else {
-            updateLiveActivity(isPaused: false, endTime: endTime)
-        }
+        // Mulai ActivityKit Dynamic Island / Live Activity
+        startLiveActivity()
 
-        // Jadwalkan Notifikasi Lokal
-        scheduleCompletionNotification(in: timeRemaining)
+        // Jadwalkan Notifikasi Selesai di Background
+        scheduleCompletionNotification(in: TimeInterval(remainingSeconds))
 
-        // Setup Combine Timer
-        timerSubscription?.cancel()
-        timerSubscription = Timer.publish(every: 1.0, on: .main, in: .common)
+        // Timer Tick Interval
+        timerCancellable = Timer.publish(every: 1.0, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 guard let self = self else { return }
-                self.tick()
+                if self.remainingSeconds > 0 {
+                    self.remainingSeconds -= 1
+                } else {
+                    self.timerDidComplete()
+                }
             }
     }
 
+    /// Menghentikan Sementara (Pause)
     func pauseTimer() {
         guard state == .running else { return }
 
-        HapticManager.shared.impact(style: .light)
-        state = .paused
-        timerSubscription?.cancel()
-        timerSubscription = nil
+        HapticManager.shared.impact(style: .medium)
+        self.state = .paused
+        self.timerCancellable?.cancel()
+        self.timerCancellable = nil
 
-        NotificationManager.shared.cancelPendingNotification(identifier: notificationId)
+        // Perbarui Live Activity state menjadi paused
         updateLiveActivity(isPaused: true)
+
+        // Batalkan notifikasi lama karena waktu bergeser
+        NotificationManager.shared.cancelPendingNotification(identifier: notificationId)
     }
 
+    /// Melanjutkan Timer (Resume)
     func resumeTimer() {
         guard state == .paused else { return }
 
-        HapticManager.shared.impact(style: .light)
-        state = .running
+        HapticManager.shared.selection()
+        self.state = .running
+        self.targetEndTime = Date().addingTimeInterval(TimeInterval(remainingSeconds))
 
-        let endTime = Date().addingTimeInterval(timeRemaining)
-        targetEndTime = endTime
+        // Perbarui Live Activity state
+        updateLiveActivity(isPaused: false)
 
-        scheduleCompletionNotification(in: timeRemaining)
-        updateLiveActivity(isPaused: false, endTime: endTime)
+        // Jadwalkan ulang notifikasi lokal
+        scheduleCompletionNotification(in: TimeInterval(remainingSeconds))
 
-        timerSubscription?.cancel()
-        timerSubscription = Timer.publish(every: 1.0, on: .main, in: .common)
+        // Lanjutkan timer tick
+        timerCancellable = Timer.publish(every: 1.0, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] _ in
                 guard let self = self else { return }
-                self.tick()
+                if self.remainingSeconds > 0 {
+                    self.remainingSeconds -= 1
+                } else {
+                    self.timerDidComplete()
+                }
             }
     }
 
+    /// Mereset Timer
     func resetTimer() {
-        HapticManager.shared.impact(style: .heavy)
-        state = .idle
-        timerSubscription?.cancel()
-        timerSubscription = nil
-        targetEndTime = nil
-        timeRemaining = selectedPreset.duration
-        totalDuration = selectedPreset.duration
+        HapticManager.shared.impact(style: .light)
+        self.timerCancellable?.cancel()
+        self.timerCancellable = nil
+        self.state = .idle
+        self.remainingSeconds = totalDuration
+        self.targetEndTime = nil
 
-        // Matikan Shield jika aktif
-        if isAutoShieldEnabled {
+        if ScreenTimeManager.shared.isShieldActive {
             ScreenTimeManager.shared.disableAppShield()
         }
 
-        // Batalkan Notifikasi & Akhiri Live Activity
+        // Batalkan notifikasi
         NotificationManager.shared.cancelPendingNotification(identifier: notificationId)
-        endLiveActivity()
-    }
-
-    func skipSession() {
-        resetTimer()
-        // Switch preset otomatis
-        if selectedPreset.isBreak {
-            selectPreset(.focus25)
-        } else {
-            selectPreset(.shortBreak5)
-        }
-    }
-
-    // MARK: - Tick Handler
-    private func tick() {
-        guard let endTime = targetEndTime else {
-            if timeRemaining > 0 {
-                timeRemaining -= 1
-            } else {
-                timerCompleted()
-            }
-            return
-        }
-
-        let remaining = endTime.timeIntervalSinceNow
-        if remaining <= 0 {
-            timeRemaining = 0
-            timerCompleted()
-        } else {
-            timeRemaining = remaining
-        }
-    }
-
-    private func timerCompleted() {
-        timerSubscription?.cancel()
-        timerSubscription = nil
-        targetEndTime = nil
-        state = .idle
-        timeRemaining = selectedPreset.duration
-
-        HapticManager.shared.success()
-
-        if !selectedPreset.isBreak {
-            completedSessionsCount += 1
-        }
-
-        // Matikan Shield
-        if isAutoShieldEnabled {
-            ScreenTimeManager.shared.disableAppShield()
-        }
 
         // Akhiri Live Activity
         endLiveActivity()
     }
 
-    // MARK: - Live Activity & Dynamic Island (ActivityKit)
-    private func startLiveActivity(endTime: Date) {
-        guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            print("Live Activities tidak diizinkan oleh sistem.")
-            return
+    /// Event saat waktu timer habis
+    private func timerDidComplete() {
+        HapticManager.shared.impact(style: .heavy)
+        self.timerCancellable?.cancel()
+        self.timerCancellable = nil
+        self.state = .idle
+        self.remainingSeconds = 0
+        self.completedSessionsCount += 1
+
+        if ScreenTimeManager.shared.isShieldActive {
+            ScreenTimeManager.shared.disableAppShield()
         }
 
+        // Akhiri Live Activity
+        endLiveActivity()
+
+        // Otomatis ganti ke mode istirahat jika baru selesai sesi fokus
+        if !selectedPreset.isBreak {
+            selectPreset(.shortBreak)
+        } else {
+            selectPreset(.quickFocus)
+        }
+    }
+
+    // MARK: - Helper Formatting
+    var formattedTime: String {
+        let minutes = remainingSeconds / 60
+        let seconds = remainingSeconds % 60
+        return String(format: "%02d:%02d", minutes, seconds)
+    }
+
+    var progress: Double {
+        guard totalDuration > 0 else { return 0 }
+        return 1.0 - (Double(remainingSeconds) / Double(totalDuration))
+    }
+
+    // MARK: - 🏝️ Live Activity & Dynamic Island Control
+
+    private func startLiveActivity() {
+        guard ActivityAuthorizationInfo().areActivitiesEnabled else { return }
+
+        // Bersihkan aktivitas lama jika masih ada
+        endLiveActivity()
+
         let attributes = PomodoroAttributes(
-            taskName: taskTitle.isEmpty ? "Sesi Fokus" : taskTitle,
+            taskName: taskTitle.isEmpty ? selectedPreset.rawValue : taskTitle,
             categoryIcon: selectedPreset.iconName
         )
 
         let initialContentState = PomodoroAttributes.ContentState(
-            endTime: endTime,
+            endTime: Date().addingTimeInterval(TimeInterval(remainingSeconds)),
             isPaused: false,
             isBreak: selectedPreset.isBreak,
-            sessionTitle: selectedPreset.rawValue,
-            totalDurationSeconds: totalDuration,
-            remainingSecondsWhenPaused: timeRemaining
+            sessionTitle: selectedPreset.isBreak ? "Rehat Sejenak" : "Sesi Fokus",
+            totalDurationSeconds: Double(totalDuration),
+            remainingSecondsWhenPaused: Double(remainingSeconds)
         )
 
         do {
-            let activity = try Activity.request(
+            let activity = try Activity<PomodoroAttributes>.request(
                 attributes: attributes,
-                content: .init(state: initialContentState, staleDate: endTime.addingTimeInterval(60))
+                content: .init(state: initialContentState, staleDate: nil),
+                pushType: nil
             )
             self.liveActivity = activity
-            print("Live Activity Pomodoro berhasil dimulai: \(activity.id)")
+            print("🚀 Berhasil memulai Live Activity Pomodoro: \(activity.id)")
         } catch {
-            print("Gagal memulai Live Activity: \(error.localizedDescription)")
+            print("⚠️ Gagal memulai Live Activity: \(error.localizedDescription)")
         }
     }
 
-    private func updateLiveActivity(isPaused: Bool, endTime: Date? = nil) {
+    private func updateLiveActivity(isPaused: Bool) {
         guard let activity = liveActivity else { return }
 
-        let currentEndTime = endTime ?? (targetEndTime ?? Date().addingTimeInterval(timeRemaining))
-        let updatedState = PomodoroAttributes.ContentState(
-            endTime: currentEndTime,
+        let updatedContentState = PomodoroAttributes.ContentState(
+            endTime: Date().addingTimeInterval(TimeInterval(remainingSeconds)),
             isPaused: isPaused,
             isBreak: selectedPreset.isBreak,
-            sessionTitle: selectedPreset.rawValue,
-            totalDurationSeconds: totalDuration,
-            remainingSecondsWhenPaused: timeRemaining
+            sessionTitle: isPaused ? "Dijeda" : (selectedPreset.isBreak ? "Rehat Sejenak" : "Sesi Fokus"),
+            totalDurationSeconds: Double(totalDuration),
+            remainingSecondsWhenPaused: Double(remainingSeconds)
         )
 
-        let content = ActivityContent(state: updatedState, staleDate: currentEndTime.addingTimeInterval(60))
         Task {
-            await activity.update(content)
+            await activity.update(ActivityContent(state: updatedContentState, staleDate: nil))
         }
     }
 
     private func endLiveActivity() {
         guard let activity = liveActivity else { return }
+
         let finalState = PomodoroAttributes.ContentState(
             endTime: Date(),
             isPaused: false,
             isBreak: selectedPreset.isBreak,
             sessionTitle: "Selesai!",
-            totalDurationSeconds: totalDuration,
+            totalDurationSeconds: Double(totalDuration),
             remainingSecondsWhenPaused: 0
         )
 
@@ -316,7 +323,8 @@ final class PomodoroManager: ObservableObject {
     private let notificationId = "pomodoro_timer_completed_notification"
 
     private func scheduleCompletionNotification(in seconds: TimeInterval) {
-        NotificationManager.shared.requestAuthorization { granted in
+        Task {
+            let granted = await NotificationManager.shared.requestAuthorization()
             guard granted else { return }
 
             let content = UNMutableNotificationContent()
@@ -328,10 +336,10 @@ final class PomodoroManager: ObservableObject {
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, seconds), repeats: false)
             let request = UNNotificationRequest(identifier: self.notificationId, content: content, trigger: trigger)
 
-            UNUserNotificationCenter.current().add(request) { error in
-                if let error = error {
-                    print("Gagal membuat notifikasi lokal: \(error.localizedDescription)")
-                }
+            do {
+                try await UNUserNotificationCenter.current().add(request)
+            } catch {
+                print("Gagal membuat notifikasi lokal: \(error.localizedDescription)")
             }
         }
     }
