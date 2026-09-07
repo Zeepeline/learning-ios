@@ -10,7 +10,7 @@ import FamilyControls
 import ManagedSettings
 import DeviceActivity
 import SwiftUI
-import Combine
+import Observation
 
 // MARK: - Activity & Event Names
 extension DeviceActivityName {
@@ -21,12 +21,13 @@ extension DeviceActivityEvent.Name {
     static let dailyLimitThresholdEvent = Self("dailyLimitThresholdEvent")
 }
 
+@Observable
 @MainActor
-final class ScreenTimeManager: ObservableObject {
+final class ScreenTimeManager {
     static let shared = ScreenTimeManager()
 
     // 1. Menyimpan aplikasi & kategori yang dipilih user
-    @Published var activitySelection = FamilyActivitySelection() {
+    var activitySelection = FamilyActivitySelection() {
         didSet {
             saveSelectionToSharedDefaults()
             if isDailyLimitEnabled {
@@ -35,17 +36,17 @@ final class ScreenTimeManager: ObservableObject {
         }
     }
 
-    @Published var isAuthorized: Bool = false
-    @Published var isShieldActive: Bool = false
+    var isAuthorized: Bool = false
+    var isShieldActive: Bool = false
 
     // Fitur Batas Durasi Harian Otomatis (Threshold Lock)
-    @Published var isDailyLimitEnabled: Bool = false
-    @Published var dailyLimitMinutes: Int = 60
+    var isDailyLimitEnabled: Bool = false
+    var dailyLimitMinutes: Int = 60
 
     // Store ManagedSettings untuk mengunci aplikasi
-    private let store = ManagedSettingsStore()
-    private let deviceActivityCenter = DeviceActivityCenter()
-    private let sharedDefaults = UserDefaults(suiteName: "group.com.gmedia.xlearning")
+    @ObservationIgnored private let store = ManagedSettingsStore()
+    @ObservationIgnored private let deviceActivityCenter = DeviceActivityCenter()
+    @ObservationIgnored private let sharedDefaults = UserDefaults(suiteName: "group.com.gmedia.xlearning")
 
     private init() {
         checkAuthorizationStatus()

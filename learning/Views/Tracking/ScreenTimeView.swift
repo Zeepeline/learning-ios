@@ -15,7 +15,7 @@ extension DeviceActivityReport.Context {
 }
 
 struct ScreenTimeView: View {
-    @ObservedObject private var manager = ScreenTimeManager.shared
+    @Bindable private var manager = ScreenTimeManager.shared
     @State private var isPickerPresented: Bool = false
     @State private var isAppListPresented: Bool = false
     @State private var isRequestingAuth: Bool = false
@@ -146,7 +146,7 @@ struct ScreenTimeAuthPromptCard: View {
 
 // MARK: - 2. Kartu Pengunci & Pemilih Aplikasi Terpadu
 struct ScreenTimeShieldManagerCard: View {
-    @ObservedObject var manager: ScreenTimeManager
+    var manager: ScreenTimeManager
     let onOpenPicker: () -> Void
     let onOpenAppList: () -> Void
 
@@ -297,7 +297,7 @@ struct ScreenTimeShieldManagerCard: View {
 
 // MARK: - 3. Kartu Batas Durasi Harian Otomatis (Threshold Lock)
 struct ScreenTimeDailyLimitCard: View {
-    @ObservedObject var manager: ScreenTimeManager
+    var manager: ScreenTimeManager
 
     private let limitPresets: [(label: String, minutes: Int)] = [
         ("15m", 15),
@@ -352,7 +352,7 @@ struct ScreenTimeDailyLimitCard: View {
                                 .background(
                                     RoundedRectangle(cornerRadius: 8)
                                         .fill(isSelected ? Color.cartoonYellow : Color.white)
-                                        .shadow(color: .black, radius: 0, x: isSelected ? 2 : 1, y: isSelected ? 2 : 1)
+                                        .shadow(color: .black, radius: 0, x: 2, y: 2)
                                 )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: 8)
@@ -372,7 +372,7 @@ struct ScreenTimeDailyLimitCard: View {
 
 // MARK: - 4. ScreenTimeReportCardView (Laporan Penggunaan Aplikasi yang Dibatasi)
 struct ScreenTimeReportCardView: View {
-    @ObservedObject var manager: ScreenTimeManager
+    var manager: ScreenTimeManager
     @State private var filter: DeviceActivityFilter = DeviceActivityFilter(
         segment: .daily(
             during: Calendar.current.dateInterval(of: .day, for: Date()) ?? DateInterval(start: Date(), duration: 86400)
@@ -442,7 +442,7 @@ struct ScreenTimeReportCardView: View {
 
 // MARK: - 5. BottomSheet: Daftar Aplikasi & Kategori Terpilih dengan Ikon & Nama Aplikasi Pas
 struct SelectedAppsBottomSheet: View {
-    @ObservedObject var manager: ScreenTimeManager
+    var manager: ScreenTimeManager
     let onOpenPicker: () -> Void
     @Environment(\.dismiss) private var dismiss
 
