@@ -25,10 +25,13 @@ struct PomodoroFocusView: View {
                 // 3. Pengaturan Sesi & Integrasi Kunci Aplikasi
                 FocusSessionSettingsCard(pomodoro: pomodoro, screenTime: screenTime)
 
-                // 4. Tombol Kontrol Aksi Fokus
+                // 4. Suara Ambient Latar & White Noise
+                AmbientSoundControlCard()
+
+                // 5. Tombol Kontrol Aksi Fokus
                 FocusActionControls(pomodoro: pomodoro)
 
-                // 5. Kartu Statistik Sesi Hari Ini
+                // 6. Kartu Statistik Sesi Hari Ini
                 FocusSessionStatsCard(pomodoro: pomodoro)
             }
             .padding(.horizontal, HIGSpacing.md)
