@@ -21,6 +21,12 @@
 	<string>Aplikasi membutuhkan izin untuk membaca data olahraga lari, langkah kaki, kalori, dan durasi tidur agar target kebiasaan dan aktivitas harian Anda tersinkronisasi otomatis.</string>
 	<key>NSHealthUpdateUsageDescription</key>
 	<string>Aplikasi menggunakan data kesehatan untuk memperbarui target kebiasaan dan kebugaran Anda.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Aplikasi membutuhkan izin akses kalender untuk menambahkan dan menyelaraskan jadwal tugas ke Apple Calendar Anda.</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>Aplikasi membutuhkan izin untuk menulis jadwal tugas baru ke Apple Calendar Anda.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Aplikasi menggunakan Face ID / Touch ID untuk melindungi privasi dan mengunci catatan serta tugas Anda.</string>
 	<key>UIApplicationShortcutItems</key>
 	<array>
 		<dict>
@@ -43,6 +49,7 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>audio</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict>
