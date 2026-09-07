@@ -9,6 +9,7 @@ import SwiftUI
 import ActivityKit
 import UserNotifications
 import Combine
+import Observation
 
 // MARK: - ⏱️ Enum Preset Pomodoro Kartun
 enum PomodoroPreset: String, CaseIterable, Identifiable {
@@ -75,18 +76,19 @@ enum PomodoroState {
 }
 
 // MARK: - 🍅 Pomodoro Timer State & Live Activity Controller
+@Observable
 @MainActor
-final class PomodoroManager: ObservableObject {
+final class PomodoroManager {
     static let shared = PomodoroManager()
 
     // MARK: - State Properties
-    @Published var selectedPreset: PomodoroPreset = .quickFocus
-    @Published var remainingSeconds: Int = 25 * 60
-    @Published var totalDuration: Int = 25 * 60
-    @Published var state: PomodoroState = .idle
-    @Published var taskTitle: String = ""
-    @Published var isAutoShieldEnabled: Bool = false
-    @Published var completedSessionsCount: Int = 0
+    var selectedPreset: PomodoroPreset = .quickFocus
+    var remainingSeconds: Int = 25 * 60
+    var totalDuration: Int = 25 * 60
+    var state: PomodoroState = .idle
+    var taskTitle: String = ""
+    var isAutoShieldEnabled: Bool = false
+    var completedSessionsCount: Int = 0
 
     var isRunning: Bool {
         state == .running
@@ -97,9 +99,9 @@ final class PomodoroManager: ObservableObject {
     }
 
     // Live Activity Reference
-    private var liveActivity: Activity<PomodoroAttributes>? = nil
-    private var timerCancellable: AnyCancellable? = nil
-    private var targetEndTime: Date? = nil
+    @ObservationIgnored private var liveActivity: Activity<PomodoroAttributes>? = nil
+    @ObservationIgnored private var timerCancellable: AnyCancellable? = nil
+    @ObservationIgnored private var targetEndTime: Date? = nil
 
     private init() {
         self.totalDuration = selectedPreset.minutes * 60

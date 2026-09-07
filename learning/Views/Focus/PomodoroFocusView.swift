@@ -9,8 +9,8 @@ import SwiftUI
 import FamilyControls
 
 struct PomodoroFocusView: View {
-    @ObservedObject private var pomodoro = PomodoroManager.shared
-    @ObservedObject private var screenTime = ScreenTimeManager.shared
+    var pomodoro = PomodoroManager.shared
+    @Bindable private var screenTime = ScreenTimeManager.shared
     @State private var isPickerPresented: Bool = false
 
     var body: some View {
@@ -45,7 +45,7 @@ struct PomodoroFocusView: View {
 
 // MARK: - 1. Main Timer Card
 struct PomodoroMainTimerCard: View {
-    @ObservedObject var pomodoro: PomodoroManager
+    var pomodoro: PomodoroManager
 
     var body: some View {
         VStack(spacing: HIGSpacing.md) {
@@ -163,7 +163,7 @@ struct PomodoroMainTimerCard: View {
 
 // MARK: - 2. Pomodoro Preset Selector
 struct PomodoroPresetSelector: View {
-    @ObservedObject var pomodoro: PomodoroManager
+    var pomodoro: PomodoroManager
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -211,8 +211,8 @@ struct PomodoroPresetSelector: View {
 
 // MARK: - 3. Focus Session Settings Card (Task + Shield Toggle)
 struct FocusSessionSettingsCard: View {
-    @ObservedObject var pomodoro: PomodoroManager
-    @ObservedObject var screenTime: ScreenTimeManager
+    @Bindable var pomodoro: PomodoroManager
+    var screenTime: ScreenTimeManager
 
     var body: some View {
         VStack(spacing: HIGSpacing.sm) {
@@ -274,7 +274,7 @@ struct FocusSessionSettingsCard: View {
 
 // MARK: - 4. Focus Action Controls
 struct FocusActionControls: View {
-    @ObservedObject var pomodoro: PomodoroManager
+    var pomodoro: PomodoroManager
 
     var body: some View {
         HStack(spacing: 10) {
@@ -393,7 +393,7 @@ struct FocusActionControls: View {
 
 // MARK: - 5. Focus Session Stats Card
 struct FocusSessionStatsCard: View {
-    @ObservedObject var pomodoro: PomodoroManager
+    var pomodoro: PomodoroManager
 
     var body: some View {
         HStack(spacing: HIGSpacing.sm) {
