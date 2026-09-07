@@ -14,6 +14,7 @@ struct HabitTrackerView: View {
     @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     
     @State private var isShowingAddHabit: Bool = false
+    @State private var habitToEdit: Habit?
     @State private var selectedCategory: String = "Semua"
     @State private var habitToDelete: Habit?
     @State private var isShowingDeleteDialog: Bool = false
@@ -127,6 +128,9 @@ struct HabitTrackerView: View {
                                     onToggleDate: { date in
                                         toggleHabitDate(habit, date: date)
                                     },
+                                    onEdit: {
+                                        habitToEdit = habit
+                                    },
                                     onDelete: {
                                         habitToDelete = habit
                                         isShowingDeleteDialog = true
@@ -165,6 +169,19 @@ struct HabitTrackerView: View {
                 .presentationDetents([.fraction(0.88), .large])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(22)
+        }
+        .sheet(item: $habitToEdit) { habit in
+            EditHabitView(
+                habit: habit,
+                onDelete: {
+                    habitToDelete = habit
+                    isShowingDeleteDialog = true
+                }
+            )
+            .environment(\.modelContext, modelContext)
+            .presentationDetents([.fraction(0.88), .large])
+            .presentationDragIndicator(.visible)
+            .presentationCornerRadius(22)
         }
         .task {
             // Sinkronisasi otomatis kebiasaan berdasarkan data Apple Health / Zepp

@@ -11,6 +11,7 @@ struct HabitCardView: View {
     let habit: Habit
     let onToggleToday: () -> Void
     let onToggleDate: (Date) -> Void
+    let onEdit: () -> Void
     let onDelete: () -> Void
     
     private let calendar = Calendar.current
@@ -33,49 +34,68 @@ struct HabitCardView: View {
         VStack(spacing: 12) {
             // Header: Icon + Info + Current Streak Badge + Tombol Checklist Hari Ini
             HStack(spacing: 10) {
-                // Icon Bulat Kartun dengan Warna Habit
-                ZStack {
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(habit.color)
-                        .shadow(color: .black, radius: 0, x: 2, y: 2)
-                        .frame(width: 40, height: 40)
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.6))
-                    
-                    Image(systemName: habit.icon)
-                        .font(.system(size: 17, weight: .black))
-                        .foregroundColor(.black)
-                }
-                
-                // Judul & Kategori
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(habit.title)
-                        .font(.system(size: 14, weight: .heavy, design: .rounded))
-                        .foregroundColor(.black)
-                        .lineLimit(1)
-                    
-                    HStack(spacing: 6) {
-                        Text(habit.category)
-                            .font(.system(size: 9.5, weight: .bold, design: .rounded))
-                            .padding(.horizontal, 5)
-                            .padding(.vertical, 1.5)
-                            .background(
-                                RoundedRectangle(cornerRadius: 5)
-                                    .fill(Color.cartoonBg)
-                            )
-                            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.black, lineWidth: 0.8))
+                // Icon Bulat Kartun dengan Warna Habit (Bisa di-tap untuk edit)
+                Button {
+                    HapticManager.shared.impact(style: .light)
+                    onEdit()
+                } label: {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(habit.color)
+                            .shadow(color: .black, radius: 0, x: 2, y: 2)
+                            .frame(width: 40, height: 40)
+                            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.6))
                         
-                        // Streak Counter Kartun
-                        HStack(spacing: 2) {
-                            Image(systemName: "flame.fill")
-                                .font(.system(size: 9.5, weight: .bold))
-                                .foregroundColor(.orange)
-                            
-                            Text("\(habit.currentStreak) Hari")
-                                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                        Image(systemName: habit.icon)
+                            .font(.system(size: 17, weight: .black))
+                            .foregroundColor(.black)
+                    }
+                }
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+                
+                // Judul & Kategori (Bisa di-tap untuk edit)
+                Button {
+                    HapticManager.shared.impact(style: .light)
+                    onEdit()
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 4) {
+                            Text(habit.title)
+                                .font(.system(size: 14, weight: .heavy, design: .rounded))
                                 .foregroundColor(.black)
+                                .lineLimit(1)
+                            
+                            Image(systemName: "pencil.circle.fill")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.black.opacity(0.4))
+                        }
+                        
+                        HStack(spacing: 6) {
+                            Text(habit.category)
+                                .font(.system(size: 9.5, weight: .bold, design: .rounded))
+                                .foregroundColor(.black)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1.5)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 5)
+                                        .fill(Color.cartoonBg)
+                                )
+                                .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.black, lineWidth: 0.8))
+                            
+                            // Streak Counter Kartun
+                            HStack(spacing: 2) {
+                                Image(systemName: "flame.fill")
+                                    .font(.system(size: 9.5, weight: .bold))
+                                    .foregroundColor(.orange)
+                                
+                                Text("\(habit.currentStreak) Hari")
+                                    .font(.system(size: 10, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.black)
+                            }
                         }
                     }
                 }
+                .buttonStyle(PlainButtonStyle())
                 
                 Spacer()
                 
@@ -163,6 +183,13 @@ struct HabitCardView: View {
         .padding(HIGSpacing.md)
         .cartoonCard()
         .contextMenu {
+            Button {
+                HapticManager.shared.impact(style: .light)
+                onEdit()
+            } label: {
+                Label("Edit Kebiasaan", systemImage: "pencil")
+            }
+            
             Button(role: .destructive) {
                 onDelete()
             } label: {
@@ -183,6 +210,7 @@ struct HabitCardView: View {
         ),
         onToggleToday: {},
         onToggleDate: { _ in },
+        onEdit: {},
         onDelete: {}
     )
 }
