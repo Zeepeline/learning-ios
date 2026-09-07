@@ -17,87 +17,135 @@ struct ProfileSettingsSection: View {
     var healthManager = HealthKitManager.shared
     var soundManager = SoundManager.shared
 
-    @State private var isTestingNotification: Bool = false
-    @State private var testNotificationNotice: String?
-
     var body: some View {
         VStack(alignment: .leading, spacing: HIGSpacing.sm) {
-            Text("Pengaturan & Keamanan")
+            Text("Pengaturan & Preferensi")
                 .font(.system(size: 16, weight: .heavy, design: .rounded))
                 .foregroundColor(.black)
                 .padding(.horizontal, HIGSpacing.md)
 
-            VStack(spacing: HIGSpacing.sm) {
-                // 1. ☁️ Toggle Sinkronisasi iCloud Kartun
-                CartoonToggleRow(
-                    icon: "icloud.fill",
-                    iconColor: .black,
-                    iconBgColor: Color.cartoonBlue,
-                    title: "Sinkronisasi iCloud",
-                    subtitle: "Cadangkan tugas & kebiasaan otomatis",
-                    isOn: $isICloudSyncEnabled,
-                    activeColor: Color.cartoonBlue
-                )
+            VStack(spacing: HIGSpacing.md) {
+                // MARK: - GRUP 1: Keamanan & Data
+                settingsGroup(title: "KEAMANAN & DATA") {
+                    VStack(spacing: HIGSpacing.xs) {
+                        // 1. ☁️ Toggle Sinkronisasi iCloud
+                        CartoonToggleRow(
+                            icon: "icloud.fill",
+                            iconColor: .black,
+                            iconBgColor: Color.cartoonBlue,
+                            title: "Sinkronisasi iCloud",
+                            subtitle: "Cadangkan tugas & kebiasaan otomatis",
+                            isOn: $isICloudSyncEnabled,
+                            activeColor: Color.cartoonBlue
+                        )
 
-                // 2. 🏃 Integrasi Apple Health & Smartwatch (Zepp/Amazfit)
-                healthKitIntegrationRow
+                        // 2. 🔐 Toggle Face ID / Biometrik
+                        if BiometricAuthManager.shared.canEvaluateBiometrics() {
+                            CartoonToggleRow(
+                                icon: "faceid",
+                                iconColor: .black,
+                                iconBgColor: Color.cartoonLavender,
+                                title: "Kunci \(BiometricAuthManager.shared.biometricType())",
+                                subtitle: "Autentikasi keamanan saat membuka aplikasi",
+                                isOn: $useBiometrics,
+                                activeColor: Color.cartoonMint
+                            )
+                        }
 
-                // 3. 🔐 Toggle Face ID / Biometrik Kartun
-                if BiometricAuthManager.shared.canEvaluateBiometrics() {
-                    CartoonToggleRow(
-                        icon: "faceid",
-                        iconColor: .black,
-                        iconBgColor: Color.cartoonLavender,
-                        title: "Kunci dengan \(BiometricAuthManager.shared.biometricType())",
-                        subtitle: "Autentikasi biometrik saat buka app",
-                        isOn: $useBiometrics,
-                        activeColor: Color.cartoonMint
-                    )
+                        // 3. 🏃 Integrasi Apple Health & Smartwatch
+                        healthKitIntegrationRow
+                    }
                 }
 
-                // 4. 🔔 Toggle Master Notifikasi Tugas Kartun
-                CartoonToggleRow(
-                    icon: "bell.badge.fill",
-                    iconColor: .black,
-                    iconBgColor: Color.cartoonYellow,
-                    title: "Pengingat Notifikasi Tugas",
-                    subtitle: "Alarm lokal sebelum tenggat waktu",
-                    isOn: $isNotificationEnabled,
-                    activeColor: Color.cartoonCoral
-                )
+                // MARK: - GRUP 2: Pengingat & Notifikasi
+                settingsGroup(title: "PENGINGAT & NOTIFIKASI") {
+                    VStack(spacing: HIGSpacing.xs) {
+                        // 1. 🔔 Toggle Master Notifikasi Tugas
+                        CartoonToggleRow(
+                            icon: "bell.badge.fill",
+                            iconColor: .black,
+                            iconBgColor: Color.cartoonYellow,
+                            title: "Pengingat Jadwal Tugas",
+                            subtitle: "Notifikasi otomatis sebelum tenggat waktu",
+                            isOn: $isNotificationEnabled,
+                            activeColor: Color.cartoonCoral
+                        )
 
-                // Sub-seksi Pengaturan Suara Notifikasi & Pengingat Berulang
-                if isNotificationEnabled {
-                    notificationSettingsSection
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        if isNotificationEnabled {
+                            // 2. ☀️ Pengingat Pagi
+                            CartoonToggleRow(
+                                icon: "sun.max.fill",
+                                iconColor: .black,
+                                iconBgColor: Color.cartoonYellow,
+                                title: "Pengingat Pagi (08:00)",
+                                subtitle: "Rencana & agenda tugas hari ini",
+                                isOn: $isMorningReminderEnabled,
+                                activeColor: Color.cartoonYellow
+                            )
+                            .onChange(of: isMorningReminderEnabled) { _, isEnabled in
+                                handleMorningReminder(isEnabled)
+                            }
+
+                            // 3. 🌙 Pengingat Malam
+                            CartoonToggleRow(
+                                icon: "moon.stars.fill",
+                                iconColor: .black,
+                                iconBgColor: Color.cartoonLavender,
+                                title: "Evaluasi Malam (20:00)",
+                                subtitle: "Review capaian & ringkasan harian",
+                                isOn: $isEveningReminderEnabled,
+                                activeColor: Color.cartoonLavender
+                            )
+                            .onChange(of: isEveningReminderEnabled) { _, isEnabled in
+                                handleEveningReminder(isEnabled)
+                            }
+                        }
+                    }
                 }
 
-                // 5. 🔊 Toggle Efek Suara (Sound FX)
-                CartoonToggleRow(
-                    icon: "speaker.wave.2.fill",
-                    iconColor: .black,
-                    iconBgColor: Color.cartoonOrange,
-                    title: "Efek Suara (Sound FX)",
-                    subtitle: "Suara pop ceria saat centang tugas & timer",
-                    isOn: Binding(
-                        get: { soundManager.isSoundFXEnabled },
-                        set: { soundManager.isSoundFXEnabled = $0 }
-                    ),
-                    activeColor: Color.cartoonOrange
-                )
+                // MARK: - GRUP 3: Audio & Umpan Balik
+                settingsGroup(title: "FEEDBACK & SUARA") {
+                    VStack(spacing: HIGSpacing.xs) {
+                        // 1. 🔊 Toggle Efek Suara (Sound FX)
+                        CartoonToggleRow(
+                            icon: "speaker.wave.2.fill",
+                            iconColor: .black,
+                            iconBgColor: Color.cartoonOrange,
+                            title: "Efek Suara (Sound FX)",
+                            subtitle: "Suara pop ceria saat menyelesaikan tugas & timer",
+                            isOn: Binding(
+                                get: { soundManager.isSoundFXEnabled },
+                                set: { soundManager.isSoundFXEnabled = $0 }
+                            ),
+                            activeColor: Color.cartoonOrange
+                        )
 
-                // 6. 📳 Toggle Getaran Haptik Kartun
-                CartoonToggleRow(
-                    icon: "hand.tap.fill",
-                    iconColor: .black,
-                    iconBgColor: Color.cartoonPink,
-                    title: "Sensasi Getaran Haptik",
-                    subtitle: "Umpan balik sentuhan responsif",
-                    isOn: $isHapticEnabled,
-                    activeColor: Color.cartoonMint
-                )
+                        // 2. 📳 Toggle Getaran Haptik
+                        CartoonToggleRow(
+                            icon: "hand.tap.fill",
+                            iconColor: .black,
+                            iconBgColor: Color.cartoonPink,
+                            title: "Sensasi Getaran Haptik",
+                            subtitle: "Umpan balik sentuhan responsif di setiap tombol",
+                            isOn: $isHapticEnabled,
+                            activeColor: Color.cartoonMint
+                        )
+                    }
+                }
             }
             .padding(.horizontal, HIGSpacing.md)
+        }
+    }
+
+    // MARK: - Helper Group Container dengan Header Kategori
+    private func settingsGroup<Content: View>(title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                .foregroundColor(.secondary)
+                .padding(.leading, 4)
+
+            content()
         }
     }
 
@@ -171,176 +219,37 @@ struct ProfileSettingsSection: View {
         .cartoonCard()
     }
 
-    // MARK: - Sub-seksi Pengaturan Suara & Pengingat Rutin Harian
-    private var notificationSettingsSection: some View {
-        VStack(spacing: HIGSpacing.sm) {
-            // Pilihan Nada Suara Notifikasi
-            notificationTonePickerCard
-
-            // Pengingat Pagi
-            CartoonToggleRow(
-                icon: "sun.max.fill",
-                iconColor: .black,
-                iconBgColor: Color.cartoonYellow,
-                title: "Pengingat Pagi (08:00)",
-                subtitle: "Semangat rencana tugas hari ini",
-                isOn: $isMorningReminderEnabled,
-                activeColor: Color.cartoonYellow
-            )
-            .onChange(of: isMorningReminderEnabled) { _, isEnabled in
-                HapticManager.shared.selection()
-                if isEnabled {
-                    Task {
-                        await NotificationManager.shared.scheduleDailyReminder(
-                            hour: 8,
-                            minute: 0,
-                            title: "Semangat Pagi! Saatnya Mulai Hari",
-                            body: "Buka aplikasi untuk melihat daftar tugas yang perlu diselesaikan hari ini!",
-                            identifier: NotificationManager.morningReminderId
-                        )
-                    }
-                } else {
-                    NotificationManager.shared.cancelReminder(identifier: NotificationManager.morningReminderId)
-                }
+    private func handleMorningReminder(_ isEnabled: Bool) {
+        HapticManager.shared.selection()
+        if isEnabled {
+            Task {
+                await NotificationManager.shared.scheduleDailyReminder(
+                    hour: 8,
+                    minute: 0,
+                    title: "Semangat Pagi! Saatnya Mulai Hari",
+                    body: "Buka aplikasi untuk melihat daftar tugas yang perlu diselesaikan hari ini!",
+                    identifier: NotificationManager.morningReminderId
+                )
             }
-
-            // Pengingat Malam
-            CartoonToggleRow(
-                icon: "moon.stars.fill",
-                iconColor: .black,
-                iconBgColor: Color.cartoonLavender,
-                title: "Pengingat Malam (20:00)",
-                subtitle: "Evaluasi & review capaian harian",
-                isOn: $isEveningReminderEnabled,
-                activeColor: Color.cartoonLavender
-            )
-            .onChange(of: isEveningReminderEnabled) { _, isEnabled in
-                HapticManager.shared.selection()
-                if isEnabled {
-                    Task {
-                        await NotificationManager.shared.scheduleDailyReminder(
-                            hour: 20,
-                            minute: 0,
-                            title: "Evaluasi Malam",
-                            body: "Hebat! Cek berapa banyak tugas yang telah berhasil kamu selesaikan hari ini.",
-                            identifier: NotificationManager.eveningReminderId
-                        )
-                    }
-                } else {
-                    NotificationManager.shared.cancelReminder(identifier: NotificationManager.eveningReminderId)
-                }
-            }
-
-            // Tombol Uji Coba Notifikasi Cepat
-            Button {
-                HapticManager.shared.impact(style: .medium)
-                isTestingNotification = true
-                testNotificationNotice = "Notifikasi akan muncul dalam 3 detik dengan nada \(soundManager.selectedTone.title)!"
-                Task {
-                    do {
-                        try await NotificationManager.shared.sendTestNotification(seconds: 3)
-                        isTestingNotification = false
-                    } catch {
-                        isTestingNotification = false
-                        testNotificationNotice = "Izin notifikasi belum diaktifkan di Pengaturan iOS."
-                    }
-                }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "bell.and.waves.left.and.right.fill")
-                        .font(.system(size: 11, weight: .bold))
-                    Text(isTestingNotification ? "Mengirim Notifikasi..." : "Kirim Notifikasi Uji Coba (3 Detik)")
-                        .font(.system(size: 11.5, weight: .heavy, design: .rounded))
-                }
-                .foregroundColor(.black)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 8)
-                .background(Color.white)
-                .cornerRadius(8)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-                .shadow(color: .black, radius: 0, x: 1, y: 1)
-            }
-            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-            .disabled(isTestingNotification)
-
-            if let notice = testNotificationNotice {
-                Text(notice)
-                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                    .foregroundColor(.secondary)
-                    .padding(.top, 2)
-            }
+        } else {
+            NotificationManager.shared.cancelReminder(identifier: NotificationManager.morningReminderId)
         }
-        .padding(.leading, 12)
     }
 
-    // MARK: - Kartu Pemilih Nada Notifikasi
-    private var notificationTonePickerCard: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "music.note")
-                    .font(.system(size: 11, weight: .bold))
-                Text("NADA SUARA NOTIFIKASI")
-                    .font(.system(size: 10, weight: .heavy, design: .rounded))
-                    .foregroundColor(.secondary)
+    private func handleEveningReminder(_ isEnabled: Bool) {
+        HapticManager.shared.selection()
+        if isEnabled {
+            Task {
+                await NotificationManager.shared.scheduleDailyReminder(
+                    hour: 20,
+                    minute: 0,
+                    title: "Evaluasi Malam",
+                    body: "Hebat! Cek berapa banyak tugas yang telah berhasil kamu selesaikan hari ini.",
+                    identifier: NotificationManager.eveningReminderId
+                )
             }
-
-            VStack(spacing: 6) {
-                ForEach(NotificationTone.allCases) { tone in
-                    let isSelected = soundManager.selectedTone == tone
-                    HStack {
-                        Image(systemName: tone.iconName)
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(isSelected ? .black : .secondary)
-
-                        Text(tone.title)
-                            .font(.system(size: 12, weight: isSelected ? .heavy : .bold, design: .rounded))
-                            .foregroundColor(.black)
-
-                        Spacer()
-
-                        // Tombol Dengar Nada (Preview)
-                        Button {
-                            soundManager.previewNotificationTone(tone)
-                        } label: {
-                            HStack(spacing: 3) {
-                                Image(systemName: "play.fill")
-                                    .font(.system(size: 8, weight: .black))
-                                Text("Dengar")
-                                    .font(.system(size: 9.5, weight: .heavy, design: .rounded))
-                            }
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 3.5)
-                            .background(Color.cartoonMint)
-                            .cornerRadius(5)
-                            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.black, lineWidth: 0.9))
-                        }
-                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
-
-                        // Radio check icon
-                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(isSelected ? Color.cartoonCoral : .gray.opacity(0.5))
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(isSelected ? Color.cartoonYellow.opacity(0.35) : Color.white)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.black, lineWidth: isSelected ? 1.3 : 0.8)
-                    )
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        soundManager.selectedTone = tone
-                        soundManager.previewNotificationTone(tone)
-                    }
-                }
-            }
+        } else {
+            NotificationManager.shared.cancelReminder(identifier: NotificationManager.eveningReminderId)
         }
-        .padding(HIGSpacing.sm)
-        .cartoonCard()
     }
 }
