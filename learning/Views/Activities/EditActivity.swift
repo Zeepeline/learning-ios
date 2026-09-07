@@ -166,7 +166,7 @@ struct EditActivity: View {
                                     RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                         .fill(Color.white)
                                         .shadow(color: .black, radius: 0, x: 2, y: 2)
-                                )
+                                    )
                                 .overlay(
                                     RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                         .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
@@ -313,7 +313,9 @@ struct EditActivity: View {
 
             // Perbarui jadwal notifikasi lokal
             if !isCompleted && item.timestamp > Date() {
-                NotificationManager.shared.scheduleNotification(for: item)
+                Task {
+                    await NotificationManager.shared.scheduleNotification(for: item)
+                }
             } else {
                 NotificationManager.shared.cancelNotification(for: item)
             }

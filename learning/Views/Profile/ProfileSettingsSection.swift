@@ -68,7 +68,7 @@ struct ProfileSettingsSection: View {
                 // Sub-seksi Pengingat Berulang Harian
                 if isNotificationEnabled {
                     dailyRemindersSection
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        .transition(.opacity.combined(with: .move(edge: .top)) )
                 }
 
                 // 5. 📳 Toggle Getaran Haptik Kartun
@@ -130,7 +130,8 @@ struct ProfileSettingsSection: View {
             } else {
                 Button {
                     HapticManager.shared.impact(style: .medium)
-                    healthManager.requestAuthorization { success in
+                    Task {
+                        let success = await healthManager.requestAuthorization()
                         if success {
                             HapticManager.shared.success()
                         }
@@ -178,13 +179,15 @@ struct ProfileSettingsSection: View {
                 .onChange(of: isMorningReminderEnabled) { _, isEnabled in
                     HapticManager.shared.selection()
                     if isEnabled {
-                        NotificationManager.shared.scheduleDailyReminder(
-                            hour: 8,
-                            minute: 0,
-                            title: "Semangat Pagi! Saatnya Mulai Hari",
-                            body: "Buka aplikasi untuk melihat daftar tugas yang perlu diselesaikan hari ini!",
-                            identifier: NotificationManager.morningReminderId
-                        )
+                        Task {
+                            await NotificationManager.shared.scheduleDailyReminder(
+                                hour: 8,
+                                minute: 0,
+                                title: "Semangat Pagi! Saatnya Mulai Hari",
+                                body: "Buka aplikasi untuk melihat daftar tugas yang perlu diselesaikan hari ini!",
+                                identifier: NotificationManager.morningReminderId
+                            )
+                        }
                     } else {
                         NotificationManager.shared.cancelReminder(identifier: NotificationManager.morningReminderId)
                     }
@@ -203,13 +206,15 @@ struct ProfileSettingsSection: View {
                 .onChange(of: isEveningReminderEnabled) { _, isEnabled in
                     HapticManager.shared.selection()
                     if isEnabled {
-                        NotificationManager.shared.scheduleDailyReminder(
-                            hour: 20,
-                            minute: 0,
-                            title: "Evaluasi Malam",
-                            body: "Hebat! Cek berapa banyak tugas yang telah berhasil kamu selesaikan hari ini.",
-                            identifier: NotificationManager.eveningReminderId
-                        )
+                        Task {
+                            await NotificationManager.shared.scheduleDailyReminder(
+                                hour: 20,
+                                minute: 0,
+                                title: "Evaluasi Malam",
+                                body: "Hebat! Cek berapa banyak tugas yang telah berhasil kamu selesaikan hari ini.",
+                                identifier: NotificationManager.eveningReminderId
+                            )
+                        }
                     } else {
                         NotificationManager.shared.cancelReminder(identifier: NotificationManager.eveningReminderId)
                     }
@@ -221,9 +226,12 @@ struct ProfileSettingsSection: View {
                 HapticManager.shared.impact(style: .medium)
                 isTestingNotification = true
                 testNotificationNotice = "Notifikasi akan muncul dalam 3 detik!"
-                NotificationManager.shared.sendTestNotification(seconds: 3) { success in
-                    isTestingNotification = false
-                    if !success {
+                Task {
+                    do {
+                        try await NotificationManager.shared.sendTestNotification(seconds: 3)
+                        isTestingNotification = false
+                    } catch {
+                        isTestingNotification = false
                         testNotificationNotice = "Izin notifikasi belum diaktifkan di Pengaturan iOS."
                     }
                 }

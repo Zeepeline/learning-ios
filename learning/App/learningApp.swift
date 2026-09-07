@@ -48,7 +48,9 @@ struct learningApp: App {
             }
             .onAppear {
                 // Inisialisasi Izin Notifikasi Sistem & Refresh Widget
-                NotificationManager.shared.requestAuthorization()
+                Task {
+                    await NotificationManager.shared.requestAuthorization()
+                }
                 WidgetCenter.shared.reloadAllTimelines()
                 
                 // Daftarkan Pintasan Suara Siri ke Sistem iOS
