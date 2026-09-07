@@ -63,7 +63,7 @@ struct Provider: TimelineProvider {
     // Helper Fetch SwiftData dari Shared Container
     private func fetchTodayTasks() -> [WidgetTaskItem] {
         let appGroupIdentifier = "group.com.gmedia.xlearning"
-        let schema = Schema([Item.self])
+        let schema = Schema([Item.self, Habit.self])
         
         guard let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) else {
             return sampleTasks
