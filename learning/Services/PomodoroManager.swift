@@ -2,28 +2,29 @@
 //  PomodoroManager.swift
 //  learning
 //
-//  Created by macbook on 8/31/26.
+//  Created by macbook on 9/5/26.
 //
 
+import Foundation
 import SwiftUI
+import Combine
 import ActivityKit
 import UserNotifications
-import Combine
 import Observation
 
-// MARK: - ⏱️ Enum Preset Pomodoro Kartun
+// MARK: - ⏱️ Pomodoro Presets (Durasi Standar & Cepat)
 enum PomodoroPreset: String, CaseIterable, Identifiable {
-    case quickFocus = "Fokus Cepat"
-    case deepWork = "Deep Work"
-    case shortBreak = "Rehat Singkat"
-    case longBreak = "Rehat Panjang"
+    case quickFocus = "25 Menit"
+    case deepFocus = "50 Menit"
+    case shortBreak = "5 Menit"
+    case longBreak = "15 Menit"
 
     var id: String { rawValue }
 
     var minutes: Int {
         switch self {
         case .quickFocus: return 25
-        case .deepWork: return 45
+        case .deepFocus: return 50
         case .shortBreak: return 5
         case .longBreak: return 15
         }
@@ -33,59 +34,51 @@ enum PomodoroPreset: String, CaseIterable, Identifiable {
         TimeInterval(minutes * 60)
     }
 
-    var iconName: String {
+    var isBreak: Bool {
         switch self {
-        case .quickFocus: return "brain.head.profile"
-        case .deepWork: return "flame.fill"
-        case .shortBreak: return "cup.and.saucer.fill"
-        case .longBreak: return "sparkles"
+        case .quickFocus, .deepFocus:
+            return false
+        case .shortBreak, .longBreak:
+            return true
         }
     }
 
     var themeColor: Color {
         switch self {
         case .quickFocus: return Color.cartoonYellow
-        case .deepWork: return Color.cartoonPink
+        case .deepFocus: return Color.cartoonCoral
         case .shortBreak: return Color.cartoonMint
-        case .longBreak: return Color.cartoonBlue
+        case .longBreak: return Color.cartoonLavender
         }
     }
 
-    var colorHex: String {
+    var iconName: String {
         switch self {
-        case .quickFocus: return "#FFD166"
-        case .deepWork: return "#FF99C8"
-        case .shortBreak: return "#6EE7B7"
-        case .longBreak: return "#A0C4FF"
-        }
-    }
-
-    var isBreak: Bool {
-        switch self {
-        case .quickFocus, .deepWork: return false
-        case .shortBreak, .longBreak: return true
+        case .quickFocus: return "bolt.fill"
+        case .deepFocus: return "flame.fill"
+        case .shortBreak: return "cup.and.saucer.fill"
+        case .longBreak: return "leaf.fill"
         }
     }
 }
 
-// MARK: - 🍅 Status Pomodoro Timer
+// MARK: - 🎯 Pomodoro State
 enum PomodoroState {
     case idle
     case running
     case paused
 }
 
-// MARK: - 🍅 Pomodoro Timer State & Live Activity Controller
+// MARK: - 🍅 Pomodoro Manager Service (Live Activity & Background Timer)
 @Observable
 @MainActor
 final class PomodoroManager {
     static let shared = PomodoroManager()
 
-    // MARK: - State Properties
+    var state: PomodoroState = .idle
     var selectedPreset: PomodoroPreset = .quickFocus
     var remainingSeconds: Int = 25 * 60
     var totalDuration: Int = 25 * 60
-    var state: PomodoroState = .idle
     var taskTitle: String = ""
     var isAutoShieldEnabled: Bool = false
     var completedSessionsCount: Int = 0
@@ -132,6 +125,11 @@ final class PomodoroManager {
             ScreenTimeManager.shared.enableAppShield()
         }
 
+        // Mulai ambient background sound jika auto-play aktif
+        if SoundManager.shared.isAutoPlayAmbientWithPomodoro && SoundManager.shared.selectedAmbient != .none {
+            SoundManager.shared.playAmbient(SoundManager.shared.selectedAmbient)
+        }
+
         // Mulai ActivityKit Dynamic Island / Live Activity
         startLiveActivity()
 
@@ -160,11 +158,15 @@ final class PomodoroManager {
         self.timerCancellable?.cancel()
         self.timerCancellable = nil
 
+        if SoundManager.shared.isAutoPlayAmbientWithPomodoro {
+            SoundManager.shared.stopAmbient()
+        }
+
         // Perbarui Live Activity state menjadi paused
         updateLiveActivity(isPaused: true)
 
         // Batalkan notifikasi lama karena waktu bergeser
-        NotificationManager.shared.cancelPendingNotification(identifier: notificationId)
+        NotificationManager.shared.cancelNotification(identifier: notificationId)
     }
 
     /// Melanjutkan Timer (Resume)
@@ -174,6 +176,10 @@ final class PomodoroManager {
         HapticManager.shared.selection()
         self.state = .running
         self.targetEndTime = Date().addingTimeInterval(TimeInterval(remainingSeconds))
+
+        if SoundManager.shared.isAutoPlayAmbientWithPomodoro && SoundManager.shared.selectedAmbient != .none {
+            SoundManager.shared.playAmbient(SoundManager.shared.selectedAmbient)
+        }
 
         // Perbarui Live Activity state
         updateLiveActivity(isPaused: false)
@@ -203,12 +209,16 @@ final class PomodoroManager {
         self.remainingSeconds = totalDuration
         self.targetEndTime = nil
 
+        if SoundManager.shared.isAutoPlayAmbientWithPomodoro {
+            SoundManager.shared.stopAmbient()
+        }
+
         if ScreenTimeManager.shared.isShieldActive {
             ScreenTimeManager.shared.disableAppShield()
         }
 
         // Batalkan notifikasi
-        NotificationManager.shared.cancelPendingNotification(identifier: notificationId)
+        NotificationManager.shared.cancelNotification(identifier: notificationId)
 
         // Akhiri Live Activity
         endLiveActivity()
@@ -217,11 +227,17 @@ final class PomodoroManager {
     /// Event saat waktu timer habis
     private func timerDidComplete() {
         HapticManager.shared.impact(style: .heavy)
+        SoundManager.shared.playPomodoroFinishSound()
+        
         self.timerCancellable?.cancel()
         self.timerCancellable = nil
         self.state = .idle
         self.remainingSeconds = 0
         self.completedSessionsCount += 1
+
+        if SoundManager.shared.isAutoPlayAmbientWithPomodoro {
+            SoundManager.shared.stopAmbient()
+        }
 
         if ScreenTimeManager.shared.isShieldActive {
             ScreenTimeManager.shared.disableAppShield()
@@ -259,10 +275,9 @@ final class PomodoroManager {
         endLiveActivity()
 
         let attributes = PomodoroAttributes(
-            taskName: taskTitle.isEmpty ? selectedPreset.rawValue : taskTitle,
+            taskName: taskTitle.isEmpty ? "Fokus Pomodoro" : taskTitle,
             categoryIcon: selectedPreset.iconName
         )
-
         let initialContentState = PomodoroAttributes.ContentState(
             endTime: Date().addingTimeInterval(TimeInterval(remainingSeconds)),
             isPaused: false,
@@ -330,18 +345,20 @@ final class PomodoroManager {
             guard granted else { return }
 
             let content = UNMutableNotificationContent()
-            content.title = self.selectedPreset.isBreak ? "Waktu Istirahat Selesai!" : "Sesi Fokus Selesai!"
-            content.body = self.selectedPreset.isBreak ? "Ayo mulai sesi fokus berikutnya!" : "Kerja bagus! Istirahatlah sejenak untuk menyegarkan pikiran."
-            content.sound = .default
+            content.title = selectedPreset.isBreak ? "⏰ Waktu Istirahat Selesai!" : "🎉 Sesi Fokus Selesai!"
+            content.body = selectedPreset.isBreak
+                ? "Rehat selesai. Saatnya kembali produktif!"
+                : "Kerja bagus! Waktunya rehat sejenak sebelum lanjut ke sesi berikutnya."
+            content.sound = SoundManager.shared.selectedTone.notificationSound
             content.badge = 1
 
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, seconds), repeats: false)
-            let request = UNNotificationRequest(identifier: self.notificationId, content: content, trigger: trigger)
+            let request = UNNotificationRequest(identifier: notificationId, content: content, trigger: trigger)
 
             do {
                 try await UNUserNotificationCenter.current().add(request)
             } catch {
-                print("Gagal membuat notifikasi lokal: \(error.localizedDescription)")
+                print("⚠️ Gagal menjadwalkan notifikasi pomodoro: \(error.localizedDescription)")
             }
         }
     }

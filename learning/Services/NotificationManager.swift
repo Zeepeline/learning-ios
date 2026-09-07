@@ -65,7 +65,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         let content = UNMutableNotificationContent()
         content.title = "Waktunya Tugas: Belajar SwiftUI & Desain Kartun!"
         content.body = "Ini adalah contoh hasil notifikasi lokal. Jangan lupa selesaikan tugas tepat waktu!"
-        content.sound = .default
+        content.sound = await MainActor.run { SoundManager.shared.selectedTone.notificationSound }
         content.badge = 1
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, seconds), repeats: false)
@@ -94,7 +94,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         let content = UNMutableNotificationContent()
         content.title = "Waktunya Tugas: \(item.title)"
         content.body = item.notes.isEmpty ? "Jangan lupa selesaikan tugas ini tepat waktu ya!" : item.notes
-        content.sound = .default
+        content.sound = await MainActor.run { SoundManager.shared.selectedTone.notificationSound }
         content.badge = 1
 
         let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: item.timestamp)
@@ -122,7 +122,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         let content = UNMutableNotificationContent()
         content.title = title
         content.body = body
-        content.sound = .default
+        content.sound = await MainActor.run { SoundManager.shared.selectedTone.notificationSound }
         content.badge = 1
 
         var dateComponents = DateComponents()
@@ -148,11 +148,11 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     }
 
     /// Membatalkan pending notifikasi berdasarkan identifier string
-    func cancelPendingNotification(identifier: String) {
+    func cancelNotification(identifier: String) {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
     }
 
-    /// Membatalkan notifikasi untuk tugas yang dihapus / selesai
+    /// Membatalkan pending notifikasi untuk tugas Item tertentu
     func cancelNotification(for item: Item) {
         let identifier = String(describing: item.persistentModelID)
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
