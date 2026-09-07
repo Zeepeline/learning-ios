@@ -18,6 +18,7 @@ struct AddHabitView: View {
     @State private var selectedIcon: String = "flame.fill"
     @State private var selectedColorHex: String = "#FF6B6B"
     @State private var selectedFrequency: String = "Harian"
+    @State private var errorMessage: String?
     
     // Preset Icon Pilihan Kartun
     private let availableIcons = [
@@ -38,6 +39,10 @@ struct AddHabitView: View {
     
     private let categories = ["Kesehatan", "Belajar", "Olahraga", "Mindfulness", "Produktivitas"]
     private let frequencies = ["Harian", "Hari Kerja", "Akhir Pekan"]
+    
+    private var isFormValid: Bool {
+        !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
     
     var body: some View {
         NavigationStack {
@@ -111,6 +116,12 @@ struct AddHabitView: View {
                                     .shadow(color: .black, radius: 0, x: 2, y: 2)
                             )
                             .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.5))
+                            .submitLabel(.done)
+                            .onSubmit {
+                                if isFormValid {
+                                    saveHabit()
+                                }
+                            }
                     }
                     .padding(.horizontal, HIGSpacing.md)
                     
@@ -220,8 +231,49 @@ struct AddHabitView: View {
                         .padding(.horizontal, -HIGSpacing.md)
                     }
                     .padding(.horizontal, HIGSpacing.md)
+
+                    // 6. Pilihan Frekuensi Target
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("FREKUENSI TARGET")
+                            .font(.system(size: 10.5, weight: .heavy, design: .rounded))
+                            .foregroundColor(.secondary)
+                        
+                        HStack(spacing: 8) {
+                            ForEach(frequencies, id: \.self) { freq in
+                                let isSelected = selectedFrequency == freq
+                                Button {
+                                    HapticManager.shared.selection()
+                                    selectedFrequency = freq
+                                } label: {
+                                    Text(freq)
+                                        .font(.system(size: 11.5, weight: .heavy, design: .rounded))
+                                        .foregroundColor(.black)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 8)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(isSelected ? Color.cartoonYellow : Color.white)
+                                                .shadow(color: .black, radius: 0, x: isSelected ? 2 : 1, y: isSelected ? 2 : 1)
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color.black, lineWidth: isSelected ? 1.8 : 1.1)
+                                        )
+                                }
+                                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+                            }
+                        }
+                    }
+                    .padding(.horizontal, HIGSpacing.md)
                     
-                    // 6. Tombol Simpan Kebiasaan
+                    if let error = errorMessage {
+                        Text(error)
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(.red)
+                            .padding(.horizontal, HIGSpacing.md)
+                    }
+                    
+                    // 7. Tombol Simpan Kebiasaan di Bawah
                     Button {
                         saveHabit()
                     } label: {
@@ -236,15 +288,16 @@ struct AddHabitView: View {
                         .padding(.vertical, 13)
                         .background(
                             RoundedRectangle(cornerRadius: 12)
-                                .fill(title.trimmingCharacters(in: .whitespaces).isEmpty ? Color.gray.opacity(0.3) : Color.cartoonYellow)
-                                .shadow(color: .black, radius: 0, x: 2, y: 2)
+                                .fill(isFormValid ? Color.cartoonYellow : Color.gray.opacity(0.3))
+                                .shadow(color: .black, radius: 0, x: isFormValid ? 2 : 0, y: isFormValid ? 2 : 0)
                         )
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.8))
                     }
                     .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-                    .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty)
+                    .disabled(!isFormValid)
                     .padding(.horizontal, HIGSpacing.md)
                     .padding(.top, 6)
+                    .padding(.bottom, HIGSpacing.xl)
                 }
                 .padding(.vertical, HIGSpacing.md)
             }
@@ -259,28 +312,43 @@ struct AddHabitView: View {
                     .font(.system(.body, design: .rounded).weight(.bold))
                     .foregroundColor(.black)
                 }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Simpan") {
+                        saveHabit()
+                    }
+                    .font(.system(.body, design: .rounded).weight(.black))
+                    .foregroundColor(isFormValid ? .black : .gray.opacity(0.5))
+                    .disabled(!isFormValid)
+                }
             }
         }
     }
     
     private func saveHabit() {
-        guard !title.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        let trimmedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else { return }
         
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-            let newHabit = Habit(
-                title: title.trimmingCharacters(in: .whitespaces),
-                icon: selectedIcon,
-                colorHex: selectedColorHex,
-                category: selectedCategory,
-                targetFrequency: selectedFrequency
-            )
-            
-            modelContext.insert(newHabit)
-            try? modelContext.save()
-            
+        let newHabit = Habit(
+            title: trimmedTitle,
+            icon: selectedIcon,
+            colorHex: selectedColorHex,
+            category: selectedCategory,
+            targetFrequency: selectedFrequency,
+            completedDates: [],
+            createdAt: Date()
+        )
+        
+        modelContext.insert(newHabit)
+        
+        do {
+            try modelContext.save()
             WidgetCenter.shared.reloadAllTimelines()
-            HapticManager.shared.success()
+            SoundManager.shared.playTaskCompletedSound()
             dismiss()
+        } catch {
+            print("⚠️ Gagal menyimpan kebiasaan baru: \(error.localizedDescription)")
+            self.errorMessage = "Gagal menyimpan: \(error.localizedDescription)"
         }
     }
 }

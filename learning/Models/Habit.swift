@@ -55,11 +55,13 @@ final class Habit {
     // Toggle penyelesaian untuk tanggal tertentu
     func toggleCompletion(on date: Date = Date()) {
         let calendar = Calendar.current
-        if let index = completedDates.firstIndex(where: { calendar.isDate($0, inSameDayAs: date) }) {
-            completedDates.remove(at: index)
+        var dates = completedDates
+        if let index = dates.firstIndex(where: { calendar.isDate($0, inSameDayAs: date) }) {
+            dates.remove(at: index)
         } else {
-            completedDates.append(date)
+            dates.append(date)
         }
+        self.completedDates = dates
     }
     
     // Perhitungan Current Streak (berurutan dari hari ini/kemarin)

@@ -89,6 +89,7 @@ struct HabitTrackerView: View {
                     // 3. Tombol Tambah Kebiasaan Cepat
                     Button {
                         HapticManager.shared.impact(style: .medium)
+                        selectedCategory = "Semua"
                         isShowingAddHabit = true
                     } label: {
                         HStack(spacing: 6) {
@@ -112,6 +113,7 @@ struct HabitTrackerView: View {
                     // 4. Daftar Kartu Kebiasaan (Habits List)
                     if filteredHabits.isEmpty {
                         HabitEmptyStateView {
+                            selectedCategory = "Semua"
                             isShowingAddHabit = true
                         }
                     } else {
@@ -159,6 +161,7 @@ struct HabitTrackerView: View {
         }
         .sheet(isPresented: $isShowingAddHabit) {
             AddHabitView()
+                .environment(\.modelContext, modelContext)
                 .presentationDetents([.fraction(0.88), .large])
                 .presentationDragIndicator(.visible)
                 .presentationCornerRadius(22)
