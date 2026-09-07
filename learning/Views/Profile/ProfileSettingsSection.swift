@@ -15,6 +15,7 @@ struct ProfileSettingsSection: View {
     @Binding var isHapticEnabled: Bool
     @AppStorage("isICloudSyncEnabled") private var isICloudSyncEnabled: Bool = true
     var healthManager = HealthKitManager.shared
+    var soundManager = SoundManager.shared
 
     @State private var isTestingNotification: Bool = false
     @State private var testNotificationNotice: String?
@@ -65,13 +66,27 @@ struct ProfileSettingsSection: View {
                     activeColor: Color.cartoonCoral
                 )
 
-                // Sub-seksi Pengingat Berulang Harian
+                // Sub-seksi Pengaturan Suara Notifikasi & Pengingat Berulang
                 if isNotificationEnabled {
-                    dailyRemindersSection
-                        .transition(.opacity.combined(with: .move(edge: .top)) )
+                    notificationSettingsSection
+                        .transition(.opacity.combined(with: .move(edge: .top)))
                 }
 
-                // 5. 📳 Toggle Getaran Haptik Kartun
+                // 5. 🔊 Toggle Efek Suara (Sound FX)
+                CartoonToggleRow(
+                    icon: "speaker.wave.2.fill",
+                    iconColor: .black,
+                    iconBgColor: Color.cartoonOrange,
+                    title: "Efek Suara (Sound FX)",
+                    subtitle: "Suara pop ceria saat centang tugas & timer",
+                    isOn: Binding(
+                        get: { soundManager.isSoundFXEnabled },
+                        set: { soundManager.isSoundFXEnabled = $0 }
+                    ),
+                    activeColor: Color.cartoonOrange
+                )
+
+                // 6. 📳 Toggle Getaran Haptik Kartun
                 CartoonToggleRow(
                     icon: "hand.tap.fill",
                     iconColor: .black,
@@ -156,9 +171,12 @@ struct ProfileSettingsSection: View {
         .cartoonCard()
     }
 
-    // MARK: - Sub-seksi Pengingat Rutin Harian
-    private var dailyRemindersSection: some View {
-        VStack(spacing: HIGSpacing.xs) {
+    // MARK: - Sub-seksi Pengaturan Suara & Pengingat Rutin Harian
+    private var notificationSettingsSection: some View {
+        VStack(spacing: HIGSpacing.sm) {
+            // Pilihan Nada Suara Notifikasi
+            notificationTonePickerCard
+
             // Pengingat Pagi
             CartoonToggleRow(
                 icon: "sun.max.fill",
@@ -217,7 +235,7 @@ struct ProfileSettingsSection: View {
             Button {
                 HapticManager.shared.impact(style: .medium)
                 isTestingNotification = true
-                testNotificationNotice = "Notifikasi akan muncul dalam 3 detik!"
+                testNotificationNotice = "Notifikasi akan muncul dalam 3 detik dengan nada \(soundManager.selectedTone.title)!"
                 Task {
                     do {
                         try await NotificationManager.shared.sendTestNotification(seconds: 3)
@@ -253,5 +271,76 @@ struct ProfileSettingsSection: View {
             }
         }
         .padding(.leading, 12)
+    }
+
+    // MARK: - Kartu Pemilih Nada Notifikasi
+    private var notificationTonePickerCard: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "music.note")
+                    .font(.system(size: 11, weight: .bold))
+                Text("NADA SUARA NOTIFIKASI")
+                    .font(.system(size: 10, weight: .heavy, design: .rounded))
+                    .foregroundColor(.secondary)
+            }
+
+            VStack(spacing: 6) {
+                ForEach(NotificationTone.allCases) { tone in
+                    let isSelected = soundManager.selectedTone == tone
+                    HStack {
+                        Image(systemName: tone.iconName)
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundColor(isSelected ? .black : .secondary)
+
+                        Text(tone.title)
+                            .font(.system(size: 12, weight: isSelected ? .heavy : .bold, design: .rounded))
+                            .foregroundColor(.black)
+
+                        Spacer()
+
+                        // Tombol Dengar Nada (Preview)
+                        Button {
+                            soundManager.previewNotificationTone(tone)
+                        } label: {
+                            HStack(spacing: 3) {
+                                Image(systemName: "play.fill")
+                                    .font(.system(size: 8, weight: .black))
+                                Text("Dengar")
+                                    .font(.system(size: 9.5, weight: .heavy, design: .rounded))
+                            }
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3.5)
+                            .background(Color.cartoonMint)
+                            .cornerRadius(5)
+                            .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.black, lineWidth: 0.9))
+                        }
+                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
+
+                        // Radio check icon
+                        Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundColor(isSelected ? Color.cartoonCoral : .gray.opacity(0.5))
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(isSelected ? Color.cartoonYellow.opacity(0.35) : Color.white)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 8)
+                            .stroke(Color.black, lineWidth: isSelected ? 1.3 : 0.8)
+                    )
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        soundManager.selectedTone = tone
+                        soundManager.previewNotificationTone(tone)
+                    }
+                }
+            }
+        }
+        .padding(HIGSpacing.sm)
+        .cartoonCard()
     }
 }

@@ -142,7 +142,7 @@ struct ContentView: View {
             item.isCompleted.toggle()
             try? modelContext.save()
             if item.isCompleted {
-                HapticManager.shared.success()
+                SoundManager.shared.playTaskCompletedSound()
                 NotificationManager.shared.cancelNotification(for: item)
             } else {
                 HapticManager.shared.impact(style: .medium)

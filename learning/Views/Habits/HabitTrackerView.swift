@@ -223,7 +223,7 @@ struct HabitTrackerView: View {
             habit.toggleCompletion()
             try? modelContext.save()
             if habit.isCompletedToday {
-                HapticManager.shared.success()
+                SoundManager.shared.playTaskCompletedSound()
             } else {
                 HapticManager.shared.impact(style: .medium)
             }
