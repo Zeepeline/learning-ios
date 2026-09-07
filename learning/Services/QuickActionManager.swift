@@ -7,7 +7,7 @@
 
 import UIKit
 import SwiftUI
-import Combine
+import Observation
 
 // MARK: - ⚡ Quick Action Types dari Info.plist
 enum QuickActionType: String {
@@ -16,12 +16,13 @@ enum QuickActionType: String {
 }
 
 // MARK: - ⚡ Quick Action Manager (Mengatur Deep Link Aksi Cepat Ikon Home Screen)
+@Observable
 @MainActor
-final class QuickActionManager: ObservableObject {
+final class QuickActionManager {
     static let shared = QuickActionManager()
     
-    @Published var selectedTab: Int = 0
-    @Published var isShowingAddActivity: Bool = false
+    var selectedTab: Int = 0
+    var isShowingAddActivity: Bool = false
     
     private init() {}
     

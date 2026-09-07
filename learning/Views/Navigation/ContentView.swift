@@ -12,7 +12,7 @@ import WidgetKit
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Item.timestamp, order: .reverse) private var items: [Item]
-    @ObservedObject private var quickActionManager = QuickActionManager.shared
+    @Bindable private var quickActionManager = QuickActionManager.shared
 
     // State untuk Edit & Delete Dialog
     @State private var itemToEdit: Item?
