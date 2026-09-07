@@ -17,6 +17,7 @@ struct ProfileView: View {
     @AppStorage("userBio") private var userBio: String = "Productivity Master"
     @AppStorage("userAvatarIcon") private var userAvatarIcon: String = "person.crop.circle.fill"
     @AppStorage("userAvatarColor") private var userAvatarColor: String = "#FFD166"
+    @AppStorage("userAvatarUrl") private var userAvatarUrl: String = ""
     @AppStorage("useBiometrics") private var useBiometrics: Bool = true
     @AppStorage("isNotificationEnabled") private var isNotificationEnabled: Bool = true
     @AppStorage("isMorningReminderEnabled") private var isMorningReminderEnabled: Bool = false
@@ -63,6 +64,7 @@ struct ProfileView: View {
                         userBio: userBio,
                         avatarIcon: userAvatarIcon,
                         avatarColorHex: userAvatarColor,
+                        avatarUrl: userAvatarUrl,
                         totalXP: totalXP,
                         userLevel: userLevel,
                         xpProgressInCurrentLevel: xpProgressInCurrentLevel,
@@ -143,6 +145,10 @@ struct ProfileView: View {
                         }
                     },
                     onConfirm: {
+                        // 1. Sign out dari Google Auth Session
+                        GoogleAuthManager.shared.signOut()
+                        userAvatarUrl = ""
+
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                             isShowingLogoutDialog = false
                             isLoggedIn = false // Kembali ke halaman Login

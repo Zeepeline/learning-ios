@@ -6,8 +6,28 @@
 //
 
 import LocalAuthentication
+import SwiftUI
 
-// MARK: - 🔐 LocalAuthentication Manager (Face ID / Touch ID)
+// MARK: - 🔐 Biometric Auth Error Types
+enum BiometricAuthError: LocalizedError {
+    case notAvailable(String)
+    case userCanceled
+    case failed(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .notAvailable(let message):
+            return message
+        case .userCanceled:
+            return "Autentikasi biometrik dibatalkan."
+        case .failed(let message):
+            return message
+        }
+    }
+}
+
+// MARK: - 🔐 LocalAuthentication Manager (Face ID / Touch ID / Optic ID)
+@MainActor
 final class BiometricAuthManager {
     static let shared = BiometricAuthManager()
     private init() {}
@@ -19,7 +39,7 @@ final class BiometricAuthManager {
         return context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
     }
 
-    /// Mendapatkan jenis biometrik yang aktif (Face ID / Touch ID)
+    /// Mendapatkan jenis biometrik yang aktif (Face ID / Touch ID / Optic ID)
     func biometricType() -> String {
         let context = LAContext()
         _ = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: nil)
@@ -38,28 +58,35 @@ final class BiometricAuthManager {
         }
     }
 
-    /// Melakukan autentikasi Face ID / Touch ID
-    func authenticate(reason: String = "Gunakan biometrik untuk masuk ke aplikasi", completion: @escaping (Bool, String?) -> Void) {
+    /// Melakukan autentikasi Face ID / Touch ID dengan async/await
+    @discardableResult
+    func authenticate(reason: String = "Gunakan biometrik untuk masuk ke aplikasi") async throws -> Bool {
         let context = LAContext()
         var error: NSError?
 
-        if context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) {
-            context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason) { success, authError in
-                DispatchQueue.main.async {
-                    if success {
-                        HapticManager.shared.success()
-                        completion(true, nil)
-                    } else {
-                        HapticManager.shared.error()
-                        let message = authError?.localizedDescription ?? "Autentikasi gagal"
-                        completion(false, message)
-                    }
-                }
+        guard context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error) else {
+            let message = error?.localizedDescription ?? "Perangkat tidak mendukung biometrik."
+            throw BiometricAuthError.notAvailable(message)
+        }
+
+        do {
+            let success = try await context.evaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, localizedReason: reason)
+            if success {
+                HapticManager.shared.success()
+                return true
+            } else {
+                HapticManager.shared.error()
+                throw BiometricAuthError.failed("Autentikasi biometrik tidak berhasil.")
             }
-        } else {
-            DispatchQueue.main.async {
-                completion(false, error?.localizedDescription ?? "Perangkat tidak mendukung biometrik.")
+        } catch let laError as LAError {
+            if laError.code == .userCancel || laError.code == .appCancel || laError.code == .systemCancel {
+                throw BiometricAuthError.userCanceled
             }
+            HapticManager.shared.error()
+            throw BiometricAuthError.failed(laError.localizedDescription)
+        } catch {
+            HapticManager.shared.error()
+            throw error
         }
     }
 }

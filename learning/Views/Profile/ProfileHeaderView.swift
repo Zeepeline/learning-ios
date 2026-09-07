@@ -13,6 +13,7 @@ struct ProfileHeaderView: View {
     let userBio: String
     let avatarIcon: String
     let avatarColorHex: String
+    var avatarUrl: String = ""
     let totalXP: Int
     let userLevel: Int
     let xpProgressInCurrentLevel: Double
@@ -21,7 +22,7 @@ struct ProfileHeaderView: View {
     var body: some View {
         VStack(spacing: HIGSpacing.sm) {
             ZStack(alignment: .bottomTrailing) {
-                // Avatar Bulat Kartun
+                // Avatar Bulat Kartun (Support Google Avatar & Custom Icon)
                 ZStack {
                     Circle()
                         .fill(Color(hex: avatarColorHex))
@@ -31,11 +32,27 @@ struct ProfileHeaderView: View {
                         )
                         .shadow(color: .black, radius: 0, x: 3, y: 3)
                     
-                    Image(systemName: avatarIcon)
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 52, height: 52)
-                        .foregroundColor(.black)
+                    if let url = URL(string: avatarUrl), !avatarUrl.isEmpty {
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFill()
+                                    .frame(width: 88, height: 88)
+                                    .clipShape(Circle())
+                                    .overlay(
+                                        Circle().stroke(Color.black, lineWidth: CartoonMetrics.thickBorderWidth)
+                                    )
+                            case .failure, .empty:
+                                cartoonIconFallback
+                            @unknown default:
+                                cartoonIconFallback
+                            }
+                        }
+                    } else {
+                        cartoonIconFallback
+                    }
                 }
 
                 // Badge Edit Pensil Mini
@@ -123,5 +140,14 @@ struct ProfileHeaderView: View {
             .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
             .padding(.horizontal, HIGSpacing.md)
         }
+    }
+
+    // MARK: - Fallback Icon
+    private var cartoonIconFallback: some View {
+        Image(systemName: avatarIcon)
+            .resizable()
+            .scaledToFit()
+            .frame(width: 52, height: 52)
+            .foregroundColor(.black)
     }
 }

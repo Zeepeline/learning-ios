@@ -11,6 +11,9 @@ import GoogleSignIn
 struct RegisterView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("isLoggedIn") private var isLoggedIn: Bool = false
+    @AppStorage("userName") private var userName: String = "Bruce Wayne"
+    @AppStorage("userEmail") private var userEmail: String = "brucewayne27@suarasa.com"
+    @AppStorage("userAvatarUrl") private var userAvatarUrl: String = ""
     
     // Form States
     @State private var fullName: String = ""
@@ -18,6 +21,7 @@ struct RegisterView: View {
     @State private var password: String = ""
     @State private var isAgreed: Bool = false
     @State private var isShowingLogin: Bool = false
+    @State private var isGoogleLoading: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -178,26 +182,11 @@ struct RegisterView: View {
                         .padding(.vertical, HIGSpacing.xxs)
 
                         // 7. Tombol Google Sign Up
-                        CartoonGoogleSignInButton(title: "Sign up with Google") {
-                            GoogleAuthManager.shared.signIn { result in
-                                switch result {
-                                case .success(let user):
-                                    let name = user.profile?.name ?? "Google User"
-                                    let email = user.profile?.email ?? ""
-                                    
-                                    UserDefaults.standard.set(name, forKey: "userName")
-                                    UserDefaults.standard.set(email, forKey: "userEmail")
-                                    
-                                    withAnimation {
-                                        isLoggedIn = true
-                                    }
-                                    HapticManager.shared.success()
-                                    
-                                case .failure(let error):
-                                    print("Google Sign In Error: \(error.localizedDescription)")
-                                    HapticManager.shared.warning()
-                                }
-                            }
+                        CartoonGoogleSignInButton(
+                            title: "Sign up with Google",
+                            isLoading: isGoogleLoading
+                        ) {
+                            handleGoogleSignUp()
                         }
 
                         Spacer(minLength: 25)
@@ -228,6 +217,40 @@ struct RegisterView: View {
             .navigationDestination(isPresented: $isShowingLogin) {
                 LoginView()
                     .navigationBarBackButtonHidden(true)
+            }
+        }
+    }
+
+    // MARK: - Google Sign Up Action (Async/Await)
+    private func handleGoogleSignUp() {
+        Task { @MainActor in
+            isGoogleLoading = true
+            defer { isGoogleLoading = false }
+
+            do {
+                let user = try await GoogleAuthManager.shared.signIn()
+                let name = user.profile?.name ?? "Google User"
+                let email = user.profile?.email ?? ""
+                let avatar = user.profile?.imageURL(withDimension: 240)?.absoluteString ?? ""
+
+                userName = name
+                userEmail = email
+                userAvatarUrl = avatar
+
+                HapticManager.shared.success()
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    isLoggedIn = true
+                }
+            } catch let error as GoogleAuthError {
+                if case .userCanceled = error {
+                    // Dibatalkan secara sengaja oleh pengguna
+                    return
+                }
+                print("Google Auth Error: \(error.localizedDescription)")
+                HapticManager.shared.warning()
+            } catch {
+                print("Google Sign Up Error: \(error.localizedDescription)")
+                HapticManager.shared.warning()
             }
         }
     }

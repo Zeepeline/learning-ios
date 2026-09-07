@@ -151,16 +151,30 @@ struct GoogleLogoView: View {
 struct CartoonGoogleSignInButton: View {
     var title: String = "Continue with Google"
     var height: CGFloat = 50
+    var isLoading: Bool = false
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
+        Button(action: {
+            guard !isLoading else { return }
+            action()
+        }) {
             HStack(spacing: HIGSpacing.sm) {
-                GoogleLogoView(size: 20)
+                if isLoading {
+                    ProgressView()
+                        .progressViewStyle(CircularProgressViewStyle(tint: .black))
+                        .scaleEffect(0.9)
 
-                Text(title)
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
-                    .foregroundColor(.black)
+                    Text("Menghubungkan...")
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundColor(.black)
+                } else {
+                    GoogleLogoView(size: 20)
+
+                    Text(title)
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
+                        .foregroundColor(.black)
+                }
             }
             .frame(maxWidth: .infinity)
             .frame(height: height)
@@ -175,6 +189,8 @@ struct CartoonGoogleSignInButton: View {
             )
         }
         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+        .disabled(isLoading)
+        .opacity(isLoading ? 0.8 : 1.0)
     }
 }
 

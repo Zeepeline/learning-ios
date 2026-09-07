@@ -15,6 +15,7 @@ struct EditProfileView: View {
     @AppStorage("userBio") private var storedBio: String = "Productivity Master"
     @AppStorage("userAvatarIcon") private var storedAvatarIcon: String = "person.crop.circle.fill"
     @AppStorage("userAvatarColor") private var storedAvatarColor: String = "#FFD166"
+    @AppStorage("userAvatarUrl") private var storedAvatarUrl: String = ""
 
     @State private var nameText: String = ""
     @State private var emailText: String = ""
@@ -280,6 +281,8 @@ struct EditProfileView: View {
         storedBio = trimmedBio.isEmpty ? "Productivity Master" : trimmedBio
         storedAvatarIcon = selectedAvatarIcon
         storedAvatarColor = selectedColorHex
+        // Reset Google photo avatar to show custom picked avatar
+        storedAvatarUrl = ""
 
         HapticManager.shared.success()
         dismiss()

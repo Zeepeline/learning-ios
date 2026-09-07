@@ -10,12 +10,16 @@ import GoogleSignIn
 
 struct LoginView: View {
     @AppStorage("isLoggedIn") private var isLoggedIn: Bool = false
+    @AppStorage("userName") private var userName: String = "Bruce Wayne"
+    @AppStorage("userEmail") private var userEmail: String = "brucewayne27@suarasa.com"
+    @AppStorage("userAvatarUrl") private var userAvatarUrl: String = ""
 
     // Form States
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var rememberMe: Bool = true
     @State private var isShowingRegister: Bool = false
+    @State private var isGoogleLoading: Bool = false
     @State private var authErrorMessage: String?
 
     var body: some View {
@@ -134,18 +138,10 @@ struct LoginView: View {
                         .opacity((email.isEmpty || password.isEmpty) ? 0.6 : 1.0)
                         .padding(.top, HIGSpacing.xs)
 
-                        // 🔐 5. Tombol Masuk Cepat Face ID / Touch ID
+                        // 🔐 5. Tombol Masuk Cepat Face ID / Touch ID (Async/Await)
                         if BiometricAuthManager.shared.canEvaluateBiometrics() {
                             Button {
-                                BiometricAuthManager.shared.authenticate(reason: "Masuk cepat ke aplikasi") { success, error in
-                                    if success {
-                                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                            isLoggedIn = true
-                                        }
-                                    } else if let error = error {
-                                        authErrorMessage = error
-                                    }
-                                }
+                                handleBiometricAuth()
                             } label: {
                                 HStack(spacing: HIGSpacing.xs) {
                                     Image(systemName: "faceid")
@@ -187,26 +183,11 @@ struct LoginView: View {
                         .padding(.vertical, HIGSpacing.xxs)
 
                         // 7. Tombol Google Sign In
-                        CartoonGoogleSignInButton(title: "Sign in with Google") {
-                            GoogleAuthManager.shared.signIn { result in
-                                switch result {
-                                case .success(let user):
-                                    let name = user.profile?.name ?? "Google User"
-                                    let email = user.profile?.email ?? ""
-
-                                    UserDefaults.standard.set(name, forKey: "userName")
-                                    UserDefaults.standard.set(email, forKey: "userEmail")
-
-                                    withAnimation {
-                                        isLoggedIn = true
-                                    }
-                                    HapticManager.shared.success()
-
-                                case .failure(let error):
-                                    print("Google Sign In Error: \(error.localizedDescription)")
-                                    HapticManager.shared.warning()
-                                }
-                            }
+                        CartoonGoogleSignInButton(
+                            title: "Sign in with Google",
+                            isLoading: isGoogleLoading
+                        ) {
+                            handleGoogleSignIn()
                         }
 
                         Spacer(minLength: 30)
@@ -237,6 +218,62 @@ struct LoginView: View {
             .navigationDestination(isPresented: $isShowingRegister) {
                 RegisterView()
                     .navigationBarBackButtonHidden(true)
+            }
+        }
+    }
+
+    // MARK: - Biometric Auth Action (Async/Await)
+    private func handleBiometricAuth() {
+        Task { @MainActor in
+            do {
+                let success = try await BiometricAuthManager.shared.authenticate(reason: "Masuk cepat ke aplikasi")
+                if success {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        isLoggedIn = true
+                    }
+                }
+            } catch let error as BiometricAuthError {
+                if case .userCanceled = error {
+                    // Dibatalkan secara sengaja oleh pengguna
+                    return
+                }
+                authErrorMessage = error.localizedDescription
+            } catch {
+                authErrorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    // MARK: - Google Sign In Action (Async/Await)
+    private func handleGoogleSignIn() {
+        Task { @MainActor in
+            isGoogleLoading = true
+            defer { isGoogleLoading = false }
+
+            do {
+                let user = try await GoogleAuthManager.shared.signIn()
+                let name = user.profile?.name ?? "Google User"
+                let email = user.profile?.email ?? ""
+                let avatar = user.profile?.imageURL(withDimension: 240)?.absoluteString ?? ""
+
+                userName = name
+                userEmail = email
+                userAvatarUrl = avatar
+
+                HapticManager.shared.success()
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    isLoggedIn = true
+                }
+            } catch let error as GoogleAuthError {
+                if case .userCanceled = error {
+                    // Dibatalkan oleh user secara sengaja, tidak perlu warning keras
+                    return
+                }
+                print("Google Auth Error: \(error.localizedDescription)")
+                HapticManager.shared.warning()
+            } catch {
+                print("Google Sign In Error: \(error.localizedDescription)")
+                HapticManager.shared.warning()
             }
         }
     }
