@@ -52,7 +52,7 @@ struct TodayHealthSummary: Sendable {
     var sleepFormatted: String = "0 jam"
     var recentWorkouts: [HealthWorkoutItem] = []
     var isAuthorized: Bool = false
-    var lastUpdated: Date = Date()
+    var lastUpdated: Date = Date.distantPast
     
     var stepsProgress: Double {
         min(1.0, Double(steps) / 6000.0) // Target default 6.000 langkah
@@ -122,7 +122,7 @@ final class HealthKitManager {
             try await healthStore.requestAuthorization(toShare: [], read: readTypes)
             self.isAuthorized = true
             self.authorizationError = nil
-            await self.fetchAllTodayHealthData()
+            await self.fetchAllTodayHealthData(force: true)
             return true
         } catch {
             self.authorizationError = error.localizedDescription
@@ -139,8 +139,14 @@ final class HealthKitManager {
     }
     
     // MARK: - 2. Mengambil Seluruh Data Kesehatan Hari Ini
-    func fetchAllTodayHealthData() async {
+    func fetchAllTodayHealthData(force: Bool = false) async {
         guard let _ = healthStore else { return }
+        
+        // Cache throttle: Jangan query ulang jika data baru saja diambil kurang dari 60 detik lalu
+        if !force && Date().timeIntervalSince(todaySummary.lastUpdated) < 60 && (todaySummary.steps > 0 || todaySummary.activeCalories > 0) {
+            return
+        }
+        
         isLoading = true
         defer { isLoading = false }
         
@@ -188,18 +194,22 @@ final class HealthKitManager {
                 quantitySamplePredicate: predicate,
                 options: .cumulativeSum
             ) { _, result, _ in
-                let steps = result?.sumQuantity()?.doubleValue(for: HKUnit.count()) ?? 0
-                continuation.resume(returning: Int(steps))
+                guard let result = result, let sum = result.sumQuantity() else {
+                    continuation.resume(returning: 0)
+                    return
+                }
+                let totalSteps = Int(sum.doubleValue(for: HKUnit.count()))
+                continuation.resume(returning: totalSteps)
             }
             healthStore.execute(query)
         }
     }
     
-    // MARK: - 4. Query Spesifik: Kalori Aktif Hari Ini (kCal)
+    // MARK: - 4. Query Kalori Terbakar Hari Ini (Active Calories)
     func fetchTodayActiveCalories() async -> Double {
         guard let healthStore = healthStore,
-              let calorieType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) else {
-            return 0
+              let calType = HKQuantityType.quantityType(forIdentifier: .activeEnergyBurned) else {
+            return 0.0
         }
         
         let calendar = Calendar.current
@@ -208,22 +218,26 @@ final class HealthKitManager {
         
         return await withCheckedContinuation { continuation in
             let query = HKStatisticsQuery(
-                quantityType: calorieType,
+                quantityType: calType,
                 quantitySamplePredicate: predicate,
                 options: .cumulativeSum
             ) { _, result, _ in
-                let calories = result?.sumQuantity()?.doubleValue(for: HKUnit.kilocalorie()) ?? 0
+                guard let result = result, let sum = result.sumQuantity() else {
+                    continuation.resume(returning: 0.0)
+                    return
+                }
+                let calories = sum.doubleValue(for: HKUnit.kilocalorie())
                 continuation.resume(returning: calories)
             }
             healthStore.execute(query)
         }
     }
     
-    // MARK: - 5. Query Spesifik: Menit Olahraga (Exercise Minutes)
+    // MARK: - 5. Query Menit Olahraga Hari Ini (Exercise Time)
     func fetchTodayExerciseMinutes() async -> Double {
         guard let healthStore = healthStore,
               let exerciseType = HKQuantityType.quantityType(forIdentifier: .appleExerciseTime) else {
-            return 0
+            return 0.0
         }
         
         let calendar = Calendar.current
@@ -236,18 +250,22 @@ final class HealthKitManager {
                 quantitySamplePredicate: predicate,
                 options: .cumulativeSum
             ) { _, result, _ in
-                let minutes = result?.sumQuantity()?.doubleValue(for: HKUnit.minute()) ?? 0
+                guard let result = result, let sum = result.sumQuantity() else {
+                    continuation.resume(returning: 0.0)
+                    return
+                }
+                let minutes = sum.doubleValue(for: HKUnit.minute())
                 continuation.resume(returning: minutes)
             }
             healthStore.execute(query)
         }
     }
     
-    // MARK: - 6. Query Spesifik: Jarak Jalan & Lari (km)
+    // MARK: - 6. Query Jarak Jalan/Lari Hari Ini (Distance Km)
     func fetchTodayDistance() async -> Double {
         guard let healthStore = healthStore,
               let distanceType = HKQuantityType.quantityType(forIdentifier: .distanceWalkingRunning) else {
-            return 0
+            return 0.0
         }
         
         let calendar = Calendar.current
@@ -260,142 +278,134 @@ final class HealthKitManager {
                 quantitySamplePredicate: predicate,
                 options: .cumulativeSum
             ) { _, result, _ in
-                let distanceMeter = result?.sumQuantity()?.doubleValue(for: HKUnit.meter()) ?? 0
-                let distanceKm = distanceMeter / 1000.0
+                guard let result = result, let sum = result.sumQuantity() else {
+                    continuation.resume(returning: 0.0)
+                    return
+                }
+                let distanceKm = sum.doubleValue(for: HKUnit.meter()) / 1000.0
                 continuation.resume(returning: distanceKm)
             }
             healthStore.execute(query)
         }
     }
     
-    // MARK: - 7. Query Spesifik: Sesi Olahraga / Lari Hari Ini (Workouts dari Zepp, Apple Watch, dll.)
+    // MARK: - 7. Query Durasi Tidur Semalam (Sleep Analysis)
+    func fetchLastNightSleep() async -> (hours: Double, formattedText: String) {
+        guard let healthStore = healthStore,
+              let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else {
+            return (0.0, "0 jam")
+        }
+        
+        let calendar = Calendar.current
+        let now = Date()
+        guard let yesterdayEvening = calendar.date(byAdding: .hour, value: -18, to: now) else {
+            return (0.0, "0 jam")
+        }
+        
+        let predicate = HKQuery.predicateForSamples(withStart: yesterdayEvening, end: now, options: [])
+        
+        return await withCheckedContinuation { continuation in
+            let query = HKSampleQuery(
+                sampleType: sleepType,
+                predicate: predicate,
+                limit: 30,
+                sortDescriptors: [NSSortDescriptor(key: "startDate", ascending: false)]
+            ) { _, samples, _ in
+                guard let samples = samples as? [HKCategorySample], !samples.isEmpty else {
+                    continuation.resume(returning: (0.0, "0 jam"))
+                    return
+                }
+                
+                var totalSleepSeconds: TimeInterval = 0
+                for sample in samples {
+                    // Nilai value: asleepUnspecified / asleepCore / asleepDeep / asleepREM
+                    if sample.value != HKCategoryValueSleepAnalysis.awake.rawValue {
+                        totalSleepSeconds += sample.endDate.timeIntervalSince(sample.startDate)
+                    }
+                }
+                
+                let totalHours = totalSleepSeconds / 3600.0
+                let hours = Int(totalHours)
+                let minutes = Int((totalSleepSeconds.truncatingRemainder(dividingBy: 3600)) / 60)
+                
+                let text = "\(hours) jam \(minutes) mnt"
+                continuation.resume(returning: (totalHours, text))
+            }
+            healthStore.execute(query)
+        }
+    }
+    
+    // MARK: - 8. Query Riwayat Sesi Workout Hari Ini (Zepp / Smartwatch Sync)
     func fetchTodayWorkouts() async -> [HealthWorkoutItem] {
         guard let healthStore = healthStore else { return [] }
         
         let calendar = Calendar.current
         let startOfDay = calendar.startOfDay(for: Date())
         let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: Date(), options: .strictStartDate)
-        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: false)
         
         return await withCheckedContinuation { continuation in
             let query = HKSampleQuery(
                 sampleType: HKObjectType.workoutType(),
                 predicate: predicate,
                 limit: 10,
-                sortDescriptors: [sortDescriptor]
+                sortDescriptors: [NSSortDescriptor(key: "startDate", ascending: false)]
             ) { _, samples, _ in
                 guard let workouts = samples as? [HKWorkout] else {
                     continuation.resume(returning: [])
                     return
                 }
                 
-                let workoutItems = workouts.map { workout -> HealthWorkoutItem in
-                    let distanceKm = (workout.totalDistance?.doubleValue(for: .meter()) ?? 0) / 1000.0
-                    let calories = workout.totalEnergyBurned?.doubleValue(for: .kilocalorie()) ?? 0
+                let items: [HealthWorkoutItem] = workouts.map { workout in
+                    let title = Self.workoutName(for: workout.workoutActivityType)
+                    let icon = Self.workoutIcon(for: workout.workoutActivityType)
+                    let distanceKm = (workout.totalDistance?.doubleValue(for: HKUnit.meter()) ?? 0.0) / 1000.0
+                    let calories = workout.totalEnergyBurned?.doubleValue(for: HKUnit.kilocalorie()) ?? 0.0
                     let source = workout.sourceRevision.source.name
                     
                     return HealthWorkoutItem(
                         id: workout.uuid,
                         activityType: workout.workoutActivityType,
-                        title: Self.title(for: workout.workoutActivityType),
-                        icon: Self.icon(for: workout.workoutActivityType),
+                        title: title,
+                        icon: icon,
                         startDate: workout.startDate,
                         endDate: workout.endDate,
                         duration: workout.duration,
                         distanceKm: distanceKm,
                         calories: calories,
-                        sourceName: source.isEmpty ? "Apple Health" : source
+                        sourceName: source
                     )
                 }
-                
-                continuation.resume(returning: workoutItems)
+                continuation.resume(returning: items)
             }
             healthStore.execute(query)
         }
     }
     
-    // MARK: - 8. Query Spesifik: Durasi Tidur Semalam (Sleep Analysis)
-    func fetchLastNightSleep() async -> (durationHours: Double, formatted: String) {
-        guard let healthStore = healthStore,
-              let sleepType = HKCategoryType.categoryType(forIdentifier: .sleepAnalysis) else {
-            return (0, "0 jam")
-        }
-        
-        let calendar = Calendar.current
-        // Ambil rentang waktu 24 jam terakhir (dari kemarin sore sampai pagi ini)
-        let now = Date()
-        guard let yesterdayNoon = calendar.date(byAdding: .hour, value: -24, to: now) else {
-            return (0, "0 jam")
-        }
-        
-        let predicate = HKQuery.predicateForSamples(withStart: yesterdayNoon, end: now, options: .strictStartDate)
-        let sortDescriptor = NSSortDescriptor(key: HKSampleSortIdentifierEndDate, ascending: false)
-        
-        return await withCheckedContinuation { continuation in
-            let query = HKSampleQuery(
-                sampleType: sleepType,
-                predicate: predicate,
-                limit: HKObjectQueryNoLimit,
-                sortDescriptors: [sortDescriptor]
-            ) { _, samples, _ in
-                guard let sleepSamples = samples as? [HKCategorySample] else {
-                    continuation.resume(returning: (0, "0 jam"))
-                    return
-                }
-                
-                var totalSleepSeconds: TimeInterval = 0
-                for sample in sleepSamples {
-                    // Cek status tidur (Asleep, Core, Deep, REM)
-                    if sample.value == HKCategoryValueSleepAnalysis.asleepCore.rawValue ||
-                       sample.value == HKCategoryValueSleepAnalysis.asleepDeep.rawValue ||
-                       sample.value == HKCategoryValueSleepAnalysis.asleepREM.rawValue ||
-                       sample.value == HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue {
-                        totalSleepSeconds += sample.endDate.timeIntervalSince(sample.startDate)
-                    }
-                }
-                
-                let hours = totalSleepSeconds / 3600.0
-                let totalMinutes = Int(totalSleepSeconds) / 60
-                let h = totalMinutes / 60
-                let m = totalMinutes % 60
-                
-                let formatted = h > 0 ? "\(h)j \(m)m" : "\(m) mnt"
-                continuation.resume(returning: (hours, formatted))
-            }
-            healthStore.execute(query)
-        }
-    }
-    
-    // MARK: - Helper Pemetaan Icon & Nama Aktivitas Kartun
-    nonisolated private static func title(for type: HKWorkoutActivityType) -> String {
+    // Helper Nama Workout
+    static func workoutName(for type: HKWorkoutActivityType) -> String {
         switch type {
-        case .running: return "Lari"
+        case .running: return "Lari Luar Ruang"
         case .walking: return "Jalan Santai"
         case .cycling: return "Bersepeda"
         case .swimming: return "Berenang"
-        case .traditionalStrengthTraining, .functionalStrengthTraining: return "Latihan Beban"
-        case .yoga: return "Yoga & Relaksasi"
+        case .functionalStrengthTraining, .traditionalStrengthTraining: return "Latihan Beban"
+        case .yoga: return "Yoga"
         case .highIntensityIntervalTraining: return "HIIT Workout"
-        case .badminton: return "Badminton"
-        case .soccer: return "Sepak Bola"
-        case .basketball: return "Bola Basket"
-        default: return "Sesi Olahraga"
+        default: return "Aktivitas Olahraga"
         }
     }
     
-    nonisolated private static func icon(for type: HKWorkoutActivityType) -> String {
+    // Helper Icon Workout
+    static func workoutIcon(for type: HKWorkoutActivityType) -> String {
         switch type {
         case .running: return "figure.run"
         case .walking: return "figure.walk"
         case .cycling: return "figure.outdoor.cycle"
         case .swimming: return "figure.pool.swim"
-        case .traditionalStrengthTraining, .functionalStrengthTraining: return "dumbbell.fill"
+        case .functionalStrengthTraining, .traditionalStrengthTraining: return "dumbbell.fill"
         case .yoga: return "figure.mind.and.body"
-        case .highIntensityIntervalTraining: return "flame.fill"
-        case .badminton: return "figure.badminton"
-        case .soccer: return "soccerball"
-        case .basketball: return "basketball.fill"
-        default: return "figure.mixed.cardio"
+        case .highIntensityIntervalTraining: return "bolt.heart.fill"
+        default: return "flame.fill"
         }
     }
 }
