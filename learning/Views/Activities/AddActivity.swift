@@ -2,7 +2,7 @@
 //  AddActivity.swift
 //  learning
 //
-//  Created by macbook on 8/30/26.
+//  Created by macbook on 8/29/26.
 //
 
 import SwiftUI
@@ -10,291 +10,164 @@ import SwiftData
 import WidgetKit
 
 struct AddActivity: View {
-    @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.dismiss) private var dismiss
 
     // Form States
     @State private var taskTitle: String = ""
-    @State private var dueDate: Date = Date()
-    @State private var assignee: String = ""
     @State private var taskDetails: String = ""
+    @State private var dueDate: Date = Date()
     @State private var selectedCategory: String = "Design"
     @State private var getAlert: Bool = true
     @State private var syncToCalendar: Bool = false
-    @State private var isShowingDatePicker: Bool = false
-
-    private enum FormField: Hashable {
-        case title
-        case assignee
-        case details
-    }
-    @FocusState private var focusedField: FormField?
 
     var body: some View {
         NavigationStack {
             ZStack {
-                // Background Cream Cerah (Tap untuk dismiss keyboard)
+                // Background Utama
                 Color.cartoonBg
                     .ignoresSafeArea()
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        focusedField = nil
-                    }
 
-                ScrollViewReader { proxy in
-                    ScrollView(showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: HIGSpacing.lg) {
-                            
-                            // 1. Header Toolbar (Tombol X dan Search) - Reusable CartoonIconButton (44pt)
-                            HStack {
-                                CartoonIconButton(icon: "xmark") {
-                                    HapticManager.shared.impact(style: .light)
-                                    dismiss()
-                                }
-
-                                Spacer()
-
-                                CartoonIconButton(icon: "magnifyingglass") {
-                                    HapticManager.shared.impact(style: .light)
-                                }
-                            }
-                            .padding(.top, HIGSpacing.md)
-
-                            // 2. Judul Layar
-                            Text("New Tasks")
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: HIGSpacing.lg) {
+                        
+                        // 1. Header Judul
+                        VStack(alignment: .leading, spacing: HIGSpacing.xxs) {
+                            Text("New Activity")
                                 .font(.system(size: 26, weight: .heavy, design: .rounded))
                                 .foregroundColor(.black)
-
-                            // 3. Form Input Kartun Neo-Brutalist (4pt/8pt Spatial)
-                            VStack(spacing: HIGSpacing.sm) {
-                                
-                                // Field 1: Task Title
-                                HStack(spacing: HIGSpacing.xs) {
-                                    Text("|")
-                                        .font(.system(size: 15, weight: .heavy, design: .rounded))
-                                        .foregroundColor(.secondary.opacity(0.6))
-                                    TextField("Task Title", text: $taskTitle)
-                                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                                        .focused($focusedField, equals: .title)
-                                }
-                                .id(FormField.title)
-                                .padding(.horizontal, HIGSpacing.md)
-                                .frame(height: 50)
-                                .background(
-                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                                        .fill(Color.white)
-                                        .shadow(color: .black, radius: 0, x: 2, y: 2)
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                                        .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-                                )
-
-                                // Field 2: Date Picker Selector
-                                Button {
-                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                                        isShowingDatePicker.toggle()
-                                        HapticManager.shared.selection()
-                                    }
-                                } label: {
-                                    HStack(spacing: HIGSpacing.xs) {
-                                        Text("|")
-                                            .font(.system(size: 15, weight: .heavy, design: .rounded))
-                                            .foregroundColor(.secondary.opacity(0.6))
-                                        
-                                        Image(systemName: "calendar")
-                                            .font(.system(size: 13, weight: .bold))
-                                            .foregroundColor(.secondary)
-                                        
-                                        Text(dueDate.formatted(date: .abbreviated, time: .shortened))
-                                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                                            .foregroundColor(.black)
-                                        
-                                        Spacer()
-                                        
-                                        Image(systemName: isShowingDatePicker ? "chevron.up" : "chevron.down")
-                                            .font(.system(size: 11, weight: .bold))
-                                            .foregroundColor(.black)
-                                    }
-                                    .padding(.horizontal, HIGSpacing.md)
-                                    .frame(height: 50)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                                            .fill(Color.white)
-                                            .shadow(color: .black, radius: 0, x: 2, y: 2)
-                                    )
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                                            .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-                                    )
-                                }
-                                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-
-                                // 🎨 Reusable Cartoon Calendar Component
-                                if isShowingDatePicker {
-                                    CartoonCalendarView(selectedDate: $dueDate)
-                                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
-                                }
-
-                                // Field 3: Assignee
-                                HStack(spacing: HIGSpacing.xs) {
-                                    Text("|")
-                                        .font(.system(size: 15, weight: .heavy, design: .rounded))
-                                        .foregroundColor(.secondary.opacity(0.6))
-                                    
-                                    TextField("Assignee", text: $assignee)
-                                        .font(.system(size: 14, weight: .bold, design: .rounded))
-                                        .focused($focusedField, equals: .assignee)
-                                    
-                                    Image(systemName: "magnifyingglass")
-                                        .font(.system(size: 14, weight: .heavy))
-                                        .foregroundColor(.secondary)
-                                }
-                                .id(FormField.assignee)
-                                .padding(.horizontal, HIGSpacing.md)
-                                .frame(height: 50)
-                                .background(
-                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                                        .fill(Color.white)
-                                        .shadow(color: .black, radius: 0, x: 2, y: 2)
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                                        .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-                                )
-
-                                // Field 4: Large Task Details Area
-                                VStack(alignment: .leading, spacing: HIGSpacing.xxs) {
-                                    ZStack(alignment: .topLeading) {
-                                        if taskDetails.isEmpty {
-                                            Text("Add your task details")
-                                                .font(.system(size: 14, weight: .bold, design: .rounded))
-                                                .foregroundColor(.secondary.opacity(0.7))
-                                                .padding(.top, HIGSpacing.xs)
-                                                .padding(.leading, HIGSpacing.xxs)
-                                        }
-                                        
-                                        TextEditor(text: $taskDetails)
-                                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                                            .frame(minHeight: 110)
-                                            .scrollContentBackground(.hidden)
-                                            .background(Color.clear)
-                                            .focused($focusedField, equals: .details)
-                                    }
-                                }
-                                .id(FormField.details)
-                                .padding(HIGSpacing.sm)
-                                .background(
-                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                                        .fill(Color.white)
-                                        .shadow(color: .black, radius: 0, x: 2, y: 2)
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                                        .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-                                )
-
-                                // Utility Icons di Bawah Text Area (Grid, Font, Attachment)
-                                HStack(spacing: 0) {
-                                    Spacer()
-                                    
-                                    Button {
-                                        HapticManager.shared.impact(style: .light)
-                                    } label: {
-                                        Image(systemName: "square.grid.2x2")
-                                            .font(.system(size: 15, weight: .semibold))
-                                            .foregroundColor(.black)
-                                            .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
-                                            .contentShape(Rectangle())
-                                    }
-                                    
-                                    Button {
-                                        HapticManager.shared.impact(style: .light)
-                                    } label: {
-                                        Image(systemName: "textformat")
-                                            .font(.system(size: 15, weight: .semibold))
-                                            .foregroundColor(.black)
-                                            .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
-                                            .contentShape(Rectangle())
-                                    }
-                                    
-                                    Button {
-                                        HapticManager.shared.impact(style: .light)
-                                    } label: {
-                                        Image(systemName: "paperclip")
-                                            .font(.system(size: 15, weight: .semibold))
-                                            .foregroundColor(.black)
-                                            .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
-                                            .contentShape(Rectangle())
-                                    }
-                                }
-                                .padding(.top, -HIGSpacing.xxs)
-                            }
-
-                            // 4. 🎨 Reusable Category Picker Component
-                            CartoonCategoryPicker(selectedCategory: $selectedCategory)
-                                .padding(.top, HIGSpacing.xxs)
-
-                            Spacer()
-                                .frame(height: 2)
-
-                            // 5. 🕹️ Toggles Kartun: Notifikasi & Apple Calendar Sync
-                            VStack(spacing: HIGSpacing.xs) {
-                                // 🔔 Toggle Notifikasi / Alert (UserNotifications)
-                                CartoonToggleRow(
-                                    icon: "bell.badge.fill",
-                                    iconColor: .black,
-                                    iconBgColor: Color.cartoonPink,
-                                    title: "Get alert for this task",
-                                    subtitle: "Notifikasi lokal saat mendekati deadline",
-                                    isOn: $getAlert,
-                                    activeColor: Color.cartoonCoral
-                                )
-
-                                // 📅 Toggle Sinkronisasi ke Apple Calendar (EventKit)
-                                CartoonToggleRow(
-                                    icon: "calendar.badge.plus",
-                                    iconColor: .black,
-                                    iconBgColor: Color.cartoonBlue,
-                                    title: "Sync to Apple Calendar",
-                                    subtitle: "Otomatis tambahkan jadwal ke kalender",
-                                    isOn: $syncToCalendar,
-                                    activeColor: Color.cartoonMint
-                                )
-                            }
-                            .padding(.top, HIGSpacing.xxs)
-
-                            // 6. 🔘 Reusable Primary Button ("Create Task")
-                            CartoonPrimaryButton(
-                                title: "Create Task",
-                                isEnabled: !taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                            ) {
-                                createTask()
-                            }
-                            .padding(.top, HIGSpacing.xs)
-                            .padding(.bottom, 60)
+                            Text("Create a new activity to boost your daily focus")
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundColor(.secondary)
                         }
-                        .padding(.horizontal, HIGSpacing.lg)
-                    }
-                    .scrollDismissesKeyboard(.interactively)
-                    .onChange(of: focusedField) { _, newField in
-                        if let newField = newField {
-                            withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                // Anchor y: 0.25 memposisikan field di area 25% atas layar (banyak ruang lega di bawahnya)
-                                proxy.scrollTo(newField, anchor: UnitPoint(x: 0.5, y: 0.25))
-                            }
+                        .padding(.top, HIGSpacing.xs)
+
+                        // 2. Input Judul Tugas (Kartun Tebal)
+                        VStack(alignment: .leading, spacing: HIGSpacing.xxs) {
+                            Text("TASK TITLE")
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, HIGSpacing.xxs)
+
+                            TextField("e.g. Read Clean Architecture Ch. 3", text: $taskTitle)
+                                .font(.system(size: 15, weight: .bold, design: .rounded))
+                                .padding(.horizontal, HIGSpacing.md)
+                                .frame(height: 52)
+                                .background(Color.white)
+                                .cornerRadius(CartoonMetrics.cardCornerRadius)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                        .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+                                )
+                                .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
                         }
+
+                        // 3. Pilihan Kategori Kartun
+                        CartoonCategoryPicker(
+                            selectedCategory: $selectedCategory
+                        )
+
+                        // 4. Input Catatan / Detail Tugas
+                        VStack(alignment: .leading, spacing: HIGSpacing.xxs) {
+                            Text("DETAILS & NOTES")
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, HIGSpacing.xxs)
+
+                            TextField("Add notes, URLs, or checklist...", text: $taskDetails, axis: .vertical)
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                .lineLimit(3...5)
+                                .padding(HIGSpacing.md)
+                                .background(Color.white)
+                                .cornerRadius(CartoonMetrics.cardCornerRadius)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                        .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+                                )
+                                .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
+                        }
+
+                        // 5. Kalender Kartun Lengkap (Bulan, Tanggal & Jam)
+                        CartoonCalendarView(
+                            selectedDate: $dueDate
+                        )
+
+                        // 6. Section Toggle Opsi Notifikasi & Kalender
+                        VStack(spacing: HIGSpacing.sm) {
+                            CartoonToggleRow(
+                                icon: "bell.fill",
+                                iconColor: .black,
+                                iconBgColor: Color.cartoonYellow,
+                                title: "Get alert",
+                                subtitle: "Send local reminder before deadline",
+                                isOn: $getAlert,
+                                activeColor: Color.cartoonYellow
+                            )
+
+                            CartoonToggleRow(
+                                icon: "calendar.badge.plus",
+                                iconColor: .black,
+                                iconBgColor: Color.cartoonMint,
+                                title: "Sync to Calendar",
+                                subtitle: "Add to Apple Calendar events",
+                                isOn: $syncToCalendar,
+                                activeColor: Color.cartoonMint
+                            )
+                        }
+
+                        // 7. Tombol Simpan (Create Task)
+                        Button {
+                            createTask()
+                        } label: {
+                            HStack(spacing: HIGSpacing.xs) {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 16, weight: .black))
+                                Text("Create Task")
+                                    .font(.system(size: 16, weight: .heavy, design: .rounded))
+                            }
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(Color.cartoonYellow)
+                            .cornerRadius(CartoonMetrics.cardCornerRadius)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                    .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+                            )
+                            .shadow(color: .black, radius: 0, x: 3, y: 3)
+                        }
+                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.5))
+                        .disabled(taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                        .opacity(taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.5 : 1.0)
+                        .padding(.top, HIGSpacing.xs)
+                        .padding(.bottom, HIGSpacing.xxl)
                     }
+                    .padding(.horizontal, HIGSpacing.md)
                 }
-                .toolbar {
-                    ToolbarItemGroup(placement: .keyboard) {
-                        Spacer()
-                        Button("Selesai") {
-                            focusedField = nil
+            }
+            .navigationTitle("Add Activity")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        HapticManager.shared.impact(style: .light)
+                        dismiss()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 12, weight: .heavy))
+                            Text("Cancel")
+                                .font(.system(size: 14, weight: .heavy, design: .rounded))
                         }
-                        .font(.system(.subheadline, design: .rounded).weight(.bold))
                         .foregroundColor(.black)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.white)
+                        .cornerRadius(10)
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.5))
+                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
                     }
+                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                 }
             }
         }
@@ -319,18 +192,23 @@ struct AddActivity: View {
 
             // 🔔 Jadwalkan Local Notification jika user memilih "Get alert"
             if getAlert {
-                NotificationManager.shared.scheduleNotification(for: item)
+                Task {
+                    await NotificationManager.shared.scheduleNotification(for: item)
+                }
             }
 
             // 📅 Sinkronisasi ke Apple Calendar jika diaktifkan
             if syncToCalendar {
-                CalendarSyncManager.shared.addEventToCalendar(
-                    title: item.title,
-                    startDate: item.timestamp,
-                    notes: item.notes
-                ) { success, _ in
-                    if success {
+                Task {
+                    do {
+                        try await CalendarSyncManager.shared.addEventToCalendar(
+                            title: item.title,
+                            startDate: item.timestamp,
+                            notes: item.notes
+                        )
                         print("✅ Tugas berhasil disinkronkan ke Apple Calendar.")
+                    } catch {
+                        print("❌ Gagal sinkronisasi kalender: \(error.localizedDescription)")
                     }
                 }
             }
