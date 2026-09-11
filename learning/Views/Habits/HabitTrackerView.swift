@@ -58,25 +58,27 @@ struct HabitTrackerView: View {
                     if !habits.isEmpty {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 8) {
-                                ForEach(categories, id: \.self) { cat in
-                                    let isSelected = selectedCategory == cat
+                                ForEach(categories, id: \.self) { category in
+                                    let isSelected = selectedCategory == category
                                     Button {
                                         HapticManager.shared.selection()
-                                        selectedCategory = cat
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                                            selectedCategory = category
+                                        }
                                     } label: {
-                                        Text(cat)
+                                        Text(category)
                                             .font(.system(size: 11.5, weight: .heavy, design: .rounded))
                                             .foregroundColor(.black)
                                             .padding(.horizontal, 12)
-                                            .padding(.vertical, 6.5)
+                                            .padding(.vertical, 7)
                                             .background(
-                                                RoundedRectangle(cornerRadius: 8)
+                                                RoundedRectangle(cornerRadius: 10)
                                                     .fill(isSelected ? Color.cartoonYellow : Color.white)
-                                                    .shadow(color: .black, radius: 0, x: isSelected ? 2 : 1, y: isSelected ? 2 : 1)
+                                                    .shadow(color: .black, radius: 0, x: isSelected ? 1.5 : 1, y: isSelected ? 1.5 : 1)
                                             )
                                             .overlay(
-                                                RoundedRectangle(cornerRadius: 8)
-                                                    .stroke(Color.black, lineWidth: isSelected ? 1.8 : 1.1)
+                                                RoundedRectangle(cornerRadius: 10)
+                                                    .stroke(Color.black, lineWidth: isSelected ? 1.5 : 1.0)
                                             )
                                     }
                                     .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
@@ -111,14 +113,14 @@ struct HabitTrackerView: View {
                     }
                     .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                     
-                    // 4. Daftar Kartu Kebiasaan (Habits List)
+                    // 4. Daftar Kartu Kebiasaan (Habits List dengan LazyVStack untuk 120fps)
                     if filteredHabits.isEmpty {
                         HabitEmptyStateView {
                             selectedCategory = "Semua"
                             isShowingAddHabit = true
                         }
                     } else {
-                        VStack(spacing: HIGSpacing.sm) {
+                        LazyVStack(spacing: HIGSpacing.sm) {
                             ForEach(filteredHabits) { habit in
                                 HabitCardView(
                                     habit: habit,

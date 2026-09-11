@@ -24,10 +24,7 @@ struct HabitCardView: View {
     }
     
     private func dayName(for date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "id_ID")
-        formatter.dateFormat = "EEE"
-        return formatter.string(from: date).uppercased()
+        date.formatted(.dateTime.weekday(.abbreviated).locale(Locale(identifier: "id_ID"))).uppercased()
     }
     
     var body: some View {
