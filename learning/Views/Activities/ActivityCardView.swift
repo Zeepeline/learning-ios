@@ -61,6 +61,11 @@ struct ActivityCardView: View {
 
                     // Badge Prioritas Kartun
                     priorityBadge(for: item.priority)
+
+                    // Badge Jadwal Rutin (Scheduler)
+                    if item.isRecurring {
+                        recurrenceBadge(for: item.recurrence)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -136,6 +141,27 @@ struct ActivityCardView: View {
             .shadow(color: .black, radius: 0, x: 1, y: 1)
     }
 
+    // MARK: - Badge Jadwal Rutin (Scheduler)
+    @ViewBuilder
+    private func recurrenceBadge(for rule: RecurrenceRule) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: rule.icon)
+                .font(.system(size: 8, weight: .bold))
+            Text(rule.shortTitle)
+                .font(.system(size: 9, weight: .heavy, design: .rounded))
+        }
+        .foregroundColor(.black)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(
+            Capsule().fill(rule.badgeColor)
+        )
+        .overlay(
+            Capsule().stroke(Color.black, lineWidth: 1.2)
+        )
+        .shadow(color: .black, radius: 0, x: 1, y: 1)
+    }
+
     private func badgeData(for priority: String) -> (Color, String) {
         switch priority {
         case "Tinggi": return (Color.cartoonPink, "Tinggi")
@@ -149,7 +175,7 @@ struct ActivityCardView: View {
 #Preview {
     VStack(spacing: 16) {
         ActivityCardView(
-            item: Item(title: "Mengerjakan Desain UI Baru", timestamp: Date(), isCompleted: false, priority: "Tinggi"),
+            item: Item(title: "Mengerjakan Desain UI Baru", timestamp: Date(), isCompleted: false, priority: "Tinggi", isRecurring: true, recurrenceRule: "Setiap Hari"),
             onToggle: {},
             onDelete: {}
         )

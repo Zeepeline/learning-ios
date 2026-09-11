@@ -21,10 +21,14 @@ struct EditActivity: View {
     @State private var taskTitle: String = ""
     @State private var dueDate: Date = Date()
     @State private var taskDetails: String = ""
-    @State private var selectedCategory: String = "Design"
+    @State private var selectedCategory: String = "Belajar"
     @State private var selectedPriority: String = "Normal"
     @State private var isCompleted: Bool = false
     @State private var isShowingDatePicker: Bool = false
+    
+    // Scheduler States
+    @State private var isSchedulerEnabled: Bool = false
+    @State private var selectedRecurrence: RecurrenceRule = .daily
 
     private let priorities = ["Tinggi", "Normal", "Rendah"]
 
@@ -170,7 +174,7 @@ struct EditActivity: View {
                                 .overlay(
                                     RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                         .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-                                )
+                                    )
                             }
                             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
@@ -210,7 +214,10 @@ struct EditActivity: View {
                             )
                         }
 
-                        // 4. Prioritas Selector Kartun (Tinggi, Normal, Rendah)
+                        // 4. Section Scheduler / Jadwal Rutin (Mirip Pengaturan)
+                        schedulerSection
+
+                        // 5. Prioritas Selector Kartun (Tinggi, Normal, Rendah)
                         VStack(alignment: .leading, spacing: HIGSpacing.xs) {
                             Text("Prioritas Tugas")
                                 .font(.system(size: 15, weight: .heavy, design: .rounded))
@@ -250,11 +257,11 @@ struct EditActivity: View {
                             }
                         }
 
-                        // 5. 🎨 Reusable Category Picker Component
+                        // 6. 🎨 Reusable Category Picker Grid
                         CartoonCategoryPicker(selectedCategory: $selectedCategory)
                             .padding(.top, HIGSpacing.xxs)
 
-                        // 6. Tombol Simpan Perubahan
+                        // 7. Tombol Simpan Perubahan
                         CartoonPrimaryButton(
                             title: "Simpan Perubahan",
                             icon: "checkmark.circle.fill",
@@ -286,9 +293,98 @@ struct EditActivity: View {
             taskTitle = item.title
             dueDate = item.timestamp
             taskDetails = item.notes
-            selectedCategory = item.category.isEmpty ? "Design" : item.category
+            selectedCategory = item.category.isEmpty ? "Belajar" : item.category
             selectedPriority = item.priority.isEmpty ? "Normal" : item.priority
             isCompleted = item.isCompleted
+            isSchedulerEnabled = item.isRecurring
+            selectedRecurrence = item.recurrence
+        }
+    }
+
+    // MARK: - Section Scheduler / Jadwal Rutin
+    private var schedulerSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("JADWAL RUTIN (SCHEDULER)")
+                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                .foregroundColor(.secondary)
+                .padding(.leading, 4)
+
+            VStack(spacing: HIGSpacing.xs) {
+                // Toggle Aktifkan Scheduler
+                CartoonToggleRow(
+                    icon: "repeat.circle.fill",
+                    iconColor: .black,
+                    iconBgColor: Color.cartoonLavender,
+                    title: "Jadwal Rutin (Scheduler)",
+                    subtitle: "Ulangi otomatis berkala mirip di pengaturan",
+                    isOn: $isSchedulerEnabled,
+                    activeColor: Color.cartoonLavender
+                )
+
+                if isSchedulerEnabled {
+                    VStack(alignment: .leading, spacing: HIGSpacing.sm) {
+                        Text("FREKUENSI PENGULANGAN")
+                            .font(.system(size: 9.5, weight: .heavy, design: .rounded))
+                            .foregroundColor(.secondary)
+
+                        // Chip Pilihan Frekuensi
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach([RecurrenceRule.daily, .weekdays, .weekends, .weekly]) { rule in
+                                    Button {
+                                        HapticManager.shared.selection()
+                                        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+                                            selectedRecurrence = rule
+                                        }
+                                    } label: {
+                                        HStack(spacing: 5) {
+                                            Image(systemName: rule.icon)
+                                                .font(.system(size: 11, weight: .bold))
+                                            Text(rule.title)
+                                                .font(.system(size: 11.5, weight: .heavy, design: .rounded))
+                                        }
+                                        .foregroundColor(.black)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 7)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(selectedRecurrence == rule ? rule.badgeColor : Color.white)
+                                                .shadow(color: .black.opacity(0.1), radius: 0, x: 1, y: 1)
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color.black, lineWidth: selectedRecurrence == rule ? 1.6 : 1.0)
+                                        )
+                                    }
+                                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+                                }
+                            }
+                            .padding(.vertical, 2)
+                        }
+
+                        // Info Box
+                        HStack(spacing: 6) {
+                            Image(systemName: "info.circle.fill")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(Color.cartoonBlue)
+                            Text("Aktivitas akan diulang setiap **\(selectedRecurrence.shortTitle)** pada pukul **\(dueDate.formatted(date: .omitted, time: .shortened))**.")
+                                .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                                .foregroundColor(.black.opacity(0.8))
+                        }
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.cartoonBlue.opacity(0.12))
+                        .cornerRadius(8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.cartoonBlue.opacity(0.3), lineWidth: 1.0))
+                    }
+                    .padding(HIGSpacing.md)
+                    .cartoonCard()
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                        removal: .opacity.combined(with: .scale(scale: 0.98))
+                    ))
+                }
+            }
         }
     }
 
@@ -310,9 +406,11 @@ struct EditActivity: View {
             item.category = selectedCategory
             item.priority = selectedPriority
             item.isCompleted = isCompleted
+            item.isRecurring = isSchedulerEnabled
+            item.recurrenceRule = isSchedulerEnabled ? selectedRecurrence.rawValue : "Sekali Saja"
 
             // Perbarui jadwal notifikasi lokal
-            if !isCompleted && item.timestamp > Date() {
+            if !isCompleted {
                 Task {
                     await NotificationManager.shared.scheduleNotification(for: item)
                 }

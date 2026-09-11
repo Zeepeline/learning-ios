@@ -37,7 +37,7 @@ struct AddTaskIntent: AppIntent {
 
     @Parameter(
         title: "Kategori",
-        description: "Kategori tugas (misal: Kerja, Pribadi, Belajar, Olahraga, Umum)",
+        description: "Kategori tugas (misal: Belajar, Kesehatan, Pekerjaan, Pribadi, Keuangan, Ibadah, Umum)",
         default: "Umum"
     )
     var category: String
@@ -82,7 +82,7 @@ struct AddTaskIntent: AppIntent {
 
         let context = validContainer.mainContext
         let taskDate = timestamp ?? detectedDate ?? Date()
-        let finalCategory = (category == "Umum" && detectedCategory != nil) ? detectedCategory! : category
+        let finalCategory = (category == "Umum" ? detectedCategory : nil) ?? category
         
         let newItem = Item(
             title: finalTitle,
@@ -99,7 +99,15 @@ struct AddTaskIntent: AppIntent {
         // Perbarui tampilan Widget di Home Screen / Lock Screen secara instan
         WidgetCenter.shared.reloadAllTimelines()
 
-        return .result(dialog: "✅ Tugas \"\(finalTitle)\" berhasil dicatat ke Learning!")
+        // Daftarkan Notifikasi Pengingat Otomatis
+        if taskDate > Date() {
+            Task {
+                await NotificationManager.shared.scheduleNotification(for: newItem)
+            }
+        }
+
+        let dialogMessage = "Tugas '\(finalTitle)' berhasil disimpan dalam kategori \(finalCategory)!"
+        return .result(dialog: IntentDialog(stringLiteral: dialogMessage))
     }
 }
 
@@ -143,18 +151,28 @@ struct VoiceTextProcessor {
         // 2. Deteksi Kategori Otomatis berdasarkan kata kunci
         var category: String? = nil
         let textLower = text.lowercased()
-        if textLower.contains("lari") || textLower.contains("jogging") || textLower.contains("gym") || textLower.contains("workout") || textLower.contains("renang") || textLower.contains("sepeda") {
-            category = "Health"
-        } else if textLower.contains("tidur") || textLower.contains("makan") || textLower.contains("istirahat") || textLower.contains("sholat") || textLower.contains("doa") {
-            category = "Personal"
-        } else if textLower.contains("meeting") || textLower.contains("rapat") || textLower.contains("kerja") || textLower.contains("client") || textLower.contains("proyek") || textLower.contains("project") {
-            category = "Work"
-        } else if textLower.contains("belajar") || textLower.contains("kuliah") || textLower.contains("baca") || textLower.contains("buku") || textLower.contains("kursus") {
-            category = "Study"
-        } else if textLower.contains("desain") || textLower.contains("design") || textLower.contains("figma") || textLower.contains("ui") {
+        if textLower.contains("lari") || textLower.contains("jogging") || textLower.contains("gym") || textLower.contains("workout") || textLower.contains("renang") || textLower.contains("sepeda") || textLower.contains("olahraga") {
+            category = "Kesehatan"
+        } else if textLower.contains("sholat") || textLower.contains("doa") || textLower.contains("ngaji") || textLower.contains("ibadah") || textLower.contains("meditasi") || textLower.contains("gereja") {
+            category = "Ibadah"
+        } else if textLower.contains("tidur") || textLower.contains("makan") || textLower.contains("istirahat") || textLower.contains("skincare") || textLower.contains("pribadi") {
+            category = "Pribadi"
+        } else if textLower.contains("belanja") || textLower.contains("pasar") || textLower.contains("supermarket") || textLower.contains("mall") {
+            category = "Belanja"
+        } else if textLower.contains("tagihan") || textLower.contains("bayar") || textLower.contains("transfer") || textLower.contains("gaji") || textLower.contains("keuangan") {
+            category = "Keuangan"
+        } else if textLower.contains("rumah") || textLower.contains("cuci") || textLower.contains("nyapu") || textLower.contains("ngepel") || textLower.contains("masak") {
+            category = "Rumah"
+        } else if textLower.contains("nongkrong") || textLower.contains("ngopi") || textLower.contains("teman") || textLower.contains("keluarga") || textLower.contains("kumpul") {
+            category = "Sosial"
+        } else if textLower.contains("meeting") || textLower.contains("rapat") || textLower.contains("kerja") || textLower.contains("client") || textLower.contains("kantor") {
+            category = "Pekerjaan"
+        } else if textLower.contains("belajar") || textLower.contains("kuliah") || textLower.contains("baca") || textLower.contains("buku") || textLower.contains("kursus") || textLower.contains("ujian") || textLower.contains("pr") {
+            category = "Belajar"
+        } else if textLower.contains("desain") || textLower.contains("design") || textLower.contains("figma") || textLower.contains("gambar") {
             category = "Design"
         } else if textLower.contains("coding") || textLower.contains("ngoding") || textLower.contains("bug") || textLower.contains("code") {
-            category = "Code"
+            category = "Coding"
         }
 
         // 3. Format Kapitalisasi Awal Kata (Title Case)

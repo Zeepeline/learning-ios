@@ -2,7 +2,7 @@
 //  AddActivity.swift
 //  learning
 //
-//  Created by macbook on 8/29/26.
+//  Created by macbook on 8/30/26.
 //
 
 import SwiftUI
@@ -10,16 +10,20 @@ import SwiftData
 import WidgetKit
 
 struct AddActivity: View {
-    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
 
     // Form States
     @State private var taskTitle: String = ""
     @State private var taskDetails: String = ""
     @State private var dueDate: Date = Date()
-    @State private var selectedCategory: String = "Design"
+    @State private var selectedCategory: String = "Belajar"
     @State private var getAlert: Bool = true
     @State private var syncToCalendar: Bool = false
+    
+    // Scheduler / Jadwal Rutin States (Mirip di Pengaturan)
+    @State private var isSchedulerEnabled: Bool = false
+    @State private var selectedRecurrence: RecurrenceRule = .daily
 
     var body: some View {
         NavigationStack {
@@ -31,91 +35,126 @@ struct AddActivity: View {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: HIGSpacing.lg) {
                         
-                        // 1. Header Judul
-                        VStack(alignment: .leading, spacing: HIGSpacing.xxs) {
+                        // 1. Header Toolbar
+                        HStack {
+                            CartoonIconButton(icon: "xmark") {
+                                dismiss()
+                            }
+
+                            Spacer()
+
                             Text("New Activity")
-                                .font(.system(size: 26, weight: .heavy, design: .rounded))
+                                .font(.system(size: 18, weight: .heavy, design: .rounded))
                                 .foregroundColor(.black)
-                            Text("Create a new activity to boost your daily focus")
-                                .font(.system(size: 13, weight: .medium, design: .rounded))
-                                .foregroundColor(.secondary)
+
+                            Spacer()
+
+                            // Balancing spacer
+                            Color.clear.frame(width: 44, height: 44)
                         }
-                        .padding(.top, HIGSpacing.xs)
+                        .padding(.top, HIGSpacing.md)
 
-                        // 2. Input Judul Tugas (Kartun Tebal)
-                        VStack(alignment: .leading, spacing: HIGSpacing.xxs) {
-                            Text("TASK TITLE")
-                                .font(.system(size: 11, weight: .heavy, design: .rounded))
-                                .foregroundColor(.secondary)
-                                .padding(.horizontal, HIGSpacing.xxs)
-
-                            TextField("e.g. Read Clean Architecture Ch. 3", text: $taskTitle)
-                                .font(.system(size: 15, weight: .bold, design: .rounded))
-                                .padding(.horizontal, HIGSpacing.md)
-                                .frame(height: 52)
-                                .background(Color.white)
-                                .cornerRadius(CartoonMetrics.cardCornerRadius)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                                        .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-                                )
-                                .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
+                        // 2. Form Input: Title
+                        VStack(spacing: HIGSpacing.xs) {
+                            HStack(spacing: HIGSpacing.xs) {
+                                Text("|")
+                                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.secondary.opacity(0.6))
+                                TextField("Activity Title", text: $taskTitle)
+                                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                            }
+                            .padding(.horizontal, HIGSpacing.md)
+                            .frame(height: 50)
+                            .background(Color.white)
+                            .cornerRadius(CartoonMetrics.cardCornerRadius)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                    .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+                            )
+                            .shadow(color: .black, radius: 0, x: 2, y: 2)
                         }
 
-                        // 3. Pilihan Kategori Kartun
+                        // 3. Form Input: Category Picker Grid
                         CartoonCategoryPicker(
                             selectedCategory: $selectedCategory
                         )
 
-                        // 4. Input Catatan / Detail Tugas
+                        // 4. Form Input: Details / Description
                         VStack(alignment: .leading, spacing: HIGSpacing.xxs) {
-                            Text("DETAILS & NOTES")
+                            Text("DETAILS")
                                 .font(.system(size: 11, weight: .heavy, design: .rounded))
                                 .foregroundColor(.secondary)
                                 .padding(.horizontal, HIGSpacing.xxs)
 
-                            TextField("Add notes, URLs, or checklist...", text: $taskDetails, axis: .vertical)
-                                .font(.system(size: 14, weight: .medium, design: .rounded))
-                                .lineLimit(3...5)
-                                .padding(HIGSpacing.md)
-                                .background(Color.white)
-                                .cornerRadius(CartoonMetrics.cardCornerRadius)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                                        .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+                            ZStack(alignment: .topLeading) {
+                                if taskDetails.isEmpty {
+                                    Text("Tambah catatan atau detail...")
+                                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                                        .foregroundColor(.secondary.opacity(0.6))
+                                        .padding(.top, HIGSpacing.sm)
+                                        .padding(.leading, HIGSpacing.xs)
+                                }
+
+                                TextEditor(text: $taskDetails)
+                                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                                    .frame(minHeight: 70)
+                                    .scrollContentBackground(.hidden)
+                                    .background(Color.clear)
+                            }
+                            .padding(HIGSpacing.sm)
+                            .background(Color.white)
+                            .cornerRadius(CartoonMetrics.cardCornerRadius)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                    .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+                            )
+                            .shadow(color: .black, radius: 0, x: 2, y: 2)
+                        }
+
+                        // 5. Form Input: Date & Time Picker
+                        VStack(alignment: .leading, spacing: HIGSpacing.xxs) {
+                            Text("DATE & TIME")
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, HIGSpacing.xxs)
+
+                            CartoonCalendarView(selectedDate: $dueDate)
+                        }
+
+                        // 6. Section Scheduler / Jadwal Rutin
+                        schedulerSection
+
+                        // 7. Pengaturan Tambahan (Toggles)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("PENGATURAN TAMBAHAN")
+                                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .padding(.leading, 4)
+
+                            VStack(spacing: HIGSpacing.xs) {
+                                CartoonToggleRow(
+                                    icon: "bell.badge.fill",
+                                    iconColor: .black,
+                                    iconBgColor: Color.cartoonYellow,
+                                    title: "Pengingat Notifikasi",
+                                    subtitle: "Kirim pemberitahuan saat waktu tiba",
+                                    isOn: $getAlert,
+                                    activeColor: Color.cartoonMint
                                 )
-                                .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
+
+                                CartoonToggleRow(
+                                    icon: "calendar.badge.plus",
+                                    iconColor: .black,
+                                    iconBgColor: Color.cartoonBlue,
+                                    title: "Sinkronkan ke Kalender",
+                                    subtitle: "Simpan ke aplikasi Kalender Apple",
+                                    isOn: $syncToCalendar,
+                                    activeColor: Color.cartoonBlue
+                                )
+                            }
                         }
 
-                        // 5. Kalender Kartun Lengkap (Bulan, Tanggal & Jam)
-                        CartoonCalendarView(
-                            selectedDate: $dueDate
-                        )
-
-                        // 6. Section Toggle Opsi Notifikasi & Kalender
-                        VStack(spacing: HIGSpacing.sm) {
-                            CartoonToggleRow(
-                                icon: "bell.fill",
-                                iconColor: .black,
-                                iconBgColor: Color.cartoonYellow,
-                                title: "Get alert",
-                                subtitle: "Send local reminder before deadline",
-                                isOn: $getAlert,
-                                activeColor: Color.cartoonYellow
-                            )
-
-                            CartoonToggleRow(
-                                icon: "calendar.badge.plus",
-                                iconColor: .black,
-                                iconBgColor: Color.cartoonMint,
-                                title: "Sync to Calendar",
-                                subtitle: "Add to Apple Calendar events",
-                                isOn: $syncToCalendar,
-                                activeColor: Color.cartoonMint
-                            )
-                        }
-
-                        // 7. Tombol Simpan (Create Task)
+                        // 8. Tombol Simpan (Create Task)
                         Button {
                             createTask()
                         } label: {
@@ -139,90 +178,150 @@ struct AddActivity: View {
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.5))
                         .disabled(taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                         .opacity(taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.5 : 1.0)
-                        .padding(.top, HIGSpacing.xs)
-                        .padding(.bottom, HIGSpacing.xxl)
+                        .padding(.top, HIGSpacing.sm)
+                        .padding(.bottom, 60)
                     }
-                    .padding(.horizontal, HIGSpacing.md)
+                    .padding(.horizontal, HIGSpacing.lg)
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
-            .navigationTitle("Add Activity")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        HapticManager.shared.impact(style: .light)
-                        dismiss()
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 12, weight: .heavy))
-                            Text("Cancel")
-                                .font(.system(size: 14, weight: .heavy, design: .rounded))
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("Selesai") {
+                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                    }
+                    .font(.system(.subheadline, design: .rounded).weight(.bold))
+                    .foregroundColor(.black)
+                }
+            }
+        }
+    }
+
+    // MARK: - Section Scheduler / Jadwal Rutin
+    private var schedulerSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("JADWAL RUTIN (SCHEDULER)")
+                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                .foregroundColor(.secondary)
+                .padding(.leading, 4)
+
+            VStack(spacing: HIGSpacing.xs) {
+                // Toggle Aktifkan Scheduler
+                CartoonToggleRow(
+                    icon: "repeat.circle.fill",
+                    iconColor: .black,
+                    iconBgColor: Color.cartoonLavender,
+                    title: "Jadwal Rutin (Scheduler)",
+                    subtitle: "Ulangi otomatis berkala mirip di pengaturan",
+                    isOn: $isSchedulerEnabled,
+                    activeColor: Color.cartoonLavender
+                )
+
+                if isSchedulerEnabled {
+                    VStack(alignment: .leading, spacing: HIGSpacing.sm) {
+                        Text("FREKUENSI PENGULANGAN")
+                            .font(.system(size: 9.5, weight: .heavy, design: .rounded))
+                            .foregroundColor(.secondary)
+
+                        // Chip Pilihan Frekuensi
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 8) {
+                                ForEach([RecurrenceRule.daily, .weekdays, .weekends, .weekly]) { rule in
+                                    Button {
+                                        HapticManager.shared.selection()
+                                        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+                                            selectedRecurrence = rule
+                                        }
+                                    } label: {
+                                        HStack(spacing: 5) {
+                                            Image(systemName: rule.icon)
+                                                .font(.system(size: 11, weight: .bold))
+                                            Text(rule.title)
+                                                .font(.system(size: 11.5, weight: .heavy, design: .rounded))
+                                        }
+                                        .foregroundColor(.black)
+                                        .padding(.horizontal, 10)
+                                        .padding(.vertical, 7)
+                                        .background(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .fill(selectedRecurrence == rule ? rule.badgeColor : Color.white)
+                                                .shadow(color: .black.opacity(0.1), radius: 0, x: 1, y: 1)
+                                        )
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color.black, lineWidth: selectedRecurrence == rule ? 1.6 : 1.0)
+                                        )
+                                    }
+                                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+                                }
+                            }
+                            .padding(.vertical, 2)
                         }
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.white)
-                        .cornerRadius(10)
-                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.5))
-                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+
+                        // Info Box
+                        HStack(spacing: 6) {
+                            Image(systemName: "info.circle.fill")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(Color.cartoonBlue)
+                            Text("Aktivitas akan diulang setiap **\(selectedRecurrence.shortTitle)** pada pukul **\(dueDate.formatted(date: .omitted, time: .shortened))**.")
+                                .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                                .foregroundColor(.black.opacity(0.8))
+                        }
+                        .padding(8)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color.cartoonBlue.opacity(0.12))
+                        .cornerRadius(8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.cartoonBlue.opacity(0.3), lineWidth: 1.0))
                     }
-                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+                    .padding(HIGSpacing.md)
+                    .cartoonCard()
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .scale(scale: 0.98)),
+                        removal: .opacity.combined(with: .scale(scale: 0.98))
+                    ))
                 }
             }
         }
     }
 
-    // MARK: - Helper Simpan Data
     private func createTask() {
-        guard !taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        let trimmedTitle = taskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTitle.isEmpty else { return }
 
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-            let item = Item(
-                title: taskTitle.trimmingCharacters(in: .whitespacesAndNewlines),
-                notes: taskDetails.trimmingCharacters(in: .whitespacesAndNewlines),
-                timestamp: dueDate,
-                isCompleted: false,
-                priority: "Normal",
-                category: selectedCategory
-            )
+        let newItem = Item(
+            title: trimmedTitle,
+            notes: taskDetails,
+            timestamp: dueDate,
+            isCompleted: false,
+            priority: "Normal",
+            category: selectedCategory,
+            isRecurring: isSchedulerEnabled,
+            recurrenceRule: isSchedulerEnabled ? selectedRecurrence.rawValue : "Sekali Saja"
+        )
 
-            modelContext.insert(item)
-            try? modelContext.save()
+        modelContext.insert(newItem)
 
-            // 🔔 Jadwalkan Local Notification jika user memilih "Get alert"
-            if getAlert {
-                Task {
-                    await NotificationManager.shared.scheduleNotification(for: item)
-                }
+        if getAlert {
+            Task {
+                await NotificationManager.shared.scheduleNotification(for: newItem)
             }
-
-            // 📅 Sinkronisasi ke Apple Calendar jika diaktifkan
-            if syncToCalendar {
-                Task {
-                    do {
-                        try await CalendarSyncManager.shared.addEventToCalendar(
-                            title: item.title,
-                            startDate: item.timestamp,
-                            notes: item.notes
-                        )
-                        print("✅ Tugas berhasil disinkronkan ke Apple Calendar.")
-                    } catch {
-                        print("❌ Gagal sinkronisasi kalender: \(error.localizedDescription)")
-                    }
-                }
-            }
-
-            // 🔄 Muat ulang widget
-            WidgetCenter.shared.reloadAllTimelines()
-
-            HapticManager.shared.success()
-            dismiss()
         }
-    }
-}
 
-#Preview {
-    AddActivity()
-        .modelContainer(for: Item.self, inMemory: true)
+        if syncToCalendar {
+            Task {
+                _ = try? await CalendarSyncManager.shared.addEventToCalendar(
+                    title: newItem.title,
+                    startDate: newItem.timestamp,
+                    notes: newItem.notes
+                )
+            }
+        }
+
+        try? modelContext.save()
+        WidgetCenter.shared.reloadAllTimelines()
+
+        HapticManager.shared.success()
+        dismiss()
+    }
 }

@@ -21,6 +21,7 @@ struct HomeActivityListView: View {
 
     private let statusFilters: [(id: String, label: String, icon: String)] = [
         ("all", "Semua", "tray.full.fill"),
+        ("recurring", "Rutin", "repeat"),
         ("pending", "Tertunda", "hourglass"),
         ("completed", "Selesai", "checkmark.circle.fill"),
         ("high", "Tinggi", "bolt.fill")
@@ -38,6 +39,8 @@ struct HomeActivityListView: View {
 
             let matchesFilter: Bool
             switch selectedStatusFilter {
+            case "recurring":
+                matchesFilter = item.isRecurring
             case "pending":
                 matchesFilter = !item.isCompleted
             case "completed":
@@ -191,52 +194,43 @@ struct HomeActivityListView: View {
         }
     }
 
-    // MARK: - Zero-State Onboarding
+    // MARK: - State Ketika Belum Ada Data (Empty State Pertama Kali)
     private var zeroStateOnboardingView: some View {
-        VStack(alignment: .leading, spacing: HIGSpacing.sm) {
-            Text("Inspirasi Tugas Cepat")
-                .font(.system(size: 15, weight: .heavy, design: .rounded))
-                .foregroundColor(.black)
-                .padding(.horizontal, HIGSpacing.md)
-                .padding(.top, HIGSpacing.xs)
+        VStack(spacing: HIGSpacing.md) {
+            ZStack {
+                Circle()
+                    .fill(Color.cartoonLavender)
+                    .frame(width: 80, height: 80)
+                    .shadow(color: .black, radius: 0, x: 2.5, y: 2.5)
+                    .overlay(Circle().stroke(Color.black, lineWidth: 2))
 
-            VStack(spacing: HIGSpacing.xs) {
-                CartoonQuickTemplateCard(
-                    title: "Buat Desain UI & Wireframe",
-                    category: "Design",
-                    icon: "paintbrush.pointed.fill",
-                    color: .cartoonYellow
-                ) {
-                    addQuickTask(title: "Buat Desain UI & Wireframe", category: "Design")
-                }
-
-                CartoonQuickTemplateCard(
-                    title: "Daily Standup & Sync Tim",
-                    category: "Meeting",
-                    icon: "person.2.fill",
-                    color: .cartoonPink
-                ) {
-                    addQuickTask(title: "Daily Standup & Sync Tim", category: "Meeting")
-                }
-
-                CartoonQuickTemplateCard(
-                    title: "Coding & Fix Bug Modul Auth",
-                    category: "Coding",
-                    icon: "hammer.fill",
-                    color: .cartoonMint
-                ) {
-                    addQuickTask(title: "Coding & Fix Bug Modul Auth", category: "Coding")
-                }
+                Image(systemName: "sparkles")
+                    .font(.system(size: 36, weight: .bold))
+                    .foregroundColor(.black)
             }
-            .padding(.horizontal, HIGSpacing.md)
+            .padding(.top, HIGSpacing.xl)
+
+            VStack(spacing: HIGSpacing.xxs) {
+                Text("Mulai Harimu!")
+                    .font(.system(size: 20, weight: .heavy, design: .rounded))
+                    .foregroundColor(.black)
+
+                Text("Tekan tombol '+' di bawah untuk menambahkan aktivitas pertamamu.")
+                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                    .foregroundColor(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, HIGSpacing.xl)
+            }
         }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, HIGSpacing.xl)
     }
 
-    // MARK: - Empty Search Result
+    // MARK: - State Ketika Pencarian / Filter Tidak Menemukan Hasil
     private var emptySearchResultView: some View {
         VStack(spacing: HIGSpacing.sm) {
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 36, weight: .bold))
+                .font(.system(size: 32, weight: .bold))
                 .foregroundColor(.secondary)
                 .padding(.top, HIGSpacing.lg)
 
@@ -244,29 +238,11 @@ struct HomeActivityListView: View {
                 .font(.system(size: 16, weight: .heavy, design: .rounded))
                 .foregroundColor(.black)
 
-            Text("Tidak ditemukan tugas dengan kata kunci \"\(searchText)\".")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
+            Text("Coba kata kunci lain atau ubah filter.")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
                 .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, HIGSpacing.md)
-    }
-
-    private func addQuickTask(title: String, category: String) {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-            let newItem = Item(
-                title: title,
-                notes: "Dibuat dari inspirasi template cepat",
-                timestamp: Date(),
-                isCompleted: false,
-                priority: "Normal",
-                category: category
-            )
-            modelContext.insert(newItem)
-            try? modelContext.save()
-            WidgetCenter.shared.reloadAllTimelines()
-            HapticManager.shared.success()
-        }
+        .padding(.vertical, HIGSpacing.xl)
     }
 }
