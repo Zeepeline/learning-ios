@@ -98,6 +98,8 @@ struct CartoonTimelineCard: View {
     var category: String = ""
     var notes: String = ""
     var isCompleted: Bool = false
+    var isRecurring: Bool = false
+    var recurrenceTitle: String = ""
     let onToggle: () -> Void
     let onDelete: () -> Void
     var onTap: (() -> Void)?
@@ -140,9 +142,26 @@ struct CartoonTimelineCard: View {
             }
 
             // Waktu Tugas
-            Text(timeText)
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundColor(.secondary)
+            HStack(spacing: 6) {
+                Text(timeText)
+                    .font(.system(size: 12, weight: .medium, design: .rounded))
+                    .foregroundColor(.secondary)
+
+                if isRecurring && !recurrenceTitle.isEmpty {
+                    HStack(spacing: 3) {
+                        Image(systemName: "repeat")
+                            .font(.system(size: 8, weight: .bold))
+                        Text(recurrenceTitle)
+                            .font(.system(size: 9, weight: .heavy, design: .rounded))
+                    }
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(Color.cartoonLavender)
+                    .clipShape(Capsule())
+                    .overlay(Capsule().stroke(Color.black, lineWidth: 1.0))
+                }
+            }
 
             // Category Pill (Jika Ada)
             if !category.isEmpty {
@@ -181,7 +200,7 @@ struct CartoonTimelineCard: View {
     }
 }
 
-// MARK: - ➕ Reusable Input Cepat "Add new subtask"
+// MARK: - ➕ Reusable Input Cepat Subtask ("Add new subtask")
 struct CartoonQuickAddBar: View {
     let timeLabel: String
     @Binding var text: String
@@ -194,42 +213,40 @@ struct CartoonQuickAddBar: View {
                 .foregroundColor(.secondary)
                 .frame(width: 58, alignment: .leading)
 
-            HStack {
-                TextField("Add new subtask", text: $text)
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
+            HStack(spacing: HIGSpacing.xs) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.system(size: 14, weight: .black))
+                    .foregroundColor(.secondary)
+
+                TextField("Add new subtask...", text: $text)
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(.black)
+                    .submitLabel(.done)
                     .onSubmit {
                         onSubmit()
                     }
 
-                Spacer()
-
-                Button {
-                    onSubmit()
-                } label: {
-                    ZStack {
-                        Circle()
-                            .fill(Color.black)
-                            .frame(width: 28, height: 28)
-
-                        Image(systemName: "plus")
-                            .font(.system(size: 13, weight: .black))
-                            .foregroundColor(.white)
+                if !text.isEmpty {
+                    Button(action: onSubmit) {
+                        Image(systemName: "arrow.up.circle.fill")
+                            .font(.system(size: 20, weight: .black))
+                            .foregroundColor(.black)
                     }
+                    .buttonStyle(.plain)
                 }
-                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
             }
             .padding(.horizontal, HIGSpacing.md)
-            .padding(.vertical, 10)
-            .frame(minHeight: 48)
+            .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 14)
                     .fill(Color.white)
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+                    .stroke(Color.black, lineWidth: 1.5)
             )
         }
+        .padding(.vertical, 4)
     }
 }

@@ -35,9 +35,39 @@ struct TodayTimelineView: View {
         return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: startOfWeek) }
     }
 
+    // Cek apakah item aktif pada tanggal tertentu (mendukung tugas berulang / scheduler)
+    @inline(__always)
+    private func isItemActive(_ item: Item, on date: Date) -> Bool {
+        if !item.isRecurring {
+            return calendar.isDate(item.timestamp, inSameDayAs: date)
+        }
+
+        // Jangan tampilkan sebelum tanggal pertama kali dibuat
+        let targetStart = calendar.startOfDay(for: date)
+        let itemStart = calendar.startOfDay(for: item.timestamp)
+        guard targetStart >= itemStart else {
+            return false
+        }
+
+        let targetWeekday = calendar.component(.weekday, from: date)
+        switch item.recurrence {
+        case .daily:
+            return true
+        case .weekdays:
+            return (2...6).contains(targetWeekday)
+        case .weekends:
+            return targetWeekday == 1 || targetWeekday == 7
+        case .weekly:
+            let itemWeekday = calendar.component(.weekday, from: item.timestamp)
+            return targetWeekday == itemWeekday
+        case .none:
+            return calendar.isDate(item.timestamp, inSameDayAs: date)
+        }
+    }
+
     // Filter item yang sesuai dengan tanggal terpilih (100% Data Nyata dari SwiftData)
     private var filteredItems: [Item] {
-        allItems.filter { calendar.isDate($0.timestamp, inSameDayAs: selectedDate) }
+        allItems.filter { isItemActive($0, on: selectedDate) }
     }
 
     // Statistik tugas pada tanggal terpilih
@@ -54,11 +84,19 @@ struct TodayTimelineView: View {
         return Double(completedTasksCount) / Double(totalTasksCount)
     }
 
-    // Helper untuk task count di setiap tanggal kalender
+    // ⚡ Optimized Fast Task Count per Date (Single-pass lookup)
     private func getTaskCount(for date: Date) -> (total: Int, completed: Int) {
-        let itemsOnDate = allItems.filter { calendar.isDate($0.timestamp, inSameDayAs: date) }
-        let completed = itemsOnDate.filter { $0.isCompleted }.count
-        return (total: itemsOnDate.count, completed: completed)
+        var total = 0
+        var completed = 0
+        for item in allItems {
+            if isItemActive(item, on: date) {
+                total += 1
+                if item.isCompleted {
+                    completed += 1
+                }
+            }
+        }
+        return (total: total, completed: completed)
     }
 
     // Cek apakah tanggal terpilih adalah hari ini
@@ -99,66 +137,46 @@ struct TodayTimelineView: View {
                             }
                         )
                         .padding(.horizontal, HIGSpacing.md)
-                        .simultaneousGesture(
-                            DragGesture(minimumDistance: 25)
-                                .onEnded { value in
-                                    // Pastikan pergerakan dominan horizontal agar scroll vertikal halaman tidak terganggu
-                                    guard abs(value.translation.width) > abs(value.translation.height) * 1.3 else { return }
-                                    if value.translation.width < -40 {
-                                        // Swipe Kiri -> Minggu Depan
-                                        changeWeek(by: 1)
-                                    } else if value.translation.width > 40 {
-                                        // Swipe Kanan -> Minggu Sebelumnya
-                                        changeWeek(by: -1)
-                                    }
-                                }
-                        )
                         .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .move(edge: .top)),
-                            removal: .opacity.combined(with: .move(edge: .top))
+                            insertion: .opacity.combined(with: .scale(scale: 0.96)),
+                            removal: .opacity.combined(with: .scale(scale: 0.96))
                         ))
                     }
 
-                    // 3. 🏷️ Header Tanggal Terpilih & Ringkasan Progress Tugas Harian
-                    selectedDateSummarySection
+                    // 3. 🎯 Kartu Ringkasan Progress Harian
+                    dailyProgressCard
                         .padding(.horizontal, HIGSpacing.md)
 
-                    // 3b. 🏃 Kartu Ringkasan Kebugaran Apple Health & Zepp (Khusus Hari Ini)
-                    if isSelectedDateToday {
-                        CartoonHealthCard()
-                            .padding(.horizontal, HIGSpacing.md)
-                            .transition(.asymmetric(
-                                insertion: .opacity.combined(with: .scale(scale: 0.98)),
-                                removal: .opacity
-                            ))
-                    }
-
-                    // 4. 🗂️ Garis Timeline Vertikal & Kartu Aktivitas (Real Data dari SwiftData)
-                    VStack(spacing: HIGSpacing.lg) {
+                    // 4. 🗂️ Garis Timeline Vertikal & Kartu Aktivitas (Menggunakan LazyVStack untuk 120fps)
+                    VStack(spacing: HIGSpacing.md) {
                         if filteredItems.isEmpty {
                             emptyTimelineState
                         } else {
-                            // Daftar Tugas Nyata Menggunakan Reusable CartoonTimelineCard
-                            ForEach(filteredItems) { item in
-                                HStack(alignment: .top, spacing: HIGSpacing.sm) {
-                                    // Kolom Waktu di Kiri (Format: 09:00 AM)
-                                    Text(item.timestamp.formatted(.dateTime.hour().minute()))
-                                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                                        .foregroundColor(.secondary)
-                                        .frame(width: 58, alignment: .leading)
-                                        .padding(.top, HIGSpacing.xs)
+                            // ⚡ LazyVStack: Instansiasi on-demand kartu tugas untuk performa scroll mulus
+                            LazyVStack(spacing: HIGSpacing.sm) {
+                                ForEach(filteredItems) { item in
+                                    HStack(alignment: .top, spacing: HIGSpacing.sm) {
+                                        // Kolom Waktu di Kiri (Format: 09:00 AM)
+                                        Text(item.timestamp.formatted(.dateTime.hour().minute()))
+                                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                                            .foregroundColor(.secondary)
+                                            .frame(width: 58, alignment: .leading)
+                                            .padding(.top, HIGSpacing.xs)
 
-                                    // Reusable Timeline Card Component dengan Dukungan Edit saat Diketuk
-                                    CartoonTimelineCard(
-                                        title: item.title,
-                                        timeText: item.timestamp.formatted(date: .omitted, time: .shortened),
-                                        category: item.category,
-                                        notes: item.notes,
-                                        isCompleted: item.isCompleted,
-                                        onToggle: { onToggleItem(item) },
-                                        onDelete: { onDeleteItem(item) },
-                                        onTap: { onEditItem(item) }
-                                    )
+                                        // Reusable Timeline Card Component dengan Dukungan Edit saat Diketuk
+                                        CartoonTimelineCard(
+                                            title: item.title,
+                                            timeText: item.timestamp.formatted(date: .omitted, time: .shortened),
+                                            category: item.category,
+                                            notes: item.notes,
+                                            isCompleted: item.isCompleted,
+                                            isRecurring: item.isRecurring,
+                                            recurrenceTitle: item.recurrence.shortTitle,
+                                            onToggle: { onToggleItem(item) },
+                                            onDelete: { onDeleteItem(item) },
+                                            onTap: { onEditItem(item) }
+                                        )
+                                    }
                                 }
                             }
 
@@ -180,204 +198,189 @@ struct TodayTimelineView: View {
             .onTapGesture {
                 isQuickAddFocused = false
             }
-            .onChange(of: isQuickAddFocused) { _, focused in
-                if focused {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                        proxy.scrollTo("quickAddBar", anchor: UnitPoint(x: 0.5, y: 0.25))
-                    }
-                }
+            .sheet(isPresented: $isShowingAddActivity) {
+                AddActivity()
             }
-            .onChange(of: selectedDate) { _, newDate in
-                // Sinkronkan baseWeekDate saat memilih tanggal agar strip minggu selalu relevan
-                if !calendar.isDate(newDate, equalTo: baseWeekDate, toGranularity: .weekOfYear) {
-                    baseWeekDate = newDate
-                }
-            }
-        }
-        .sheet(isPresented: $isShowingAddActivity) {
-            AddActivity()
-                .presentationDetents([.fraction(0.92), .large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(24)
         }
     }
 
-    // MARK: - 📅 Header Kontrol Kalender
+    // MARK: - 🎛️ Header Kontrol Kalender
     private var calendarControlHeader: some View {
-        HStack(spacing: HIGSpacing.xs) {
-            // Teks Bulan & Tahun dari baseWeekDate / selectedDate
-            HStack(spacing: 6) {
-                Text(monthYearText(from: isMonthViewExpanded ? selectedDate : baseWeekDate))
+        HStack {
+            // Label Bulan & Tahun
+            VStack(alignment: .leading, spacing: 2) {
+                Text(monthYearText(from: selectedDate))
                     .font(.system(size: 18, weight: .heavy, design: .rounded))
                     .foregroundColor(.black)
+
+                Text(isSelectedDateToday ? "Hari Ini" : selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "id_ID"))))
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundColor(isSelectedDateToday ? Color.cartoonCoral : .secondary)
             }
 
             Spacer()
 
-            // Tombol Pintas "Hari Ini" jika bukan di hari ini
-            if !isSelectedDateToday {
-                Button {
-                    HapticManager.shared.impact(style: .light)
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                        let today = Date()
-                        selectedDate = today
-                        baseWeekDate = today
-                    }
-                } label: {
-                    HStack(spacing: 4) {
-                        Image(systemName: "arrow.uturn.backward.circle.fill")
-                            .font(.system(size: 11, weight: .bold))
+            HStack(spacing: 8) {
+                // Tombol "Hari Ini"
+                if !isSelectedDateToday {
+                    Button {
+                        HapticManager.shared.impact(style: .medium)
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                            selectedDate = Date()
+                            baseWeekDate = Date()
+                        }
+                    } label: {
                         Text("Hari Ini")
                             .font(.system(size: 11, weight: .heavy, design: .rounded))
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .fill(Color.cartoonYellow)
+                                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(Color.black, lineWidth: 1.5)
+                            )
                     }
-                    .foregroundColor(.black)
-                    .padding(.horizontal, HIGSpacing.xs)
-                    .padding(.vertical, 5)
-                    .background(
-                        Capsule()
-                            .fill(Color.cartoonYellow)
-                            .shadow(color: .black.opacity(0.15), radius: 0, x: 1, y: 1)
-                    )
-                    .overlay(Capsule().stroke(Color.black, lineWidth: 1.2))
+                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+                }
+
+                // Navigasi Minggu Sebelumnya (<)
+                Button {
+                    changeWeek(by: -1)
+                } label: {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 12, weight: .black))
+                        .foregroundColor(.black)
+                        .frame(width: 32, height: 32)
+                        .background(Color.white)
+                        .cornerRadius(8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
+                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                }
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+
+                // Navigasi Minggu Berikutnya (>)
+                Button {
+                    changeWeek(by: 1)
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .black))
+                        .foregroundColor(.black)
+                        .frame(width: 32, height: 32)
+                        .background(Color.white)
+                        .cornerRadius(8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
+                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                }
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+
+                // Toggle Tampilan Bulan/Mingguan
+                Button {
+                    HapticManager.shared.selection()
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                        isMonthViewExpanded.toggle()
+                    }
+                } label: {
+                    Image(systemName: isMonthViewExpanded ? "calendar.day.timeline.left" : "calendar")
+                        .font(.system(size: 13, weight: .black))
+                        .foregroundColor(.black)
+                        .frame(width: 32, height: 32)
+                        .background(isMonthViewExpanded ? Color.cartoonLavender : Color.white)
+                        .cornerRadius(8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
+                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
                 }
                 .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
             }
-
-            // Tombol Navigasi < (Minggu/Bulan Sebelumnya)
-            Button {
-                HapticManager.shared.impact(style: .light)
-                if isMonthViewExpanded {
-                    changeMonth(by: -1)
-                } else {
-                    changeWeek(by: -1)
-                }
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 12, weight: .black))
-                    .foregroundColor(.black)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.white)
-                            .shadow(color: .black.opacity(0.1), radius: 0, x: 1, y: 1)
-                    )
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-            }
-            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-
-            // Tombol Navigasi > (Minggu/Bulan Selanjutnya)
-            Button {
-                HapticManager.shared.impact(style: .light)
-                if isMonthViewExpanded {
-                    changeMonth(by: 1)
-                } else {
-                    changeWeek(by: 1)
-                }
-            } label: {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12, weight: .black))
-                    .foregroundColor(.black)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(Color.white)
-                            .shadow(color: .black.opacity(0.1), radius: 0, x: 1, y: 1)
-                    )
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-            }
-            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-
-            // Tombol Toggle Kalender Bulanan Penuh / Mingguan
-            Button {
-                HapticManager.shared.selection()
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                    isMonthViewExpanded.toggle()
-                }
-            } label: {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 8)
-                        .fill(isMonthViewExpanded ? Color.cartoonCoral : Color.white)
-                        .frame(width: 32, height: 32)
-                        .shadow(color: .black.opacity(0.1), radius: 0, x: 1, y: 1)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-
-                    Image(systemName: isMonthViewExpanded ? "rectangle.split.1x2.fill" : "calendar")
-                        .font(.system(size: 13, weight: .bold))
-                        .foregroundColor(isMonthViewExpanded ? .white : .black)
-                }
-            }
-            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
         }
     }
 
-    // MARK: - 🏷️ Section Header Tanggal Terpilih & Progress Card
-    private var selectedDateSummarySection: some View {
-        VStack(alignment: .leading, spacing: HIGSpacing.xs) {
-            HStack(alignment: .center) {
-                // Judul Hari & Tanggal Lengkap
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide).year()))
-                        .font(.system(size: 16, weight: .heavy, design: .rounded))
+    // MARK: - 🎯 Kartu Ringkasan Progress Harian
+    private var dailyProgressCard: some View {
+        HStack(spacing: HIGSpacing.md) {
+            // Icon Progress Kartun
+            ZStack {
+                Circle()
+                    .fill(progressRatio >= 1.0 && totalTasksCount > 0 ? Color.cartoonMint : Color.cartoonYellow)
+                    .frame(width: 46, height: 46)
+                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                    .overlay(Circle().stroke(Color.black, lineWidth: 2))
+
+                if progressRatio >= 1.0 && totalTasksCount > 0 {
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.system(size: 20, weight: .bold))
                         .foregroundColor(.black)
-                    
-                    if isSelectedDateToday {
-                        Text("Jadwal Hari Ini")
-                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                            .foregroundColor(Color.cartoonCoral)
-                    }
-                }
-
-                Spacer()
-
-                // Badge Ringkasan Tugas
-                if totalTasksCount > 0 {
-                    HStack(spacing: 4) {
-                        Image(systemName: completedTasksCount == totalTasksCount ? "checkmark.seal.fill" : "list.clipboard.fill")
-                            .font(.system(size: 11, weight: .bold))
-                        Text("\(completedTasksCount)/\(totalTasksCount) Selesai")
-                            .font(.system(size: 11, weight: .heavy, design: .rounded))
-                    }
-                    .foregroundColor(.black)
-                    .padding(.horizontal, HIGSpacing.xs)
-                    .padding(.vertical, 5)
-                    .background(
-                        Capsule()
-                            .fill(completedTasksCount == totalTasksCount ? Color.cartoonMint : Color.cartoonBlue)
-                            .shadow(color: .black.opacity(0.12), radius: 0, x: 1, y: 1)
-                    )
-                    .overlay(Capsule().stroke(Color.black, lineWidth: 1.2))
+                } else {
+                    Text("\(Int(progressRatio * 100))%")
+                        .font(.system(size: 13, weight: .heavy, design: .rounded))
+                        .foregroundColor(.black)
                 }
             }
 
-            // Progress Bar Bergaya Kartun jika ada tugas
-            if totalTasksCount > 0 {
+            // Info Teks Progress
+            VStack(alignment: .leading, spacing: 3) {
+                Text(progressTitle)
+                    .font(.system(size: 14, weight: .heavy, design: .rounded))
+                    .foregroundColor(.black)
+
+                Text(progressSubtitle)
+                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                    .foregroundColor(.secondary)
+
+                // Bar Progress Mini Kartun
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(Color(red: 0.92, green: 0.92, blue: 0.94))
+                        Capsule()
+                            .fill(Color(red: 0.90, green: 0.90, blue: 0.92))
                             .frame(height: 8)
-                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
+                            .overlay(Capsule().stroke(Color.black, lineWidth: 1.2))
 
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(completedTasksCount == totalTasksCount ? Color.cartoonMint : Color.cartoonCoral)
+                        Capsule()
+                            .fill(progressRatio >= 1.0 ? Color.cartoonMint : Color.cartoonCoral)
                             .frame(width: max(0, geo.size.width * CGFloat(progressRatio)), height: 8)
-                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: progressRatio > 0 ? 1.0 : 0))
+                            .overlay(Capsule().stroke(Color.black, lineWidth: progressRatio > 0 ? 1.2 : 0))
                     }
                 }
                 .frame(height: 8)
-                .animation(.spring(response: 0.35, dampingFraction: 0.75), value: progressRatio)
+                .padding(.top, 2)
             }
+
+            Spacer()
         }
-        .padding(HIGSpacing.sm)
+        .padding(HIGSpacing.md)
         .background(
-            RoundedRectangle(cornerRadius: CartoonMetrics.cornerRadius)
+            RoundedRectangle(cornerRadius: 16)
                 .fill(Color.white)
                 .shadow(color: .black, radius: 0, x: 2, y: 2)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: CartoonMetrics.cornerRadius)
+            RoundedRectangle(cornerRadius: 16)
                 .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
         )
+    }
+
+    private var progressTitle: String {
+        if totalTasksCount == 0 {
+            return "Tidak Ada Tugas"
+        } else if completedTasksCount == totalTasksCount {
+            return "Semua Tugas Tuntas! 🎉"
+        } else {
+            return "\(completedTasksCount) dari \(totalTasksCount) Selesai"
+        }
+    }
+
+    private var progressSubtitle: String {
+        if totalTasksCount == 0 {
+            return "Jadwal kosong, istirahat atau buat tugas baru!"
+        } else if completedTasksCount == totalTasksCount {
+            return "Pencapaian luar biasa untuk hari ini!"
+        } else {
+            return "\(totalTasksCount - completedTasksCount) tugas lagi yang menunggu kamu."
+        }
     }
 
     // MARK: - 📬 Tampilan Kosong untuk Tanggal Terpilih
@@ -442,9 +445,7 @@ struct TodayTimelineView: View {
 
     // MARK: - Helper Logika Navigasi & Aksi
     private func monthYearText(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: date)
+        date.formatted(.dateTime.month(.wide).year().locale(Locale(identifier: "id_ID")))
     }
 
     private func changeWeek(by amount: Int) {
@@ -456,22 +457,17 @@ struct TodayTimelineView: View {
                 }
             }
         }
-    }
-
-    private func changeMonth(by amount: Int) {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-            if let newDate = calendar.date(byAdding: .month, value: amount, to: selectedDate) {
-                selectedDate = newDate
-                baseWeekDate = newDate
-            }
-        }
+        HapticManager.shared.selection()
     }
 
     private func createQuickSubtask() {
-        guard !newSubtaskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        let trimmed = newSubtaskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
             let newItem = Item(
-                title: newSubtaskTitle.trimmingCharacters(in: .whitespacesAndNewlines),
+                title: trimmed,
+                notes: "",
                 timestamp: selectedDate,
                 isCompleted: false,
                 priority: "Normal",
@@ -479,18 +475,11 @@ struct TodayTimelineView: View {
             )
             modelContext.insert(newItem)
             try? modelContext.save()
-            newSubtaskTitle = ""
             WidgetCenter.shared.reloadAllTimelines()
-            HapticManager.shared.impact(style: .medium)
+
+            newSubtaskTitle = ""
+            isQuickAddFocused = false
+            HapticManager.shared.success()
         }
     }
-}
-
-#Preview {
-    TodayTimelineView(
-        onDeleteItem: { _ in },
-        onToggleItem: { _ in },
-        onEditItem: { _ in }
-    )
-    .modelContainer(for: Item.self, inMemory: true)
 }

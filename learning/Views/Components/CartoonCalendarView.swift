@@ -246,9 +246,7 @@ struct CartoonCalendarView: View {
 
     // MARK: - Helper Logika Tanggal
     private func monthYearString(from date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: date)
+        date.formatted(.dateTime.month(.wide).year().locale(Locale(identifier: "id_ID")))
     }
 
     private func changeMonth(by amount: Int) {
