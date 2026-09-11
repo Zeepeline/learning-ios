@@ -5,11 +5,11 @@
 //  Created by macbook on 8/29/26.
 //
 
-import SwiftUI
-import SwiftData
-import WidgetKit
-import GoogleSignIn
 import AppIntents
+import GoogleSignIn
+import SwiftData
+import SwiftUI
+import WidgetKit
 
 @main
 struct learningApp: App {
@@ -52,7 +52,7 @@ struct learningApp: App {
                     await NotificationManager.shared.requestAuthorization()
                 }
                 WidgetCenter.shared.reloadAllTimelines()
-                
+
                 // Daftarkan Pintasan Suara Siri ke Sistem iOS
                 LearningShortcutsProvider.updateAppShortcutParameters()
             }
@@ -87,7 +87,8 @@ struct learningApp: App {
                     print("⚠️ SQLite lama tidak memiliki tabel baru (ZHABIT). Memulihkan database...")
                     cleanCorruptStore(at: containerURL)
                     if let freshContainer = try? ModelContainer(for: schema, configurations: [config]),
-                       isContainerHealthy(freshContainer) {
+                       isContainerHealthy(freshContainer)
+                    {
                         print("✅ Berhasil membuat ulang SQLite database dengan skema lengkap (Item & Habit).")
                         return freshContainer
                     }
@@ -103,7 +104,8 @@ struct learningApp: App {
         // 2. Fallback Standard Local Storage
         let standardConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
         if let container = try? ModelContainer(for: schema, configurations: [standardConfig]),
-           isContainerHealthy(container) {
+           isContainerHealthy(container)
+        {
             return container
         }
 

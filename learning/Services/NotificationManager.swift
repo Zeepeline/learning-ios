@@ -84,29 +84,77 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         }
     }
 
-    /// Menjadwalkan notifikasi lokal untuk tugas tertentu dengan async/await
+    /// Menjadwalkan notifikasi lokal untuk tugas tertentu (termasuk jadwal rutin/scheduler)
     func scheduleNotification(for item: Item) async {
-        guard item.timestamp > Date() else { return }
-
         let granted = await requestAuthorization()
         guard granted else { return }
 
+        // Batalkan notifikasi lama terkait item ini sebelum membuat yang baru
+        cancelNotification(for: item)
+
         let content = UNMutableNotificationContent()
-        content.title = "Waktunya Tugas: \(item.title)"
-        content.body = item.notes.isEmpty ? "Jangan lupa selesaikan tugas ini tepat waktu ya!" : item.notes
+        content.title = item.isRecurring ? "⏰ Jadwal Rutin: \(item.title)" : "Waktunya Tugas: \(item.title)"
+        content.body = item.notes.isEmpty ? "Jangan lupa selesaikan aktivitas ini tepat waktu ya!" : item.notes
         content.sound = await MainActor.run { SoundManager.shared.selectedTone.notificationSound }
         content.badge = 1
 
-        let triggerDate = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: item.timestamp)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+        let calendar = Calendar.current
+        let baseIdentifier = String(describing: item.persistentModelID)
+        let hour = calendar.component(.hour, from: item.timestamp)
+        let minute = calendar.component(.minute, from: item.timestamp)
 
-        let identifier = String(describing: item.persistentModelID)
-        let request = UNNotificationRequest(identifier: identifier, content: content, trigger: trigger)
+        if item.isRecurring {
+            switch item.recurrence {
+            case .daily:
+                var dateComponents = DateComponents()
+                dateComponents.hour = hour
+                dateComponents.minute = minute
+                let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+                let request = UNNotificationRequest(identifier: baseIdentifier, content: content, trigger: trigger)
+                try? await UNUserNotificationCenter.current().add(request)
 
-        do {
-            try await UNUserNotificationCenter.current().add(request)
-        } catch {
-            print("Gagal menjadwalkan notifikasi: \(error.localizedDescription)")
+            case .weekdays:
+                // Senin sampai Jumat (weekday 2..6 di Calendar Gregorian)
+                for weekday in 2...6 {
+                    var dateComponents = DateComponents()
+                    dateComponents.weekday = weekday
+                    dateComponents.hour = hour
+                    dateComponents.minute = minute
+                    let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+                    let request = UNNotificationRequest(identifier: "\(baseIdentifier)_wd_\(weekday)", content: content, trigger: trigger)
+                    try? await UNUserNotificationCenter.current().add(request)
+                }
+
+            case .weekends:
+                // Minggu (1) dan Sabtu (7)
+                for weekday in [1, 7] {
+                    var dateComponents = DateComponents()
+                    dateComponents.weekday = weekday
+                    dateComponents.hour = hour
+                    dateComponents.minute = minute
+                    let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+                    let request = UNNotificationRequest(identifier: "\(baseIdentifier)_we_\(weekday)", content: content, trigger: trigger)
+                    try? await UNUserNotificationCenter.current().add(request)
+                }
+
+            case .weekly:
+                var dateComponents = DateComponents()
+                dateComponents.weekday = calendar.component(.weekday, from: item.timestamp)
+                dateComponents.hour = hour
+                dateComponents.minute = minute
+                let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+                let request = UNNotificationRequest(identifier: baseIdentifier, content: content, trigger: trigger)
+                try? await UNUserNotificationCenter.current().add(request)
+
+            case .none:
+                break
+            }
+        } else {
+            guard item.timestamp > Date() else { return }
+            let triggerDate = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: item.timestamp)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerDate, repeats: false)
+            let request = UNNotificationRequest(identifier: baseIdentifier, content: content, trigger: trigger)
+            try? await UNUserNotificationCenter.current().add(request)
         }
     }
 
@@ -152,9 +200,14 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
     }
 
-    /// Membatalkan pending notifikasi untuk tugas Item tertentu
+    /// Membatalkan pending notifikasi untuk tugas Item tertentu (termasuk sub-jadwal mingguan/harian)
     func cancelNotification(for item: Item) {
-        let identifier = String(describing: item.persistentModelID)
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: [identifier])
+        let baseIdentifier = String(describing: item.persistentModelID)
+        var idsToRemove = [baseIdentifier]
+        for i in 1...7 {
+            idsToRemove.append("\(baseIdentifier)_wd_\(i)")
+            idsToRemove.append("\(baseIdentifier)_we_\(i)")
+        }
+        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: idsToRemove)
     }
 }

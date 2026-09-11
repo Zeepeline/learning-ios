@@ -101,7 +101,7 @@ enum AmbientSound: String, CaseIterable, Identifiable {
     }
 }
 
-// MARK: - 🔊 Unified Sound & Ambient Audio Manager
+// MARK: - 🔊 Unified Sound & Ambient Audio Manager (High Performance & Zero Cold-Start Lag)
 @Observable
 @MainActor
 final class SoundManager {
@@ -144,15 +144,17 @@ final class SoundManager {
 
     var isPlayingAmbient: Bool = false
 
-    // MARK: - Audio Engine Properties
+    // MARK: - Audio Engine Properties & In-Memory Player Cache
     @ObservationIgnored private var audioEngine: AVAudioEngine?
     @ObservationIgnored private var noiseNode: AVAudioSourceNode?
     @ObservationIgnored private var mainMixer: AVAudioMixerNode?
-    @ObservationIgnored private var audioPlayer: AVAudioPlayer?
+    @ObservationIgnored private var isAudioSessionConfigured: Bool = false
+    @ObservationIgnored private var playerCache: [String: AVAudioPlayer] = [:]
 
     private init() {
         loadSettings()
-        setupAudioSession()
+        // ⚡ Catatan Optimasi: AudioSession sekarang diinisialisasi secara lazy (Just-In-Time)
+        // saat pengguna memutar suara, sehingga menghemat waktu cold-start aplikasi.
     }
 
     private func loadSettings() {
@@ -179,30 +181,50 @@ final class SoundManager {
         }
     }
 
-    private func setupAudioSession() {
+    /// Setup Audio Session secara Lazy & Non-blocking
+    private func setupAudioSessionIfNeeded() {
+        guard !isAudioSessionConfigured else { return }
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.ambient, mode: .default, options: [.mixWithOthers])
             try session.setActive(true)
+            self.isAudioSessionConfigured = true
         } catch {
             print("⚠️ Gagal inisialisasi AVAudioSession: \(error.localizedDescription)")
         }
     }
 
-    // MARK: - 🔔 Notification Tone Preview
+    // MARK: - 🔔 In-Memory Cached Sound Player
     func previewNotificationTone(_ tone: NotificationTone) {
         HapticManager.shared.selection()
-        if let fileName = tone.fileName,
-           let url = Bundle.main.url(forResource: (fileName as NSString).deletingPathExtension, withExtension: (fileName as NSString).pathExtension) {
+        guard let fileName = tone.fileName else {
+            AudioServicesPlaySystemSound(1007)
+            return
+        }
+
+        setupAudioSessionIfNeeded()
+
+        // ⚡ Gunakan cached player jika tersedia, hindari I/O disk berulang
+        if let cachedPlayer = playerCache[fileName] {
+            cachedPlayer.currentTime = 0
+            cachedPlayer.play()
+            return
+        }
+
+        let name = (fileName as NSString).deletingPathExtension
+        let ext = (fileName as NSString).pathExtension
+
+        if let url = Bundle.main.url(forResource: name, withExtension: ext) {
             do {
-                audioPlayer = try AVAudioPlayer(contentsOf: url)
-                audioPlayer?.volume = 1.0
-                audioPlayer?.play()
+                let player = try AVAudioPlayer(contentsOf: url)
+                player.prepareToPlay()
+                player.volume = 1.0
+                player.play()
+                playerCache[fileName] = player
             } catch {
                 AudioServicesPlaySystemSound(1007)
             }
         } else {
-            // Default system chime
             AudioServicesPlaySystemSound(1007)
         }
     }
@@ -245,7 +267,7 @@ final class SoundManager {
             return
         }
 
-        setupAudioSession()
+        setupAudioSessionIfNeeded()
 
         let engine = AVAudioEngine()
         let mixer = engine.mainMixerNode

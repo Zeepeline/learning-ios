@@ -69,7 +69,7 @@ enum PomodoroState {
     case paused
 }
 
-// MARK: - 🍅 Pomodoro Manager Service (Live Activity & Background Timer)
+// MARK: - 🍅 Pomodoro Manager Service (Live Activity & Battery-Optimized Wall-Clock Timer)
 @Observable
 @MainActor
 final class PomodoroManager {
@@ -91,14 +91,70 @@ final class PomodoroManager {
         state == .paused
     }
 
-    // Live Activity Reference
+    // Live Activity & Timer References
     @ObservationIgnored private var liveActivity: Activity<PomodoroAttributes>? = nil
     @ObservationIgnored private var timerCancellable: AnyCancellable? = nil
     @ObservationIgnored private var targetEndTime: Date? = nil
+    @ObservationIgnored private var cancellables = Set<AnyCancellable>()
 
     private init() {
         self.totalDuration = selectedPreset.minutes * 60
         self.remainingSeconds = selectedPreset.minutes * 60
+        setupLifecycleObservers()
+    }
+
+    // MARK: - 🔋 Background Lifecycle Synchronization (Battery Saver & Wall-Clock Precision)
+    private func setupLifecycleObservers() {
+        NotificationCenter.default.publisher(for: UIApplication.didEnterBackgroundNotification)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.handleAppDidEnterBackground()
+                }
+            }
+            .store(in: &cancellables)
+
+        NotificationCenter.default.publisher(for: UIApplication.willEnterForegroundNotification)
+            .sink { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.handleAppWillEnterForeground()
+                }
+            }
+            .store(in: &cancellables)
+    }
+
+    private func handleAppDidEnterBackground() {
+        // Hentikan tick CPU thread utama saat di background untuk menghemat baterai
+        timerCancellable?.cancel()
+        timerCancellable = nil
+    }
+
+    private func handleAppWillEnterForeground() {
+        guard state == .running, let targetEndTime = targetEndTime else { return }
+
+        // Sinkronisasi ulang secara presisi dengan jam dinding aktual sistem (Wall-Clock time)
+        let now = Date()
+        let diff = Int(targetEndTime.timeIntervalSince(now))
+
+        if diff <= 0 {
+            timerDidComplete()
+        } else {
+            self.remainingSeconds = diff
+            startActiveTimerTick()
+        }
+    }
+
+    private func startActiveTimerTick() {
+        timerCancellable?.cancel()
+        timerCancellable = Timer.publish(every: 1.0, on: .main, in: .common)
+            .autoconnect()
+            .sink { [weak self] _ in
+                guard let self = self else { return }
+                if self.remainingSeconds > 0 {
+                    self.remainingSeconds -= 1
+                } else {
+                    self.timerDidComplete()
+                }
+            }
     }
 
     // MARK: - Timer Actions
@@ -137,16 +193,7 @@ final class PomodoroManager {
         scheduleCompletionNotification(in: TimeInterval(remainingSeconds))
 
         // Timer Tick Interval
-        timerCancellable = Timer.publish(every: 1.0, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] _ in
-                guard let self = self else { return }
-                if self.remainingSeconds > 0 {
-                    self.remainingSeconds -= 1
-                } else {
-                    self.timerDidComplete()
-                }
-            }
+        startActiveTimerTick()
     }
 
     /// Menghentikan Sementara (Pause)
@@ -188,16 +235,7 @@ final class PomodoroManager {
         scheduleCompletionNotification(in: TimeInterval(remainingSeconds))
 
         // Lanjutkan timer tick
-        timerCancellable = Timer.publish(every: 1.0, on: .main, in: .common)
-            .autoconnect()
-            .sink { [weak self] _ in
-                guard let self = self else { return }
-                if self.remainingSeconds > 0 {
-                    self.remainingSeconds -= 1
-                } else {
-                    self.timerDidComplete()
-                }
-            }
+        startActiveTimerTick()
     }
 
     /// Mereset Timer
