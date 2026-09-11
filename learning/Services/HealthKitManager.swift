@@ -35,10 +35,7 @@ struct HealthWorkoutItem: Identifiable, Sendable {
     }
     
     var timeFormatted: String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "id_ID")
-        formatter.dateFormat = "HH:mm"
-        return formatter.string(from: startDate)
+        startDate.formatted(date: .omitted, time: .shortened)
     }
 }
 
@@ -67,13 +64,14 @@ struct TodayHealthSummary: Sendable {
     }
 }
 
-// MARK: - 🩺 HealthKit Service Layer Manager
+// MARK: - 🩺 HealthKit Service Layer Manager (High-Performance Query Cache & In-Flight Deduplication)
 @Observable
 @MainActor
 final class HealthKitManager {
     static let shared = HealthKitManager()
     
     @ObservationIgnored private let healthStore: HKHealthStore? = HKHealthStore.isHealthDataAvailable() ? HKHealthStore() : nil
+    @ObservationIgnored private var inFlightFetchTask: Task<Void, Never>? = nil
     
     var isAuthorized: Bool = false
     var isLoading: Bool = false
@@ -138,43 +136,57 @@ final class HealthKitManager {
         self.isAuthorized = (status == .sharingAuthorized)
     }
     
-    // MARK: - 2. Mengambil Seluruh Data Kesehatan Hari Ini
+    // MARK: - 2. Mengambil Seluruh Data Kesehatan Hari Ini (Deduplicated & Cached)
     func fetchAllTodayHealthData(force: Bool = false) async {
-        guard let _ = healthStore else { return }
+        guard healthStore != nil else { return }
         
-        // Cache throttle: Jangan query ulang jika data baru saja diambil kurang dari 60 detik lalu
+        // ⚡ Cache throttle: Jangan query ulang jika data baru saja diambil kurang dari 60 detik lalu
         if !force && Date().timeIntervalSince(todaySummary.lastUpdated) < 60 && (todaySummary.steps > 0 || todaySummary.activeCalories > 0) {
             return
         }
         
-        isLoading = true
-        defer { isLoading = false }
+        // ⚡ In-Flight Task Deduplication: Jika ada fetch yang sedang berjalan, tunggu task tersebut
+        if let existingTask = inFlightFetchTask {
+            await existingTask.value
+            return
+        }
         
-        async let steps = fetchTodaySteps()
-        async let calories = fetchTodayActiveCalories()
-        async let exercise = fetchTodayExerciseMinutes()
-        async let distance = fetchTodayDistance()
-        async let sleep = fetchLastNightSleep()
-        async let workouts = fetchTodayWorkouts()
+        let fetchTask = Task { @MainActor in
+            self.isLoading = true
+            defer {
+                self.isLoading = false
+                self.inFlightFetchTask = nil
+            }
+            
+            async let steps = self.fetchTodaySteps()
+            async let calories = self.fetchTodayActiveCalories()
+            async let exercise = self.fetchTodayExerciseMinutes()
+            async let distance = self.fetchTodayDistance()
+            async let sleep = self.fetchLastNightSleep()
+            async let workouts = self.fetchTodayWorkouts()
+            
+            let fetchedSteps = await steps
+            let fetchedCalories = await calories
+            let fetchedExercise = await exercise
+            let fetchedDistance = await distance
+            let (sleepHours, sleepText) = await sleep
+            let fetchedWorkouts = await workouts
+            
+            self.todaySummary = TodayHealthSummary(
+                steps: fetchedSteps,
+                activeCalories: fetchedCalories,
+                exerciseMinutes: fetchedExercise,
+                distanceKm: fetchedDistance,
+                sleepDurationHours: sleepHours,
+                sleepFormatted: sleepText,
+                recentWorkouts: fetchedWorkouts,
+                isAuthorized: true,
+                lastUpdated: Date()
+            )
+        }
         
-        let fetchedSteps = await steps
-        let fetchedCalories = await calories
-        let fetchedExercise = await exercise
-        let fetchedDistance = await distance
-        let (sleepHours, sleepText) = await sleep
-        let fetchedWorkouts = await workouts
-        
-        self.todaySummary = TodayHealthSummary(
-            steps: fetchedSteps,
-            activeCalories: fetchedCalories,
-            exerciseMinutes: fetchedExercise,
-            distanceKm: fetchedDistance,
-            sleepDurationHours: sleepHours,
-            sleepFormatted: sleepText,
-            recentWorkouts: fetchedWorkouts,
-            isAuthorized: true,
-            lastUpdated: Date()
-        )
+        self.inFlightFetchTask = fetchTask
+        await fetchTask.value
     }
     
     // MARK: - 3. Query Spesifik: Langkah Kaki Hari Ini (Steps)
@@ -382,7 +394,7 @@ final class HealthKitManager {
     }
     
     // Helper Nama Workout
-    static func workoutName(for type: HKWorkoutActivityType) -> String {
+    nonisolated static func workoutName(for type: HKWorkoutActivityType) -> String {
         switch type {
         case .running: return "Lari Luar Ruang"
         case .walking: return "Jalan Santai"
@@ -396,16 +408,16 @@ final class HealthKitManager {
     }
     
     // Helper Icon Workout
-    static func workoutIcon(for type: HKWorkoutActivityType) -> String {
+    nonisolated static func workoutIcon(for type: HKWorkoutActivityType) -> String {
         switch type {
         case .running: return "figure.run"
         case .walking: return "figure.walk"
-        case .cycling: return "figure.outdoor.cycle"
+        case .cycling: return "bicycle"
         case .swimming: return "figure.pool.swim"
         case .functionalStrengthTraining, .traditionalStrengthTraining: return "dumbbell.fill"
         case .yoga: return "figure.mind.and.body"
-        case .highIntensityIntervalTraining: return "bolt.heart.fill"
-        default: return "flame.fill"
+        case .highIntensityIntervalTraining: return "flame.fill"
+        default: return "sportscourt.fill"
         }
     }
 }
