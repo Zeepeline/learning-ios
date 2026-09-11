@@ -13,7 +13,7 @@ struct ProfileStatsView: View {
     let importantCompletedCount: Int
     var maxHabitStreak: Int = 0
 
-    var body: some View {
+    dynamic var body: some View {
         VStack(alignment: .leading, spacing: HIGSpacing.xs) {
             Text("Statistik Produktivitas")
                 .font(.system(size: 16, weight: .heavy, design: .rounded))
@@ -65,7 +65,7 @@ struct ProfileStatCard: View {
     let bgColor: Color
     var iconColor: Color = .black
 
-    var body: some View {
+    dynamic var body: some View {
         HStack(spacing: HIGSpacing.xs) {
             ZStack {
                 Circle()

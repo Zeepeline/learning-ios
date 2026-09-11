@@ -20,7 +20,7 @@ struct CartoonConfirmDialog: View {
     let onCancel: () -> Void
     let onConfirm: () -> Void
 
-    var body: some View {
+    dynamic var body: some View {
         ZStack {
             // Backdrop Gelap Transparan
             Color.black.opacity(0.45)

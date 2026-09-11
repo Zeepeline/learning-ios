@@ -10,7 +10,7 @@ import SwiftUI
 struct AmbientSoundControlCard: View {
     var soundManager = SoundManager.shared
 
-    var body: some View {
+    dynamic var body: some View {
         VStack(alignment: .leading, spacing: HIGSpacing.sm) {
             // Header Info & Master Play/Stop Button
             HStack {

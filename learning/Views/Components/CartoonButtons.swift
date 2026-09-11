@@ -17,7 +17,7 @@ struct CartoonPrimaryButton: View {
     var isEnabled: Bool = true
     let action: () -> Void
 
-    var body: some View {
+    dynamic var body: some View {
         Button {
             action()
         } label: {
@@ -56,7 +56,7 @@ struct CartoonIconButton: View {
     var size: CGFloat = HIGSpacing.touchTargetMin
     let action: () -> Void
 
-    var body: some View {
+    dynamic var body: some View {
         Button {
             action()
         } label: {
@@ -82,7 +82,7 @@ struct CartoonIconButton: View {
 struct GoogleLogoView: View {
     var size: CGFloat = 20
 
-    var body: some View {
+    dynamic var body: some View {
         Canvas { context, canvasSize in
             let w = canvasSize.width
             let h = canvasSize.height
@@ -154,7 +154,7 @@ struct CartoonGoogleSignInButton: View {
     var isLoading: Bool = false
     let action: () -> Void
 
-    var body: some View {
+    dynamic var body: some View {
         Button(action: {
             guard !isLoading else { return }
             action()

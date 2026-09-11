@@ -19,7 +19,7 @@ struct CartoonHeaderView: View {
     var trailingIcon: String = "plus"
     var trailingBgColor: Color = Color.cartoonYellow
 
-    var body: some View {
+    dynamic var body: some View {
         HStack(spacing: HIGSpacing.md) {
             // Tombol Kiri (Quick Action / Profil Avatar)
             if let leadingAction = leadingAction {

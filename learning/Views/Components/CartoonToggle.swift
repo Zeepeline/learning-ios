@@ -13,7 +13,7 @@ struct CartoonToggleSwitch: View {
     var activeColor: Color = Color.cartoonMint
     var inactiveColor: Color = Color(red: 0.90, green: 0.90, blue: 0.92)
 
-    var body: some View {
+    dynamic var body: some View {
         Button {
             withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
                 isOn.toggle()
@@ -70,7 +70,7 @@ struct CartoonToggleRow: View {
     @Binding var isOn: Bool
     var activeColor: Color = Color.cartoonMint
 
-    var body: some View {
+    dynamic var body: some View {
         HStack(spacing: HIGSpacing.sm) {
             // Icon Badge Kartun
             ZStack {

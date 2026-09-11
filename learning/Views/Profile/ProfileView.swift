@@ -53,7 +53,7 @@ struct ProfileView: View {
         return remainder / 200.0
     }
 
-    var body: some View {
+    dynamic var body: some View {
         ZStack {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: HIGSpacing.xl) {
