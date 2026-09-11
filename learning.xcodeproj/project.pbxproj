@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CDE7D1BD9A5740B2B962C303 /* PatchSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = B230631F02BF4EF788A7AADF /* PatchSwiftUI */; };
 		D023488530492A93005D8B1F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D023488430492A92005D8B1F /* WidgetKit.framework */; };
 		D023488730492A93005D8B1F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D023488630492A93005D8B1F /* SwiftUI.framework */; };
 		D023489430492A99005D8B1F /* TaskWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D023488230492A92005D8B1F /* TaskWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -15,6 +16,7 @@
 		D02CFC20304BCBD60035BBA6 /* DeviceActivityReportExtension.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = D02CFC14304BCBD50035BBA6 /* DeviceActivityReportExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D08BDD24304C153E008C7F43 /* DeviceActivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D08BDD23304C153E008C7F43 /* DeviceActivity.framework */; };
 		D08BDD2C304C153E008C7F43 /* DeviceActivityMonitor.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D08BDD22304C153E008C7F43 /* DeviceActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		EFD36EC431E9488284BA1026 /* PatchSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 50084CE674084904A61F729C /* PatchSDK */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -175,6 +177,8 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CDE7D1BD9A5740B2B962C303 /* PatchSwiftUI in Frameworks */,
+				EFD36EC431E9488284BA1026 /* PatchSDK in Frameworks */,
 				D02348B83049B71E005D8B1F /* GoogleSignInSwift in Frameworks */,
 				D02348B63049B71E005D8B1F /* GoogleSignIn in Frameworks */,
 			);
@@ -284,6 +288,8 @@
 			);
 			name = learning;
 			packageProductDependencies = (
+				B230631F02BF4EF788A7AADF /* PatchSwiftUI */,
+				50084CE674084904A61F729C /* PatchSDK */,
 				D02348B53049B71E005D8B1F /* GoogleSignIn */,
 				D02348B73049B71E005D8B1F /* GoogleSignInSwift */,
 			);
@@ -445,6 +451,7 @@
 			mainGroup = D01F662530431930008F3AA0;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				FA11000AB1B043F6BDD57DAD /* XCRemoteSwiftPackageReference "patch-swift" */,
 				D02348B43049B71E005D8B1F /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -1143,9 +1150,27 @@
 				minimumVersion = 9.2.0;
 			};
 		};
+		FA11000AB1B043F6BDD57DAD /* XCRemoteSwiftPackageReference "patch-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/patch-release/patch-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		50084CE674084904A61F729C /* PatchSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FA11000AB1B043F6BDD57DAD /* XCRemoteSwiftPackageReference "patch-swift" */;
+			productName = PatchSDK;
+		};
+		B230631F02BF4EF788A7AADF /* PatchSwiftUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = FA11000AB1B043F6BDD57DAD /* XCRemoteSwiftPackageReference "patch-swift" */;
+			productName = PatchSwiftUI;
+		};
 		D02348B53049B71E005D8B1F /* GoogleSignIn */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = D02348B43049B71E005D8B1F /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;

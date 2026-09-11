@@ -1,0 +1,10 @@
+# Xcode & OS artifacts
+.DS_Store
+xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcuserstate
+
+# Patch OTA artifacts
+*.patch-backup
+*/Patch/Generated/
+.Patch.cache/

@@ -1,0 +1,69 @@
+version: 1
+app_key: pak_c2f8cd6af1cfe8eb56906e4e66b5f493fc2649314af16cbabb18a4b2204fcee2
+project: learning.xcodeproj
+target: learning
+app_id: 573f3ef7-f22e-4694-aa1c-dffddd27be40
+workspace_id: f2db4b6a-af63-4ed5-820a-349f742d626c
+bundle_id: com.irmintul.xlearning
+api_base_url: https://api.patchrelease.com
+exclude:
+  - "TaskWidget/**"
+  - "DeviceActivityReport/**"
+  - "DeviceActivityMonitor/**"
+bridges:
+  networking: true
+  userDefaults: true
+  notifications: true
+  navigation: true
+  keychain: true
+  dateLocale: true
+  logging: true
+  analytics: true
+  fileStorage: true
+  connectivity: true
+  biometrics: true
+  appReview: true
+  pasteboard: true
+  haptics: true
+  deviceInfo: true
+  shareSheet: true
+  openURL: true
+  location: true
+  calendar: true
+  contacts: true
+  appBadge: true
+  mailCompose: true
+  inAppPurchase: true
+  speechSynthesis: true
+  documentPicker: true
+  systemSound: true
+  photoPicker: true
+  secureRandom: true
+  appGroupStorage: true
+  screenControl: true
+  audioPlayback: true
+  motion: true
+  mapsDirections: true
+  networkImage: true
+  spotlightIndex: true
+  backgroundTask: true
+  fileDownload: true
+  accessibility: true
+  appShortcuts: true
+  handoff: true
+  watchConnectivity: true
+  nfcRead: true
+  processInfo: true
+  audioRecording: true
+  videoPlayback: true
+  speechRecognition: true
+  mediaInfo: true
+  imageFilter: true
+  pdfGenerate: true
+  qrGenerate: true
+  camera: true
+build:
+  optimization: size
+  stripDebugInfo: true
+  swiftui: true
+  auto_prepare: true
