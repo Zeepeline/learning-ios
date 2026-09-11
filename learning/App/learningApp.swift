@@ -10,6 +10,7 @@ import GoogleSignIn
 import SwiftData
 import SwiftUI
 import WidgetKit
+import PatchSDK
 
 @main
 struct learningApp: App {
@@ -20,6 +21,12 @@ struct learningApp: App {
     let sharedModelContainer: ModelContainer
 
     init() {
+        Patch.configure(.init(
+            appKey: "pak_c2f8cd6af1cfe8eb56906e4e66b5f493fc2649314af16cbabb18a4b2204fcee2",
+            appID: "573f3ef7-f22e-4694-aa1c-dffddd27be40",
+            fingerprint: "03c1074d90efaf563ccb64f4313aa55f418d0d258fbbfd6d21af72a3e45b179b"))
+        Task { await Patch.shared.start() }
+
         self.sharedModelContainer = Self.createModelContainer()
     }
 
