@@ -12,19 +12,19 @@ import Combine
 
 // MARK: - 🌐 AI Provider Selection
 enum AIProviderType: String, CaseIterable, Identifiable {
-    case gemini = "Google AI Studio (Gemini 1.5 Flash)"
-    case ninerouter = "Ninerouter / DeepSeek (Multi-LLM)"
+    case googleAccount = "Akun Gemini.com (Tanpa Limit & Asli)"
     case local = "Smart Local Engine (Gratis & Offline)"
-    case googleAccount = "Akun Google Login (Gemini OAuth)"
+    case gemini = "Google AI Studio (API Key)"
+    case ninerouter = "Ninerouter / DeepSeek (Multi-LLM)"
 
     var id: String { rawValue }
 
     var shortName: String {
         switch self {
-        case .gemini: return "Gemini 1.5"
-        case .ninerouter: return "DeepSeek / LLM"
+        case .googleAccount: return "Gemini.com (Web)"
         case .local: return "Local Engine"
-        case .googleAccount: return "Gemini (OAuth)"
+        case .gemini: return "Gemini Key"
+        case .ninerouter: return "DeepSeek"
         }
     }
 }
@@ -97,15 +97,14 @@ final class MCPAIAssistantService: ObservableObject {
             MCPAIChatMessage(
                 role: .assistant,
                 content: """
-                Hai! Aku **AI Productivity Buddy (Co-Planner & MCP Engine)** 🤖✨
+                Hai! Aku **AI Productivity Buddy (Native + Gemini.com Engine)** 🤖✨
 
-                Kita bisa **berdiskusi layaknya asisten pribadi**:
-                • 💬 Ceritakan rencana/tujuanmu, aku akan bantu analisis & rekomendasikan subtasks sebelum dibuat.
-                • 📝 Eksekusi tugas to-do list, habit tracker, dan rencana proyek multi-fase.
-                • ⏱️ Jalankan sesi Pomodoro (25m/50m) & Live Activity.
-                • 🏃‍♂️ Cek data kesehatan Apple Health & kontrol Screen Time App Shield.
+                UI chat ini terhubung langsung ke **Gemini Asli**:
+                • 💬 Berdiskusi bebas, brainstorming, dan merencanakan ide tanpa batas kuota AI Studio.
+                • 📋 Rekomendasi subtasks & pemecahan jadwal secara otomatis.
+                • ⚡ Kontrol penuh MCP: to-do list, Pomodoro timer, Apple Health, dan Screen Time App Shield!
 
-                Apa rencana atau tugas yang ingin kita diskusikan hari ini?
+                Apa yang ingin kita diskusikan atau jadwalkan sekarang?
                 """
             )
         )
@@ -115,7 +114,7 @@ final class MCPAIAssistantService: ObservableObject {
     func sendMessage(
         _ userText: String,
         modelContext: ModelContext,
-        provider: AIProviderType = .local,
+        provider: AIProviderType = .googleAccount,
         apiKey: String = "",
         ninerouterBaseUrl: String = "https://api.ninerouter.com/v1",
         ninerouterModel: String = "deepseek/deepseek-chat"
@@ -131,6 +130,9 @@ final class MCPAIAssistantService: ObservableObject {
         let cleanApiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
 
         switch provider {
+        case .googleAccount:
+            await processWithGoogleUserAccount(prompt: trimmed, modelContext: modelContext)
+
         case .gemini:
             if !cleanApiKey.isEmpty {
                 await processWithGeminiLLM(prompt: trimmed, apiKey: cleanApiKey, modelContext: modelContext)
@@ -151,14 +153,25 @@ final class MCPAIAssistantService: ObservableObject {
                 await processWithLocalDiscussion(prompt: trimmed, modelContext: modelContext, missingKeyPrompt: "Ninerouter API Key belum dimasukkan.")
             }
 
-        case .googleAccount:
-            await processWithGoogleUserAccount(prompt: trimmed, modelContext: modelContext)
-
         case .local:
             await processWithLocalDiscussion(prompt: trimmed, modelContext: modelContext)
         }
 
         isProcessing = false
+    }
+
+    // MARK: - 🌐 Gemini.com Headless Bridge Execution
+    private func processWithGoogleUserAccount(prompt: String, modelContext: ModelContext) async {
+        do {
+            let replyText = try await GeminiHeadlessEngine.shared.queryGemini(prompt: prompt)
+            await dispatchActionOrDisplayLLMResponse(llmText: replyText, prompt: prompt, modelContext: modelContext)
+        } catch {
+            await processWithLocalDiscussion(
+                prompt: prompt,
+                modelContext: modelContext,
+                missingKeyPrompt: "Tip: Pastikan sudah login di gemini.google.com melalui tombol ✨ Gemini.com di kanan atas"
+            )
+        }
     }
 
     // MARK: - 💬 Interactive Discussion & Co-Planning Dialogue Engine
@@ -254,7 +267,7 @@ final class MCPAIAssistantService: ObservableObject {
         // 8. General AI Conversation Response
         var extraNote = ""
         if let missing = missingKeyPrompt {
-            extraNote = "\n\n*(Catatan: \(missing) Masukkan API Key di pengaturan ⚙️ untuk percakapan bebas LLM tanpa batas)*"
+            extraNote = "\n\n*(Catatan: \(missing))*"
         }
 
         let reply = """
@@ -360,7 +373,7 @@ final class MCPAIAssistantService: ObservableObject {
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Saved"))
     }
 
-    // MARK: - 🌐 Gemini LLM (Google AI Studio API Key) - True Conversational LLM
+    // MARK: - 🌐 Gemini LLM (Google AI Studio API Key)
     private func processWithGeminiLLM(prompt: String, apiKey: String, modelContext: ModelContext) async {
         guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\(apiKey)") else {
             await processWithLocalDiscussion(prompt: prompt, modelContext: modelContext)
@@ -380,24 +393,14 @@ final class MCPAIAssistantService: ObservableObject {
         let systemInstruction: [String: Any] = [
             "parts": [
                 [
-                    "text": """
-                    Kamu adalah AI Productivity Buddy cerdas, kolaboratif, dan ramah di aplikasi to-do list iOS.
-                    Prinsip interaksi:
-                    1. Selalu berdiskusi secara interaktif. Jika pengguna menyapa, sapa balik dengan hangat.
-                    2. Jika pengguna meminta dibuatkan jadwal, rencana, atau tugas baru, bedah terlebih dahulu menjadi subtasks terstruktur, berikan rekomendasi prioritas & estimasi waktu, lalu tanyakan konfirmasi pengguna.
-                    3. Berikan jawaban dalam format Markdown yang rapi dengan bullet points dan emoji yang tepat.
-                    """
+                    "text": "Kamu adalah AI Productivity Buddy cerdas dan kolaboratif. Diskusikan rencana dan rekomendasikan subtasks sebelum membuat tugas. Format Markdown rapi."
                 ]
             ]
         ]
 
         let requestBody: [String: Any] = [
             "contents": contentsPayload,
-            "system_instruction": systemInstruction,
-            "generationConfig": [
-                "temperature": 0.7,
-                "topP": 0.95
-            ]
+            "system_instruction": systemInstruction
         ]
 
         guard let jsonData = try? JSONSerialization.data(withJSONObject: requestBody) else {
@@ -493,25 +496,6 @@ final class MCPAIAssistantService: ObservableObject {
         } catch {
             await processWithLocalDiscussion(prompt: prompt, modelContext: modelContext)
         }
-    }
-
-    private func processWithGoogleUserAccount(prompt: String, modelContext: ModelContext) async {
-        guard GoogleAuthManager.shared.isUserLoggedIn else {
-            let reply = """
-            🔒 **Akun Google Belum Terhubung**
-
-            Silakan login dengan Google di tab Profil atau Pengaturan ⚙️ untuk sinkronisasi akun.
-            """
-            messages.append(MCPAIChatMessage(role: .assistant, content: reply))
-            return
-        }
-
-        // Google Cloud API memerlukan API Key resmi dari Google AI Studio untuk pemanggilan Gemini 1.5 Flash langsung
-        await processWithLocalDiscussion(
-            prompt: prompt,
-            modelContext: modelContext,
-            missingKeyPrompt: "Akun Google terhubung (\(GoogleAuthManager.shared.currentUserEmail ?? "")). Untuk otak Gemini LLM penuh, masukkan Google AI Studio API Key gratis di ⚙️ Pengaturan"
-        )
     }
 
     private func dispatchActionOrDisplayLLMResponse(llmText: String, prompt: String, modelContext: ModelContext) async {
