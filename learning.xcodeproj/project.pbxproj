@@ -16,6 +16,7 @@
 		D02CFC20304BCBD60035BBA6 /* DeviceActivityReportExtension.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = D02CFC14304BCBD50035BBA6 /* DeviceActivityReportExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		D08BDD24304C153E008C7F43 /* DeviceActivity.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D08BDD23304C153E008C7F43 /* DeviceActivity.framework */; };
 		D08BDD2C304C153E008C7F43 /* DeviceActivityMonitor.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = D08BDD22304C153E008C7F43 /* DeviceActivityMonitor.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		D0C32F5130543B1A00E1B90F /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = D0C32F5230543B1A00E1B90F /* Sentry */; };
 		EFD36EC431E9488284BA1026 /* PatchSDK in Frameworks */ = {isa = PBXBuildFile; productRef = 50084CE674084904A61F729C /* PatchSDK */; };
 /* End PBXBuildFile section */
 
@@ -177,6 +178,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D0C32F5130543B1A00E1B90F /* Sentry in Frameworks */,
 				CDE7D1BD9A5740B2B962C303 /* PatchSwiftUI in Frameworks */,
 				EFD36EC431E9488284BA1026 /* PatchSDK in Frameworks */,
 				D02348B83049B71E005D8B1F /* GoogleSignInSwift in Frameworks */,
@@ -288,6 +290,7 @@
 			);
 			name = learning;
 			packageProductDependencies = (
+				D0C32F5230543B1A00E1B90F /* Sentry */,
 				B230631F02BF4EF788A7AADF /* PatchSwiftUI */,
 				50084CE674084904A61F729C /* PatchSDK */,
 				D02348B53049B71E005D8B1F /* GoogleSignIn */,
@@ -453,6 +456,7 @@
 			packageReferences = (
 				FA11000AB1B043F6BDD57DAD /* XCRemoteSwiftPackageReference "patch-swift" */,
 				D02348B43049B71E005D8B1F /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				D0C32F5030543B1A00E1B90F /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D01F662F30431930008F3AA0 /* Products */;
@@ -1150,6 +1154,14 @@
 				minimumVersion = 9.2.0;
 			};
 		};
+		D0C32F5030543B1A00E1B90F /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.28.0;
+			};
+		};
 		FA11000AB1B043F6BDD57DAD /* XCRemoteSwiftPackageReference "patch-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/patch-release/patch-swift";
@@ -1180,6 +1192,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = D02348B43049B71E005D8B1F /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
 			productName = GoogleSignInSwift;
+		};
+		D0C32F5230543B1A00E1B90F /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D0C32F5030543B1A00E1B90F /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

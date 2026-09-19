@@ -56,6 +56,23 @@ enum NotificationTone: String, CaseIterable, Identifiable {
     }
 }
 
+// MARK: - 🔔 Alarm Sound Option (Preset or Custom MP3)
+struct AlarmSoundItem: Identifiable, Hashable, Equatable, Sendable {
+    let id: String
+    let title: String
+    let iconName: String
+    let fileName: String? // nil for default iOS, "cartoon_bell.caf", or "custom_xxx.caf"
+    let isCustom: Bool
+
+    static let defaultSystem = AlarmSoundItem(
+        id: "default_system",
+        title: "Default iOS",
+        iconName: "bell.fill",
+        fileName: nil,
+        isCustom: false
+    )
+}
+
 // MARK: - 🌧️ Pomodoro Ambient Soundscapes
 enum AmbientSound: String, CaseIterable, Identifiable {
     case none = "none"
@@ -192,6 +209,248 @@ final class SoundManager {
         } catch {
             print("⚠️ Gagal inisialisasi AVAudioSession: \(error.localizedDescription)")
         }
+    }
+
+    // MARK: - 📁 Custom Sounds Directory & Management
+    nonisolated func getSoundsDirectory() -> URL {
+        let libraryDir = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask)[0]
+        let soundsDir = libraryDir.appendingPathComponent("Sounds", isDirectory: true)
+        if !FileManager.default.fileExists(atPath: soundsDir.path) {
+            try? FileManager.default.createDirectory(at: soundsDir, withIntermediateDirectories: true)
+        }
+        return soundsDir
+    }
+
+    /// Mendapatkan daftar semua suara alarm (Preset Bawaan + Custom MP3 yang diimpor)
+    func getAvailableAlarmSounds() -> [AlarmSoundItem] {
+        var items: [AlarmSoundItem] = [
+            AlarmSoundItem(
+                id: "default_system",
+                title: "Default iOS",
+                iconName: "bell.fill",
+                fileName: nil,
+                isCustom: false
+            ),
+            AlarmSoundItem(
+                id: "cartoon_bell",
+                title: "Cartoon Bell",
+                iconName: "bell.badge.fill",
+                fileName: "cartoon_bell.caf",
+                isCustom: false
+            ),
+            AlarmSoundItem(
+                id: "zen_chime",
+                title: "Zen Chime",
+                iconName: "sparkles",
+                fileName: "zen_chime.caf",
+                isCustom: false
+            ),
+            AlarmSoundItem(
+                id: "energetic_alert",
+                title: "Energetic Pulse",
+                iconName: "bolt.fill",
+                fileName: "energetic_alert.caf",
+                isCustom: false
+            )
+        ]
+
+        let soundsDir = getSoundsDirectory()
+        if let files = try? FileManager.default.contentsOfDirectory(at: soundsDir, includingPropertiesForKeys: [.contentModificationDateKey], options: .skipsHiddenFiles) {
+            let validExts = ["caf", "wav", "aiff", "m4a"]
+            let customFiles = files.filter { validExts.contains($0.pathExtension.lowercased()) }
+
+            for url in customFiles {
+                let filename = url.lastPathComponent
+                let rawTitle = url.deletingPathExtension().lastPathComponent
+                    .replacingOccurrences(of: "custom_", with: "")
+                    .replacingOccurrences(of: "_", with: " ")
+                    .capitalized
+                items.append(AlarmSoundItem(
+                    id: filename,
+                    title: rawTitle.isEmpty ? filename : rawTitle,
+                    iconName: "music.note",
+                    fileName: filename,
+                    isCustom: true
+                ))
+            }
+        }
+
+        return items
+    }
+
+    /// Memutar pratinjau (preview) suara alarm berdasarkan nama file / identifier
+    func previewSound(named soundName: String?) {
+        HapticManager.shared.selection()
+
+        guard let soundName = soundName, !soundName.isEmpty, soundName != "default_system" else {
+            AudioServicesPlaySystemSound(1007)
+            return
+        }
+
+        setupAudioSessionIfNeeded()
+
+        // 1. Cek di Memory Cache
+        if let cachedPlayer = playerCache[soundName] {
+            cachedPlayer.currentTime = 0
+            cachedPlayer.play()
+            return
+        }
+
+        // 2. Cek di Library/Sounds/ (File Custom Impor)
+        let soundsDir = getSoundsDirectory()
+        let customURL = soundsDir.appendingPathComponent(soundName)
+        if FileManager.default.fileExists(atPath: customURL.path) {
+            do {
+                let player = try AVAudioPlayer(contentsOf: customURL)
+                player.prepareToPlay()
+                player.volume = 1.0
+                player.play()
+                playerCache[soundName] = player
+                return
+            } catch {
+                print("Gagal memutar audio custom: \(error.localizedDescription)")
+            }
+        }
+
+        // 3. Cek di Bundle Utama
+        let name = (soundName as NSString).deletingPathExtension
+        let ext = (soundName as NSString).pathExtension
+        let fileExt = ext.isEmpty ? "caf" : ext
+
+        if let bundleURL = Bundle.main.url(forResource: name, withExtension: fileExt) {
+            do {
+                let player = try AVAudioPlayer(contentsOf: bundleURL)
+                player.prepareToPlay()
+                player.volume = 1.0
+                player.play()
+                playerCache[soundName] = player
+                return
+            } catch {
+                print("Gagal memutar audio bundle: \(error.localizedDescription)")
+            }
+        }
+
+        // Fallback jika file tidak ditemukan
+        AudioServicesPlaySystemSound(1007)
+    }
+
+    /// Mengimpor file MP3 / audio lain, memotongnya maksimal 29.5 detik, dan menyimpannya sebagai CAF di Library/Sounds/
+    func importAudioFile(from sourceURL: URL, preferredName: String? = nil) async throws -> AlarmSoundItem {
+        let hasAccess = sourceURL.startAccessingSecurityScopedResource()
+        defer {
+            if hasAccess {
+                sourceURL.stopAccessingSecurityScopedResource()
+            }
+        }
+
+        let soundsDir = getSoundsDirectory()
+        let rawFileName = preferredName ?? sourceURL.deletingPathExtension().lastPathComponent
+        let cleanName = rawFileName
+            .folding(options: .diacriticInsensitive, locale: .current)
+            .components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .filter { !$0.isEmpty }
+            .joined(separator: "_")
+        let baseName = cleanName.isEmpty ? "alarm" : cleanName
+        let uniqueSuffix = UUID().uuidString.prefix(4)
+        let outputFileName = "custom_\(baseName)_\(uniqueSuffix).caf"
+        let outputURL = soundsDir.appendingPathComponent(outputFileName)
+
+        // Buka file sumber audio dengan AVAudioFile
+        let inputFile = try AVAudioFile(forReading: sourceURL)
+        let inputFormat = inputFile.processingFormat
+        let maxDurationSeconds: Double = 29.5
+        let maxFramesToRead = AVAudioFrameCount(min(inputFile.length, AVAudioFramePosition(inputFormat.sampleRate * maxDurationSeconds)))
+
+        // Format Output 16-bit Linear PCM (Diwajibkan oleh iOS UserNotifications untuk custom sounds)
+        let outputSettings: [String: Any] = [
+            AVFormatIDKey: kAudioFormatLinearPCM,
+            AVSampleRateKey: inputFormat.sampleRate,
+            AVNumberOfChannelsKey: min(2, inputFormat.channelCount),
+            AVLinearPCMBitDepthKey: 16,
+            AVLinearPCMIsBigEndianKey: false,
+            AVLinearPCMIsFloatKey: false,
+            AVLinearPCMIsNonInterleaved: false
+        ]
+
+        guard let outputFormat = AVAudioFormat(
+            commonFormat: .pcmFormatInt16,
+            sampleRate: inputFormat.sampleRate,
+            channels: min(2, inputFormat.channelCount),
+            interleaved: true
+        ) else {
+            throw NSError(domain: "SoundManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Gagal membuat format audio PCM."])
+        }
+
+        let outputFile = try AVAudioFile(
+            forWriting: outputURL,
+            settings: outputSettings,
+            commonFormat: .pcmFormatInt16,
+            interleaved: true
+        )
+
+        let bufferSize: AVAudioFrameCount = 4096
+        guard let inputBuffer = AVAudioPCMBuffer(pcmFormat: inputFormat, frameCapacity: bufferSize) else {
+            throw NSError(domain: "SoundManager", code: 2, userInfo: [NSLocalizedDescriptionKey: "Gagal mengalokasikan buffer audio."])
+        }
+
+        guard let formatConverter = AVAudioConverter(from: inputFormat, to: outputFormat) else {
+            throw NSError(domain: "SoundManager", code: 3, userInfo: [NSLocalizedDescriptionKey: "Konverter format audio tidak tersedia."])
+        }
+
+        var totalFramesProcessed: AVAudioFrameCount = 0
+
+        while totalFramesProcessed < maxFramesToRead {
+            let framesRemaining = maxFramesToRead - totalFramesProcessed
+            let framesToReadNow = min(bufferSize, framesRemaining)
+
+            try inputFile.read(into: inputBuffer, frameCount: framesToReadNow)
+            if inputBuffer.frameLength == 0 { break }
+
+            guard let outputBuffer = AVAudioPCMBuffer(pcmFormat: outputFormat, frameCapacity: inputBuffer.frameLength) else { break }
+
+            var error: NSError? = nil
+            _ = formatConverter.convert(to: outputBuffer, error: &error) { inNumPackets, outStatus in
+                outStatus.pointee = .haveData
+                return inputBuffer
+            }
+
+            if let error = error {
+                print("Peringatan konversi buffer audio: \(error.localizedDescription)")
+            }
+
+            try outputFile.write(from: outputBuffer)
+            totalFramesProcessed += inputBuffer.frameLength
+        }
+
+        let displayTitle = baseName.replacingOccurrences(of: "_", with: " ").capitalized
+        return AlarmSoundItem(
+            id: outputFileName,
+            title: displayTitle,
+            iconName: "music.note",
+            fileName: outputFileName,
+            isCustom: true
+        )
+    }
+
+    /// Menghapus file suara custom dari Library/Sounds/
+    func deleteCustomSound(fileName: String) {
+        let soundsDir = getSoundsDirectory()
+        let fileURL = soundsDir.appendingPathComponent(fileName)
+        try? FileManager.default.removeItem(at: fileURL)
+        playerCache.removeValue(forKey: fileName)
+    }
+
+    // MARK: - 🔊 Interactive Cartoon UI Audio FX (Pop, Chime, Trash)
+    func playPop() {
+        AudioServicesPlaySystemSound(1104) // Tink sound
+    }
+
+    func playSuccessChime() {
+        AudioServicesPlaySystemSound(1025) // Positive chime sound
+    }
+
+    func playDeleteSound() {
+        AudioServicesPlaySystemSound(1156) // Trash sound
     }
 
     // MARK: - 🔔 In-Memory Cached Sound Player

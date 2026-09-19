@@ -11,6 +11,7 @@ import SwiftData
 import SwiftUI
 import WidgetKit
 import PatchSDK
+import Sentry
 
 @main
 struct learningApp: App {
@@ -21,6 +22,24 @@ struct learningApp: App {
     let sharedModelContainer: ModelContainer
 
     init() {
+        #if !DEBUG
+        SentrySDK.start { options in
+            options.dsn = "https://09aa236fe8910f45568ed50292148074@o4508036224188416.ingest.us.sentry.io/4512067977478144"
+            options.debug = false
+            options.environment = "production"
+            
+            // Tracing & Performance Monitoring
+            options.tracesSampleRate = 1.0
+            
+            // Session Replay
+            options.sessionReplay.sessionSampleRate = 0.5
+            options.sessionReplay.onErrorSampleRate = 1.0
+            
+            // Menangkap UI freeze / hang
+            options.enableAppHangTracking = true
+            options.appHangTimeoutInterval = 2.0
+        }
+        #endif
         Patch.configure(.init(
             appKey: "pak_c2f8cd6af1cfe8eb56906e4e66b5f493fc2649314af16cbabb18a4b2204fcee2",
             appID: "573f3ef7-f22e-4694-aa1c-dffddd27be40",
@@ -47,6 +66,7 @@ struct learningApp: App {
                         ))
                 }
             }
+            .dynamicTypeSize(.medium) // 🔒 Kunci ukuran teks tetap Medium (mengabaikan pembesaran teks sistem secara total)
             .preferredColorScheme(.light)
             .animation(.spring(response: 0.45, dampingFraction: 0.8), value: isLoggedIn)
             .onOpenURL { url in
@@ -69,6 +89,10 @@ struct learningApp: App {
                     WidgetCenter.shared.reloadAllTimelines()
                 }
             }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didReceiveMemoryWarningNotification)) { _ in
+                // ⚡ Free up memory cache immediately upon system pressure
+                ImageCacheManager.shared.clearMemory()
+            }
         }
         .modelContainer(sharedModelContainer)
     }
@@ -82,10 +106,14 @@ struct learningApp: App {
         ])
         let appGroupIdentifier = "group.com.gmedia.xlearning"
 
-        // 1. Coba inisialisasi App Group Shared Container
+        // 1. Coba inisialisasi App Group Shared Container dengan Sinkronisasi CloudKit
         if let containerURL = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupIdentifier) {
             let storeURL = containerURL.appendingPathComponent("learning.sqlite")
-            let config = ModelConfiguration(schema: schema, url: storeURL)
+            let config = ModelConfiguration(
+                schema: schema,
+                url: storeURL,
+                cloudKitDatabase: .automatic
+            )
 
             if let container = try? ModelContainer(for: schema, configurations: [config]) {
                 if isContainerHealthy(container) {
@@ -108,8 +136,12 @@ struct learningApp: App {
             }
         }
 
-        // 2. Fallback Standard Local Storage
-        let standardConfig = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        // 2. Fallback Standard Local Storage dengan CloudKit
+        let standardConfig = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false,
+            cloudKitDatabase: .automatic
+        )
         if let container = try? ModelContainer(for: schema, configurations: [standardConfig]),
            isContainerHealthy(container)
         {

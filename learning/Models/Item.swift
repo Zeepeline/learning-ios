@@ -138,6 +138,19 @@ public enum RecurrenceRule: String, Codable, CaseIterable, Identifiable, Sendabl
     }
 }
 
+// MARK: - 📋 Subtask Item Model
+public struct SubtaskItem: Codable, Identifiable, Hashable, Sendable {
+    public var id: String
+    public var title: String
+    public var isCompleted: Bool
+
+    public init(id: String = UUID().uuidString, title: String, isCompleted: Bool = false) {
+        self.id = id
+        self.title = title
+        self.isCompleted = isCompleted
+    }
+}
+
 // MARK: - 📦 SwiftData Model: Item
 @Model
 final class Item {
@@ -145,29 +158,41 @@ final class Item {
     var notes: String = ""
     var timestamp: Date = Date()
     var isCompleted: Bool = false
+    var completedAt: Date? = nil
     var priority: String = "Normal"
     var category: String = "Design"
     var isRecurring: Bool = false
     var recurrenceRule: String = "Sekali Saja"
+    var customSoundName: String? = nil
+    var subtasks: [SubtaskItem] = []
+    @Attribute(.externalStorage) var imageAttachmentData: Data? = nil
     
     init(
         title: String = "Aktivitas Baru",
         notes: String = "",
         timestamp: Date = Date(),
         isCompleted: Bool = false,
+        completedAt: Date? = nil,
         priority: String = "Normal",
         category: String = "Design",
         isRecurring: Bool = false,
-        recurrenceRule: String = "Sekali Saja"
+        recurrenceRule: String = "Sekali Saja",
+        customSoundName: String? = nil,
+        subtasks: [SubtaskItem] = [],
+        imageAttachmentData: Data? = nil
     ) {
         self.title = title
         self.notes = notes
         self.timestamp = timestamp
         self.isCompleted = isCompleted
+        self.completedAt = completedAt
         self.priority = priority
         self.category = category
         self.isRecurring = isRecurring
         self.recurrenceRule = recurrenceRule
+        self.customSoundName = customSoundName
+        self.subtasks = subtasks
+        self.imageAttachmentData = imageAttachmentData
     }
 
     convenience init(
@@ -177,7 +202,10 @@ final class Item {
         isCompleted: Bool = false,
         priority: TaskPriority,
         category: TaskCategory,
-        recurrence: RecurrenceRule = .none
+        recurrence: RecurrenceRule = .none,
+        customSoundName: String? = nil,
+        subtasks: [SubtaskItem] = [],
+        imageAttachmentData: Data? = nil
     ) {
         self.init(
             title: title,
@@ -187,7 +215,10 @@ final class Item {
             priority: priority.rawValue,
             category: category.rawValue,
             isRecurring: recurrence != .none,
-            recurrenceRule: recurrence.rawValue
+            recurrenceRule: recurrence.rawValue,
+            customSoundName: customSoundName,
+            subtasks: subtasks,
+            imageAttachmentData: imageAttachmentData
         )
     }
 
@@ -211,5 +242,18 @@ final class Item {
             recurrenceRule = newValue.rawValue
             isRecurring = (newValue != .none)
         }
+    }
+
+    var completedSubtasksCount: Int {
+        subtasks.filter { $0.isCompleted }.count
+    }
+
+    var totalSubtasksCount: Int {
+        subtasks.count
+    }
+
+    var subtaskProgress: Double {
+        guard !subtasks.isEmpty else { return 0.0 }
+        return Double(completedSubtasksCount) / Double(totalSubtasksCount)
     }
 }

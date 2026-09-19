@@ -30,6 +30,9 @@ struct WidgetTaskItem: Identifiable {
     let priority: String
     let timeFormatted: String
     let isCompleted: Bool
+    let totalSubtasks: Int
+    let completedSubtasks: Int
+    let hasAttachment: Bool
 }
 
 // MARK: - 2. Provider Pengambil Data SwiftData dari App Group
@@ -99,7 +102,10 @@ struct Provider: TimelineProvider {
                     category: item.category.isEmpty ? "Tugas" : item.category,
                     priority: item.priority.isEmpty ? "Normal" : item.priority,
                     timeFormatted: item.timestamp.formatted(date: .omitted, time: .shortened),
-                    isCompleted: item.isCompleted
+                    isCompleted: item.isCompleted,
+                    totalSubtasks: item.totalSubtasksCount,
+                    completedSubtasks: item.completedSubtasksCount,
+                    hasAttachment: item.imageAttachmentData != nil
                 )
             }
         } catch {
@@ -109,9 +115,9 @@ struct Provider: TimelineProvider {
     
     private var sampleTasks: [WidgetTaskItem] {
         [
-            WidgetTaskItem(id: "1", title: "Desain Wireframe App", category: "Design", priority: "Tinggi", timeFormatted: "09:00", isCompleted: false),
-            WidgetTaskItem(id: "2", title: "Daily Standup Meeting", category: "Meeting", priority: "Normal", timeFormatted: "10:30", isCompleted: true),
-            WidgetTaskItem(id: "3", title: "Bug Fixing Auth & UI", category: "Coding", priority: "Normal", timeFormatted: "14:00", isCompleted: false)
+            WidgetTaskItem(id: "1", title: "Desain Wireframe App", category: "Design", priority: "Tinggi", timeFormatted: "09:00", isCompleted: false, totalSubtasks: 3, completedSubtasks: 1, hasAttachment: true),
+            WidgetTaskItem(id: "2", title: "Daily Standup Meeting", category: "Meeting", priority: "Normal", timeFormatted: "10:30", isCompleted: true, totalSubtasks: 0, completedSubtasks: 0, hasAttachment: false),
+            WidgetTaskItem(id: "3", title: "Bug Fixing Auth & UI", category: "Coding", priority: "Normal", timeFormatted: "14:00", isCompleted: false, totalSubtasks: 2, completedSubtasks: 2, hasAttachment: false)
         ]
     }
 }
@@ -239,24 +245,41 @@ struct TaskWidgetEntryView: View {
                     .frame(maxWidth: .infinity)
                 } else {
                     ForEach(entry.todayTasks.prefix(3)) { task in
-                        HStack(spacing: 6) {
+                        HStack(spacing: 5) {
                             Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                                .font(.system(size: 12, weight: .bold))
+                                .font(.system(size: 11, weight: .bold))
                                 .foregroundColor(task.isCompleted ? Color(red: 0.15, green: 0.65, blue: 0.30) : Color.black)
 
                             Text(task.title)
-                                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
                                 .foregroundColor(.black)
                                 .strikethrough(task.isCompleted, color: .black)
                                 .lineLimit(1)
 
                             Spacer()
 
+                            if task.hasAttachment {
+                                Image(systemName: "photo.fill")
+                                    .font(.system(size: 8, weight: .bold))
+                                    .foregroundColor(.black.opacity(0.6))
+                            }
+
+                            if task.totalSubtasks > 0 {
+                                Text("\(task.completedSubtasks)/\(task.totalSubtasks)")
+                                    .font(.system(size: 8.5, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.black)
+                                    .padding(.horizontal, 4)
+                                    .padding(.vertical, 1.5)
+                                    .background(Color(red: 0.85, green: 0.95, blue: 0.88))
+                                    .cornerRadius(4)
+                                    .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.black, lineWidth: 0.8))
+                            }
+
                             Text(task.timeFormatted)
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .font(.system(size: 9.5, weight: .bold, design: .rounded))
                                 .foregroundColor(Color.black.opacity(0.6))
                         }
-                        .padding(.vertical, 2)
+                        .padding(.vertical, 1.5)
                     }
                     Spacer()
                 }

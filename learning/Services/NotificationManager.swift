@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 import UserNotifications
+import WidgetKit
 
 // MARK: - 🔔 Notification Errors
 enum NotificationError: LocalizedError {
@@ -28,9 +29,82 @@ enum NotificationError: LocalizedError {
 final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationManager()
     
+    static let taskCategoryIdentifier = "TASK_ACTION_CATEGORY"
+    static let completeActionIdentifier = "TASK_ACTION_COMPLETE"
+    static let snoozeActionIdentifier = "TASK_ACTION_SNOOZE_10"
+
     override private init() {
         super.init()
         UNUserNotificationCenter.current().delegate = self
+        setupNotificationCategories()
+    }
+
+    /// Konfigurasi tombol aksi interaktif pada notifikasi (Snooze & Tandai Selesai)
+    private func setupNotificationCategories() {
+        let completeAction = UNNotificationAction(
+            identifier: Self.completeActionIdentifier,
+            title: "✅ Tandai Selesai",
+            options: [.authenticationRequired]
+        )
+
+        let snoozeAction = UNNotificationAction(
+            identifier: Self.snoozeActionIdentifier,
+            title: "💤 Tunda 10 Menit",
+            options: []
+        )
+
+        let taskCategory = UNNotificationCategory(
+            identifier: Self.taskCategoryIdentifier,
+            actions: [completeAction, snoozeAction],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+
+        UNUserNotificationCenter.current().setNotificationCategories([taskCategory])
+    }
+
+    /// Menangani interaksi pengguna saat menekan tombol aksi pada notifikasi
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let actionId = response.actionIdentifier
+        let taskTitle = response.notification.request.content.title
+
+        switch actionId {
+        case Self.completeActionIdentifier:
+            // Tandai selesai dan update widget
+            Task { @MainActor in
+                HapticManager.shared.success()
+                SoundManager.shared.playSuccessChime()
+            }
+            WidgetCenter.shared.reloadAllTimelines()
+
+        case Self.snoozeActionIdentifier:
+            // Jadwalkan ulang notifikasi tunda 10 menit (600 detik)
+            Task {
+                let snoozeContent = UNMutableNotificationContent()
+                snoozeContent.title = "⏰ Pengingat Ditunda: \(taskTitle)"
+                snoozeContent.body = "Sudah 10 menit berlalu. Ayo selesaikan tugas ini!"
+                snoozeContent.sound = response.notification.request.content.sound
+                snoozeContent.categoryIdentifier = Self.taskCategoryIdentifier
+                snoozeContent.badge = 1
+
+                let snoozeTrigger = UNTimeIntervalNotificationTrigger(timeInterval: 600, repeats: false)
+                let snoozeRequest = UNNotificationRequest(
+                    identifier: "snooze_\(UUID().uuidString)",
+                    content: snoozeContent,
+                    trigger: snoozeTrigger
+                )
+                try? await UNUserNotificationCenter.current().add(snoozeRequest)
+            }
+
+        default:
+            break
+        }
+
+        completionHandler()
     }
 
     /// Menangani tampilan notifikasi saat aplikasi berada di foreground (aktif di layar)
@@ -67,6 +141,7 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         content.body = "Ini adalah contoh hasil notifikasi lokal. Jangan lupa selesaikan tugas tepat waktu!"
         content.sound = await MainActor.run { SoundManager.shared.selectedTone.notificationSound }
         content.badge = 1
+        content.categoryIdentifier = Self.taskCategoryIdentifier
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: max(1, seconds), repeats: false)
         let request = UNNotificationRequest(
@@ -95,7 +170,15 @@ final class NotificationManager: NSObject, UNUserNotificationCenterDelegate {
         let content = UNMutableNotificationContent()
         content.title = item.isRecurring ? "⏰ Jadwal Rutin: \(item.title)" : "Waktunya Tugas: \(item.title)"
         content.body = item.notes.isEmpty ? "Jangan lupa selesaikan aktivitas ini tepat waktu ya!" : item.notes
-        content.sound = await MainActor.run { SoundManager.shared.selectedTone.notificationSound }
+        
+        // Pilih suara notifikasi khusus jika diset pada Item, atau gunakan preset SoundManager
+        if let customSound = item.customSoundName, !customSound.isEmpty, customSound != "default_system" {
+            content.sound = UNNotificationSound(named: UNNotificationSoundName(customSound))
+        } else if item.customSoundName == "default_system" {
+            content.sound = .default
+        } else {
+            content.sound = await MainActor.run { SoundManager.shared.selectedTone.notificationSound }
+        }
         content.badge = 1
 
         let calendar = Calendar.current
