@@ -12,8 +12,9 @@ struct AIAssistantSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @StateObject private var assistantService = MCPAIAssistantService.shared
+    @StateObject private var geminiBridge = GeminiBackgroundBridgeManager.shared
 
-    @AppStorage("aiProviderType") private var selectedProviderRaw: String = AIProviderType.local.rawValue
+    @AppStorage("aiProviderType") private var selectedProviderRaw: String = AIProviderType.googleAccount.rawValue
     @AppStorage("geminiApiKey") private var geminiApiKey: String = ""
     @AppStorage("ninerouterApiKey") private var ninerouterApiKey: String = ""
     @AppStorage("ninerouterBaseUrl") private var ninerouterBaseUrl: String = "https://api.ninerouter.com/v1"
@@ -21,7 +22,7 @@ struct AIAssistantSheetView: View {
 
     @State private var inputText: String = ""
     @State private var isShowingSettings: Bool = false
-    @State private var tempProvider: AIProviderType = .local
+    @State private var tempProvider: AIProviderType = .googleAccount
     @State private var tempGeminiApiKey: String = ""
     @State private var tempNinerouterApiKey: String = ""
     @State private var tempNinerouterBaseUrl: String = ""
@@ -29,7 +30,7 @@ struct AIAssistantSheetView: View {
     @FocusState private var isInputFocused: Bool
 
     private var currentProvider: AIProviderType {
-        AIProviderType(rawValue: selectedProviderRaw) ?? .local
+        AIProviderType(rawValue: selectedProviderRaw) ?? .googleAccount
     }
 
     // Saran Prompt Cepat MCP Multi-Feature
@@ -50,6 +51,12 @@ struct AIAssistantSheetView: View {
             ZStack {
                 Color.cartoonBg
                     .ignoresSafeArea()
+
+                // MARK: - 👁️ Invisible Background Engine (gemini.google.com)
+                InvisibleGeminiWebEngineView()
+                    .frame(width: 1, height: 1)
+                    .opacity(0.01)
+                    .allowsHitTesting(false)
 
                 VStack(spacing: 0) {
                     // MARK: - 💬 Chat Messages ScrollView
@@ -86,7 +93,7 @@ struct AIAssistantSheetView: View {
                     bottomInputBar
                 }
             }
-            .navigationTitle("AI Buddy (MCP)")
+            .navigationTitle("Gemini AI (MCP)")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -108,15 +115,15 @@ struct AIAssistantSheetView: View {
 
                 ToolbarItem(placement: .principal) {
                     VStack(spacing: 2) {
-                        Text("AI Buddy (MCP)")
+                        Text("Gemini AI (MCP)")
                             .font(.system(size: 15, weight: .heavy, design: .rounded))
                             .foregroundColor(.black)
 
                         HStack(spacing: 4) {
                             Circle()
-                                .fill(Color.cartoonMint)
+                                .fill(geminiBridge.isWebReady ? Color.cartoonMint : Color.cartoonYellow)
                                 .frame(width: 6, height: 6)
-                            Text("In-App Chat Engine")
+                            Text(geminiBridge.isWebReady ? "Gemini.com Terhubung" : "Menghubungkan Engine...")
                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                                 .foregroundColor(.secondary)
                         }
@@ -298,7 +305,7 @@ struct AIAssistantSheetView: View {
                         .fill(Color.black.opacity(0.75))
                         .frame(width: 6, height: 6)
                 }
-                Text("Memproses...")
+                Text("Gemini sedang berpikir...")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundColor(.secondary)
                     .padding(.leading, 4)
@@ -355,11 +362,11 @@ struct AIAssistantSheetView: View {
     private var bottomInputBar: some View {
         HStack(spacing: 10) {
             HStack(spacing: 8) {
-                Image(systemName: "wand.and.stars")
+                Image(systemName: "sparkles")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.cartoonTextPrimary)
 
-                TextField("Ketik pesan, tanya saran, atau minta jadwalkan tugas...", text: $inputText)
+                TextField("Ketik pesan untuk Gemini...", text: $inputText)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .focused($isInputFocused)
                     .onSubmit {
@@ -491,10 +498,10 @@ struct AIAssistantSheetView: View {
                         }
                     } else {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("⚡ Smart In-App Co-Planning Engine")
+                            Text("✨ Gemini.com Engine Latar Belakang")
                                 .font(.system(size: 12, weight: .heavy, design: .rounded))
                                 .foregroundColor(.black)
-                            Text("Berjalan 100% di dalam chat aplikasi tanpa perlu membuka web atau login browser. Siap berdiskusi jadwal, menyarankan subtasks, dan mengontrol semua fitur aplikasi!")
+                            Text("Menghubungkan pesan chat langsung ke mesin cerdas Gemini tanpa batas kuota Studio dan mengeksekusi aksi MCP secara otomatis.")
                                 .font(.system(size: 12, weight: .medium, design: .rounded))
                                 .foregroundColor(.secondary)
                         }
@@ -550,8 +557,8 @@ struct AIAssistantSheetView: View {
     private func providerIcon(for prov: AIProviderType) -> String {
         switch prov {
         case .local: return "bolt.shield.fill"
-        case .googleAccount: return "person.crop.circle.fill"
-        case .gemini: return "sparkles"
+        case .googleAccount: return "sparkles"
+        case .gemini: return "key.fill"
         case .ninerouter: return "network"
         }
     }

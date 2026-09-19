@@ -12,8 +12,8 @@ import Combine
 
 // MARK: - 🌐 AI Provider Selection
 enum AIProviderType: String, CaseIterable, Identifiable {
-    case googleAccount = "Akun Gemini.com (Tanpa Limit & Asli)"
-    case local = "Smart Local Engine (Gratis & Offline)"
+    case googleAccount = "Gemini.com (Background Engine Asli)"
+    case local = "Smart Local Co-Planner (Offline)"
     case gemini = "Google AI Studio (API Key)"
     case ninerouter = "Ninerouter / DeepSeek (Multi-LLM)"
 
@@ -21,7 +21,7 @@ enum AIProviderType: String, CaseIterable, Identifiable {
 
     var shortName: String {
         switch self {
-        case .googleAccount: return "Gemini.com (Web)"
+        case .googleAccount: return "Gemini.com"
         case .local: return "Local Engine"
         case .gemini: return "Gemini Key"
         case .ninerouter: return "DeepSeek"
@@ -97,14 +97,14 @@ final class MCPAIAssistantService: ObservableObject {
             MCPAIChatMessage(
                 role: .assistant,
                 content: """
-                Hai! Aku **AI Productivity Buddy (Native + Gemini.com Engine)** 🤖✨
+                Hai! Aku **Gemini AI (MCP Buddy)** 🤖✨
 
-                UI chat ini terhubung langsung ke **Gemini Asli**:
-                • 💬 Berdiskusi bebas, brainstorming, dan merencanakan ide tanpa batas kuota AI Studio.
-                • 📋 Rekomendasi subtasks & pemecahan jadwal secara otomatis.
-                • ⚡ Kontrol penuh MCP: to-do list, Pomodoro timer, Apple Health, dan Screen Time App Shield!
+                Semua percakapan berjalan di tampilan chat ini dan ditenagai oleh mesin **Gemini.com**:
+                • 💬 Berdiskusi bebas & brainstorming rencana tanpa batasan kuota Studio.
+                • 📋 Rekomendasi subtasks & pemecahan jadwal otomatis.
+                • ⚡ Eksekusi langsung ke To-Do List, Pomodoro Timer, Apple Health, dan Screen Time!
 
-                Apa yang ingin kita diskusikan atau jadwalkan sekarang?
+                Apa yang ingin kita diskusikan atau rencanakan hari ini?
                 """
             )
         )
@@ -160,16 +160,15 @@ final class MCPAIAssistantService: ObservableObject {
         isProcessing = false
     }
 
-    // MARK: - 🌐 Gemini.com Headless Bridge Execution
+    // MARK: - 🌐 Gemini.com Background Bridge Execution
     private func processWithGoogleUserAccount(prompt: String, modelContext: ModelContext) async {
         do {
-            let replyText = try await GeminiHeadlessEngine.shared.queryGemini(prompt: prompt)
+            let replyText = try await GeminiBackgroundBridgeManager.shared.sendPromptToGeminiWeb(prompt)
             await dispatchActionOrDisplayLLMResponse(llmText: replyText, prompt: prompt, modelContext: modelContext)
         } catch {
             await processWithLocalDiscussion(
                 prompt: prompt,
-                modelContext: modelContext,
-                missingKeyPrompt: "Tip: Pastikan sudah login di gemini.google.com melalui tombol ✨ Gemini.com di kanan atas"
+                modelContext: modelContext
             )
         }
     }
@@ -271,9 +270,9 @@ final class MCPAIAssistantService: ObservableObject {
         }
 
         let reply = """
-        Menarik! Terkait *"\(prompt)"*, aku siap bantu merencanakan atau mengeksekusinya.
+        Menarik! Terkait *"\(prompt)"*, mari kita rencanakan atau eksekusi langkah konkretnya.
 
-        💡 Mau aku buatkan rencana langkah-langkah terstruktur (*subtasks*) untuk ini? Cukup balas *"Ya, tolong buatkan rekomendasinya"* atau ceritakan detail target waktumu!\(extraNote)
+        💡 Mau aku buatkan rekomendasi langkah-langkah subtasks untuk ini? Balas *"Ya, tolong buatkan rekomendasinya"* atau ceritakan detailnya!\(extraNote)
         """
         messages.append(MCPAIChatMessage(role: .assistant, content: reply))
     }
@@ -333,7 +332,7 @@ final class MCPAIAssistantService: ObservableObject {
         let subtasks = proposal.subtasks.map { SubtaskItem(title: $0, isCompleted: false) }
         let newItem = Item(
             title: proposal.title,
-            notes: "Direncanakan & didiskusikan bersama AI Productivity Buddy",
+            notes: "Direncanakan & didiskusikan bersama Gemini AI Buddy",
             timestamp: Date(),
             isCompleted: false,
             completedAt: nil,
