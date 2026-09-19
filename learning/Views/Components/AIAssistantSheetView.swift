@@ -22,6 +22,7 @@ struct AIAssistantSheetView: View {
 
     @State private var inputText: String = ""
     @State private var isShowingSettings: Bool = false
+    @State private var isShowingGeminiWeb: Bool = false
     @State private var tempProvider: AIProviderType = .local
     @State private var tempGeminiApiKey: String = ""
     @State private var tempNinerouterApiKey: String = ""
@@ -54,6 +55,9 @@ struct AIAssistantSheetView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
+                    // MARK: - 🌐 Banner Akses Cepat Gemini.com
+                    geminiWebQuickBanner
+
                     // MARK: - 💬 Chat Messages ScrollView
                     ScrollViewReader { proxy in
                         ScrollView(showsIndicators: false) {
@@ -127,6 +131,27 @@ struct AIAssistantSheetView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 8) {
+                        // Tombol Buka Gemini.com Web Resmi
+                        Button {
+                            HapticManager.shared.impact(style: .medium)
+                            isShowingGeminiWeb = true
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 11, weight: .black))
+                                Text("Gemini.com")
+                                    .font(.system(size: 11, weight: .black, design: .rounded))
+                            }
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 8)
+                            .frame(height: 32)
+                            .background(Color.cartoonBlue)
+                            .cornerRadius(8)
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
+                            .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                        }
+                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+
                         // Tombol Clear Chat
                         Button {
                             HapticManager.shared.selection()
@@ -169,14 +194,50 @@ struct AIAssistantSheetView: View {
             .sheet(isPresented: $isShowingSettings) {
                 aiSettingsSheet
             }
+            .sheet(isPresented: $isShowingGeminiWeb) {
+                SafariView(url: URL(string: "https://gemini.google.com")!)
+                    .ignoresSafeArea()
+            }
         }
     }
 
-    // MARK: -  плав Smooth Scrolling Helpers
+    // MARK: - 🌐 Banner Akses Cepat Gemini.com
+    private var geminiWebQuickBanner: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.black)
+
+            Text("Mau ngobrol langsung di akun Gemini biasa?")
+                .font(.system(size: 11.5, weight: .bold, design: .rounded))
+                .foregroundColor(.black)
+
+            Spacer()
+
+            Button {
+                HapticManager.shared.impact(style: .light)
+                isShowingGeminiWeb = true
+            } label: {
+                Text("Buka Gemini.com ↗")
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color.cartoonYellow)
+                    .cornerRadius(6)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
+            }
+        }
+        .padding(.horizontal, HIGSpacing.md)
+        .padding(.vertical, 6)
+        .background(Color.white.opacity(0.85))
+        .overlay(Rectangle().frame(height: 1).foregroundColor(Color.black.opacity(0.1)), alignment: .bottom)
+    }
+
+    // MARK: - 🌊 Smooth Scrolling Helpers
     private func smoothScrollToBottom(proxy: ScrollViewProxy) {
         guard let lastId = assistantService.messages.last?.id else { return }
         Task { @MainActor in
-            // Delay 80ms untuk memberi jeda kalkulasi layout SwiftUI agar animasi scroll terasa tenang dan mulus
             try? await Task.sleep(nanoseconds: 80_000_000)
             withAnimation(.easeInOut(duration: 0.45)) {
                 proxy.scrollTo(lastId, anchor: .bottom)
@@ -301,7 +362,7 @@ struct AIAssistantSheetView: View {
                         .fill(Color.black.opacity(0.75))
                         .frame(width: 6, height: 6)
                 }
-                Text("Memproses via \(currentProvider.shortName)...")
+                Text("Memproses...")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundColor(.secondary)
                     .padding(.leading, 4)
@@ -363,7 +424,7 @@ struct AIAssistantSheetView: View {
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.cartoonTextPrimary)
 
-                TextField("Minta aksi MCP / diskusikan rencanamu...", text: $inputText)
+                TextField("Diskusikan rencana atau minta aksi aplikasi...", text: $inputText)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .focused($isInputFocused)
                     .onSubmit {
@@ -410,9 +471,41 @@ struct AIAssistantSheetView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: HIGSpacing.lg) {
                     
+                    // Banner Buka Gemini.com
+                    Button {
+                        isShowingSettings = false
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                            isShowingGeminiWeb = true
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.black)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Buka Gemini Web Resmi (gemini.google.com)")
+                                    .font(.system(size: 13, weight: .heavy, design: .rounded))
+                                    .foregroundColor(.black)
+                                Text("Gunakan langsung akun Google konsumen tanpa API Key")
+                                    .font(.system(size: 11, weight: .medium, design: .rounded))
+                                    .foregroundColor(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "arrow.up.right.square.fill")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.black)
+                        }
+                        .padding(12)
+                        .background(Color.cartoonBlue.opacity(0.3))
+                        .cornerRadius(12)
+                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.2))
+                    }
+                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+
                     // 1. Pilihan Provider
                     VStack(alignment: .leading, spacing: HIGSpacing.xs) {
-                        Text("PILIHAN AI PROVIDER")
+                        Text("PILIHAN ENGINE IN-APP")
                             .font(.system(size: 11, weight: .heavy, design: .rounded))
                             .foregroundColor(.secondary)
 
@@ -457,70 +550,17 @@ struct AIAssistantSheetView: View {
                     }
 
                     // 2. Form Spesifik Provider
-                    if tempProvider == .googleAccount {
-                        VStack(alignment: .leading, spacing: 10) {
-                            Text("SINKRONISASI AKUN GOOGLE")
+                    if tempProvider == .gemini {
+                        VStack(alignment: .leading, spacing: HIGSpacing.xs) {
+                            Text("GOOGLE AI STUDIO API KEY (OPSIONAL)")
                                 .font(.system(size: 11, weight: .heavy, design: .rounded))
                                 .foregroundColor(.secondary)
 
-                            if GoogleAuthManager.shared.isUserLoggedIn {
-                                HStack(spacing: 10) {
-                                    Image(systemName: "person.crop.circle.badge.checkmark")
-                                        .font(.system(size: 20, weight: .bold))
-                                        .foregroundColor(.cartoonMint)
-
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text("Akun Terhubung:")
-                                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                                            .foregroundColor(.secondary)
-                                        Text(GoogleAuthManager.shared.currentUserEmail ?? "Google User")
-                                            .font(.system(size: 13, weight: .heavy, design: .rounded))
-                                            .foregroundColor(.black)
-                                    }
-                                    Spacer()
-                                }
-                                .padding(12)
-                                .background(Color.white)
-                                .cornerRadius(12)
-                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.2))
-
-                                Text("💡 Gemini 1.5 Flash akan otomatis dipanggil menggunakan token OAuth akun Google Anda tanpa perlu API key manual.")
-                                    .font(.system(size: 11.5, weight: .medium, design: .rounded))
-                                    .foregroundColor(.secondary)
-                            } else {
-                                VStack(alignment: .leading, spacing: 10) {
-                                    Text("⚠️ Anda belum login dengan Akun Google.")
-                                        .font(.system(size: 12, weight: .heavy, design: .rounded))
-                                        .foregroundColor(.black)
-
-                                    Button {
-                                        Task {
-                                            isGoogleSigningIn = true
-                                            _ = try? await GoogleAuthManager.shared.signIn()
-                                            isGoogleSigningIn = false
-                                        }
-                                    } label: {
-                                        HStack {
-                                            Image(systemName: "g.circle.fill")
-                                                .font(.system(size: 16, weight: .bold))
-                                            Text(isGoogleSigningIn ? "Menghubungkan..." : "Sign in with Google")
-                                                .font(.system(size: 13, weight: .heavy, design: .rounded))
-                                        }
-                                        .foregroundColor(.black)
-                                        .frame(maxWidth: .infinity)
-                                        .frame(height: 44)
-                                        .background(Color.cartoonCoral)
-                                        .cornerRadius(10)
-                                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.2))
-                                    }
-                                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-                                    .disabled(isGoogleSigningIn)
-                                }
-                                .padding(12)
-                                .background(Color.white)
-                                .cornerRadius(12)
-                                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.2))
-                            }
+                            CartoonInputField(
+                                placeholder: "AIzaSy...",
+                                text: $tempGeminiApiKey,
+                                icon: "key.fill"
+                            )
                         }
                     } else if tempProvider == .ninerouter {
                         VStack(alignment: .leading, spacing: HIGSpacing.xs) {
@@ -546,24 +586,12 @@ struct AIAssistantSheetView: View {
                                 icon: "link"
                             )
                         }
-                    } else if tempProvider == .gemini {
-                        VStack(alignment: .leading, spacing: HIGSpacing.xs) {
-                            Text("GOOGLE AI STUDIO API KEY")
-                                .font(.system(size: 11, weight: .heavy, design: .rounded))
-                                .foregroundColor(.secondary)
-
-                            CartoonInputField(
-                                placeholder: "AIzaSy...",
-                                text: $tempGeminiApiKey,
-                                icon: "key.fill"
-                            )
-                        }
                     } else {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("ℹ️ Smart Local Engine")
+                            Text("ℹ️ Smart Local Co-Planning Engine")
                                 .font(.system(size: 12, weight: .heavy, design: .rounded))
                                 .foregroundColor(.black)
-                            Text("Bekerja secara offline langsung di perangkat tanpa memerlukan API Key atau kuota internet. Gratis selamanya!")
+                            Text("Bekerja secara offline langsung di perangkat tanpa API Key. Mampu berdiskusi rencana dan merekomendasikan subtasks sebelum dibuat!")
                                 .font(.system(size: 12, weight: .medium, design: .rounded))
                                 .foregroundColor(.secondary)
                         }
