@@ -157,7 +157,7 @@ struct TodayTimelineView: View {
                                 ForEach(filteredItems) { item in
                                     HStack(alignment: .top, spacing: HIGSpacing.sm) {
                                         // Kolom Waktu di Kiri (Format: 09:00 AM)
-                                        Text(item.timestamp.formatted(.dateTime.hour().minute()))
+                                        Text(CalendarDateCache.shared.formatTime(item.timestamp))
                                             .font(.system(size: 12, weight: .bold, design: .rounded))
                                             .foregroundColor(.secondary)
                                             .frame(width: 58, alignment: .leading)

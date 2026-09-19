@@ -29,6 +29,11 @@ struct EditActivity: View {
     // Scheduler States
     @State private var isSchedulerEnabled: Bool = false
     @State private var selectedRecurrence: RecurrenceRule = .daily
+    @State private var selectedCustomSound: String? = "cartoon_bell.caf"
+
+    // Subtasks & Attachments States
+    @State private var subtasks: [SubtaskItem] = []
+    @State private var imageAttachmentData: Data? = nil
 
     private let priorities = ["Tinggi", "Normal", "Rendah"]
 
@@ -214,10 +219,20 @@ struct EditActivity: View {
                             )
                         }
 
-                        // 4. Section Scheduler / Jadwal Rutin (Mirip Pengaturan)
+                        // 4. Checklist & Subtasks (dengan Smart AI Auto-Breakdown)
+                        CartoonSubtaskSectionView(
+                            subtasks: $subtasks,
+                            taskTitle: taskTitle,
+                            taskCategory: selectedCategory
+                        )
+
+                        // 5. Lampiran Foto / Gambar Referensi
+                        CartoonImageAttachmentView(imageData: $imageAttachmentData)
+
+                        // 6. Section Scheduler / Jadwal Rutin (Mirip Pengaturan)
                         schedulerSection
 
-                        // 5. Prioritas Selector Kartun (Tinggi, Normal, Rendah)
+                        // 7. Prioritas Selector Kartun (Tinggi, Normal, Rendah)
                         VStack(alignment: .leading, spacing: HIGSpacing.xs) {
                             Text("Prioritas Tugas")
                                 .font(.system(size: 15, weight: .heavy, design: .rounded))
@@ -298,6 +313,9 @@ struct EditActivity: View {
             isCompleted = item.isCompleted
             isSchedulerEnabled = item.isRecurring
             selectedRecurrence = item.recurrence
+            selectedCustomSound = item.customSoundName ?? "cartoon_bell.caf"
+            subtasks = item.subtasks
+            imageAttachmentData = item.imageAttachmentData
         }
     }
 
@@ -376,6 +394,13 @@ struct EditActivity: View {
                         .background(Color.cartoonBlue.opacity(0.12))
                         .cornerRadius(8)
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.cartoonBlue.opacity(0.3), lineWidth: 1.0))
+
+                        // Custom Alarm Sound Picker (Presets + Custom MP3)
+                        Divider()
+                            .background(Color.black.opacity(0.1))
+                            .padding(.vertical, 2)
+
+                        CartoonAlarmSoundPicker(selectedSoundName: $selectedCustomSound)
                     }
                     .padding(HIGSpacing.md)
                     .cartoonCard()
@@ -408,6 +433,9 @@ struct EditActivity: View {
             item.isCompleted = isCompleted
             item.isRecurring = isSchedulerEnabled
             item.recurrenceRule = isSchedulerEnabled ? selectedRecurrence.rawValue : "Sekali Saja"
+            item.customSoundName = isSchedulerEnabled ? selectedCustomSound : nil
+            item.subtasks = subtasks
+            item.imageAttachmentData = imageAttachmentData
 
             // Perbarui jadwal notifikasi lokal
             if !isCompleted {

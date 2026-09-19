@@ -6,99 +6,42 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ActivityCardView: View {
+    @Environment(\.modelContext) private var modelContext
     let item: Item
     var onToggle: () -> Void
     var onDelete: () -> Void
     var onTap: (() -> Void)?
 
+    @State private var isExpanded: Bool = false
+    @State private var isShowingFullImage: Bool = false
+
     dynamic var body: some View {
-        HStack(spacing: HIGSpacing.sm) {
-            // 1. 🔘 Tombol Checkbox Kartun Pop Neo-Brutalist
-            Button {
-                withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
-                    onToggle()
+        VStack(alignment: .leading, spacing: HIGSpacing.xs) {
+            HStack(spacing: HIGSpacing.sm) {
+                // 1. 🔘 Tombol Checkbox Kartun
+                checkboxButton
+
+                // 2. 📝 Detail Konten Aktivitas
+                taskContent
+
+                Spacer()
+
+                // Tombol Expand jika memiliki subtask atau foto
+                if !item.subtasks.isEmpty || item.imageAttachmentData != nil {
+                    expandButton
                 }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(item.isCompleted ? Color.cartoonMint : Color.white)
-                        .frame(width: 30, height: 30)
-                        .overlay(
-                            Circle().stroke(Color.black, lineWidth: 2.0)
-                        )
-                        .shadow(color: .black, radius: 0, x: 2, y: 2)
-                    
-                    if item.isCompleted {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 14, weight: .black))
-                            .foregroundColor(.black)
-                    }
-                }
-                .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
 
-            // 2. 📝 Detail Konten Aktivitas (Teks Hitam Tajam & Tegas Bergaya Kartun)
-            VStack(alignment: .leading, spacing: 5) {
-                Text(item.title)
-                    .font(.system(size: 15, weight: .heavy, design: .rounded))
-                    .foregroundColor(Color.black)
-                    .strikethrough(item.isCompleted, color: Color.black.opacity(0.8))
-                    .multilineTextAlignment(.leading)
-
-                HStack(spacing: HIGSpacing.xs) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "clock.fill")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(Color.black.opacity(0.65))
-                        Text(item.timestamp, format: Date.FormatStyle(date: .abbreviated, time: .shortened))
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundColor(Color.black.opacity(0.65))
-                    }
-
-                    // Badge Prioritas Kartun
-                    priorityBadge(for: item.priority)
-
-                    // Badge Jadwal Rutin (Scheduler)
-                    if item.isRecurring {
-                        recurrenceBadge(for: item.recurrence)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                onTap?()
+                // 3. 🗑️ Tombol Hapus
+                deleteButton
             }
 
-            Spacer()
-
-            // 3. 🗑️ Tombol Hapus Kartun Pop
-            Button {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                    onDelete()
-                }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(Color.cartoonPink)
-                        .frame(width: 32, height: 32)
-                        .overlay(
-                            Circle().stroke(Color.black, lineWidth: 1.8)
-                        )
-                        .shadow(color: .black, radius: 0, x: 2, y: 2)
-                    
-                    Image(systemName: "trash.fill")
-                        .font(.system(size: 12, weight: .black))
-                        .foregroundColor(.black)
-                }
-                .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
-                .contentShape(Rectangle())
+            // Expanded Subtasks & Photo
+            if isExpanded {
+                expandedDetailsView
             }
-            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
         }
         .padding(.horizontal, HIGSpacing.md)
         .padding(.vertical, HIGSpacing.sm)
@@ -111,6 +54,232 @@ struct ActivityCardView: View {
             RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                 .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
         )
+        .sheet(isPresented: $isShowingFullImage) {
+            fullscreenImageSheet
+        }
+    }
+
+    // MARK: - Subviews
+
+    private var checkboxButton: some View {
+        Button {
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
+                SoundManager.shared.playPop()
+                onToggle()
+            }
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(item.isCompleted ? Color.cartoonMint : Color.white)
+                    .frame(width: 30, height: 30)
+                    .overlay(Circle().stroke(Color.black, lineWidth: 2.0))
+                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                
+                if item.isCompleted {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .black))
+                        .foregroundColor(.black)
+                }
+            }
+            .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+    }
+
+    private var taskContent: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(item.title)
+                .font(.system(size: 15, weight: .heavy, design: .rounded))
+                .foregroundColor(Color.black)
+                .strikethrough(item.isCompleted, color: Color.black.opacity(0.8))
+                .multilineTextAlignment(.leading)
+
+            HStack(spacing: HIGSpacing.xs) {
+                HStack(spacing: 4) {
+                    Image(systemName: "clock.fill")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(Color.black.opacity(0.65))
+                    Text(item.timestamp, format: Date.FormatStyle(date: .abbreviated, time: .shortened))
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundColor(Color.black.opacity(0.65))
+                }
+
+                // Badge Prioritas Kartun
+                priorityBadge(for: item.priority)
+
+                // Badge Jadwal Rutin (Scheduler)
+                if item.isRecurring {
+                    recurrenceBadge(for: item.recurrence)
+                }
+
+                // Badge Subtask Progress
+                if !item.subtasks.isEmpty {
+                    subtaskBadge(for: item)
+                }
+
+                // Badge Foto Terlampir
+                if item.imageAttachmentData != nil {
+                    attachmentBadge
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            onTap?()
+        }
+    }
+
+    private var expandButton: some View {
+        Button {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                isExpanded.toggle()
+                HapticManager.shared.selection()
+            }
+        } label: {
+            Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
+                .font(.system(size: 18, weight: .bold))
+                .foregroundColor(.black.opacity(0.7))
+        }
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+    }
+
+    private var deleteButton: some View {
+        Button {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                SoundManager.shared.playDeleteSound()
+                onDelete()
+            }
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(Color.cartoonPink)
+                    .frame(width: 30, height: 30)
+                    .overlay(Circle().stroke(Color.black, lineWidth: 1.8))
+                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                
+                Image(systemName: "trash.fill")
+                    .font(.system(size: 11, weight: .black))
+                    .foregroundColor(.black)
+            }
+            .frame(width: 36, height: 36)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+    }
+
+    private var expandedDetailsView: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Divider()
+                .background(Color.black.opacity(0.15))
+                .padding(.vertical, 2)
+
+            // Subtasks Checklist
+            if !item.subtasks.isEmpty {
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(item.subtasks.indices, id: \.self) { index in
+                        let subtask = item.subtasks[index]
+                        Button {
+                            toggleSubtask(at: index)
+                        } label: {
+                            HStack(spacing: 8) {
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 4)
+                                        .fill(subtask.isCompleted ? Color.cartoonMint : Color.white)
+                                        .frame(width: 17, height: 17)
+                                        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.black, lineWidth: 1.2))
+
+                                    if subtask.isCompleted {
+                                        Image(systemName: "checkmark")
+                                            .font(.system(size: 9, weight: .black))
+                                            .foregroundColor(.black)
+                                    }
+                                }
+
+                                Text(subtask.title)
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .foregroundColor(.black)
+                                    .strikethrough(subtask.isCompleted, color: .black.opacity(0.6))
+
+                                Spacer()
+                            }
+                            .padding(.vertical, 2)
+                            .padding(.horizontal, 4)
+                        }
+                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
+                    }
+                }
+            }
+
+            // Thumbnail Foto Terlampir (Cached & Downsampled)
+            if let imgData = item.imageAttachmentData,
+               let uiImg = ImageCacheManager.shared.thumbnail(for: imgData, key: "\(item.id)", targetSize: CGSize(width: 100, height: 100)) {
+                HStack(spacing: 8) {
+                    Image(uiImage: uiImg)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 50, height: 50)
+                        .clipped()
+                        .cornerRadius(6)
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.2))
+                        .shadow(color: .black.opacity(0.1), radius: 0, x: 1, y: 1)
+                        .onTapGesture {
+                            isShowingFullImage = true
+                        }
+
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Foto Lampiran Referensi")
+                            .font(.system(size: 11, weight: .heavy, design: .rounded))
+                            .foregroundColor(.black)
+                        Text("Ketuk untuk perbesar")
+                            .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                }
+                .padding(6)
+                .background(Color.white.opacity(0.7))
+                .cornerRadius(8)
+            }
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+    }
+
+    @ViewBuilder
+    private var fullscreenImageSheet: some View {
+        if let imgData = item.imageAttachmentData, let uiImg = UIImage(data: imgData) {
+            NavigationStack {
+                ZStack {
+                    Color.black.ignoresSafeArea()
+                    Image(uiImage: uiImg)
+                        .resizable()
+                        .scaledToFit()
+                        .padding()
+                }
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Tutup") {
+                            isShowingFullImage = false
+                        }
+                        .font(.system(.body, design: .rounded).weight(.bold))
+                        .foregroundColor(.white)
+                    }
+                }
+            }
+        }
+    }
+
+    private func toggleSubtask(at index: Int) {
+        guard index < item.subtasks.count else { return }
+        HapticManager.shared.impact(style: .light)
+        SoundManager.shared.playPop()
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+            var updated = item.subtasks
+            updated[index].isCompleted.toggle()
+            item.subtasks = updated
+            try? modelContext.save()
+        }
     }
 
     // MARK: - Warna Background Kartu Terang Solid
@@ -162,6 +331,46 @@ struct ActivityCardView: View {
         .shadow(color: .black, radius: 0, x: 1, y: 1)
     }
 
+    // MARK: - Badge Subtask Checklist
+    @ViewBuilder
+    private func subtaskBadge(for item: Item) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: "checklist")
+                .font(.system(size: 8, weight: .bold))
+            Text("\(item.completedSubtasksCount)/\(item.totalSubtasksCount)")
+                .font(.system(size: 9, weight: .heavy, design: .rounded))
+        }
+        .foregroundColor(.black)
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(
+            Capsule().fill(item.subtaskProgress == 1.0 ? Color.cartoonMint : Color.cartoonLavender)
+        )
+        .overlay(
+            Capsule().stroke(Color.black, lineWidth: 1.2)
+        )
+        .shadow(color: .black, radius: 0, x: 1, y: 1)
+    }
+
+    // MARK: - Badge Foto Terlampir
+    @ViewBuilder
+    private var attachmentBadge: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "photo.fill")
+                .font(.system(size: 8, weight: .bold))
+        }
+        .foregroundColor(.black)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 3)
+        .background(
+            Capsule().fill(Color.cartoonPink)
+        )
+        .overlay(
+            Capsule().stroke(Color.black, lineWidth: 1.2)
+        )
+        .shadow(color: .black, radius: 0, x: 1, y: 1)
+    }
+
     private func badgeData(for priority: String) -> (Color, String) {
         switch priority {
         case "Tinggi": return (Color.cartoonPink, "Tinggi")
@@ -188,251 +397,3 @@ struct ActivityCardView: View {
     .padding()
     .background(Color.cartoonBg)
 }
-
-// PATCH-THUNKS-BEGIN (generated by `patchcli prepare` — DO NOT EDIT)
-// @generated
-// =========================================================================
-// AUTOGENERATED BY `patchcli prepare` — DO NOT EDIT THIS SECTION.
-//
-// Do NOT edit any code in this generated section — neither by hand NOR with
-// an AI coding assistant (Copilot, Cursor, Claude, etc.).
-//
-// Reason: this block is REGENERATED on every `patchcli prepare` run (which
-// also runs automatically inside `patchcli build`/`push`/`release`). Any
-// manual change here is SILENTLY OVERWRITTEN on the next prepare, and an
-// inconsistent thunk can break the OTA fingerprint (causing a MISMATCH that
-// blocks your release).
-//
-// To change a view's behaviour: edit the VIEW SOURCE FILE itself — never
-// this generated thunk. To remove this section entirely, delete the block
-// from BEGIN to END and re-run `patchcli prepare` (it recreates it).
-// =========================================================================
-// Patch kept the patch-thunk code for the view(s) below in YOUR file because each is
-// declared `private`/`fileprivate` (or its body host-resolves a `private` member) —
-// and Swift access control is file-scoped, so a thunk in the separate
-// `Patch/Generated/` folder cannot reach it. Only the minimum that genuinely needs
-// file-scoped access is here.
-// ActivityCardView: helper methods kept here — its body reads private member(s): cardBgColor, priorityBadge, recurrenceBadge.
-//   To move this into Patch/Generated/, make those member(s) `internal` (drop
-//   `private`/`fileprivate`) and re-run `patchcli prepare`.
-#if canImport(SwiftUI)
-import SwiftUI
-import PatchSDK
-import PatchSwiftUI
-import PatchRender
-#if canImport(AVFoundation)
-import AVFoundation
-#endif
-#if canImport(ActivityKit)
-import ActivityKit
-#endif
-#if canImport(AdSupport)
-import AdSupport
-#endif
-#if canImport(AppIntents)
-import AppIntents
-#endif
-#if canImport(AppTrackingTransparency)
-import AppTrackingTransparency
-#endif
-#if canImport(AudioToolbox)
-import AudioToolbox
-#endif
-#if canImport(Combine)
-import Combine
-#endif
-#if canImport(DeviceActivity)
-import DeviceActivity
-#endif
-#if canImport(EventKit)
-import EventKit
-#endif
-#if canImport(ExtensionKit)
-import ExtensionKit
-#endif
-#if canImport(FamilyControls)
-import FamilyControls
-#endif
-#if canImport(Foundation)
-import Foundation
-#endif
-#if canImport(GoogleSignIn)
-import GoogleSignIn
-#endif
-#if canImport(HealthKit)
-import HealthKit
-#endif
-#if canImport(LocalAuthentication)
-import LocalAuthentication
-#endif
-#if canImport(ManagedSettings)
-import ManagedSettings
-#endif
-#if canImport(Observation)
-import Observation
-#endif
-#if canImport(SafariServices)
-import SafariServices
-#endif
-#if canImport(SwiftData)
-import SwiftData
-#endif
-#if canImport(UIKit)
-import UIKit
-#endif
-#if canImport(UserNotifications)
-import UserNotifications
-#endif
-#if canImport(WidgetKit)
-import WidgetKit
-#endif
-
-extension ActivityCardView {
-    /// Native renderers for this view's non-lowerable leaves, keyed by the
-    /// shipped tree's opaque-slot id. Each is a FACTORY `([String]) -> AnyView`:
-    /// a PARAMETERIZED leaf (a slotted custom view with lifted string-literal
-    /// args) substitutes the runtime-supplied `a[k]` into its template, so an
-    /// OTA patch that only edited a string ships through here (the id is
-    /// structural/stable, the new value rides WASM in `BodyEmission.slotArgs`).
-    /// A plain leaf ignores its args. Empty for a fully-lowered view.
-    @MainActor func __patchSlots() -> [String: ([String]) -> AnyView] {
-        var __s: [String: ([String]) -> AnyView] = [:]
-        __s["op_fae8196f80700150"] = { (a: [String]) in a.count >= 3 ? AnyView(HStack(spacing: HIGSpacing.sm) {
-            // 1. 🔘 Tombol Checkbox Kartun Pop Neo-Brutalist
-            Button {
-                withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
-                    onToggle()
-                }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(item.isCompleted ? Color.cartoonMint : Color.white)
-                        .frame(width: 30, height: 30)
-                        .overlay(
-                            Circle().stroke(Color.black, lineWidth: 2.0)
-                        )
-                        .shadow(color: .black, radius: 0, x: 2, y: 2)
-                    
-                    if item.isCompleted {
-                        Image(systemName: a[0])
-                            .font(.system(size: 14, weight: .black))
-                            .foregroundColor(.black)
-                    }
-                }
-                .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
-
-            // 2. 📝 Detail Konten Aktivitas (Teks Hitam Tajam & Tegas Bergaya Kartun)
-            VStack(alignment: .leading, spacing: 5) {
-                Text(item.title)
-                    .font(.system(size: 15, weight: .heavy, design: .rounded))
-                    .foregroundColor(Color.black)
-                    .strikethrough(item.isCompleted, color: Color.black.opacity(0.8))
-                    .multilineTextAlignment(.leading)
-
-                HStack(spacing: HIGSpacing.xs) {
-                    HStack(spacing: 4) {
-                        Image(systemName: a[1])
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(Color.black.opacity(0.65))
-                        Text(item.timestamp, format: Date.FormatStyle(date: .abbreviated, time: .shortened))
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundColor(Color.black.opacity(0.65))
-                    }
-
-                    // Badge Prioritas Kartun
-                    priorityBadge(for: item.priority)
-
-                    // Badge Jadwal Rutin (Scheduler)
-                    if item.isRecurring {
-                        recurrenceBadge(for: item.recurrence)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                onTap?()
-            }
-
-            Spacer()
-
-            // 3. 🗑️ Tombol Hapus Kartun Pop
-            Button {
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                    onDelete()
-                }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(Color.cartoonPink)
-                        .frame(width: 32, height: 32)
-                        .overlay(
-                            Circle().stroke(Color.black, lineWidth: 1.8)
-                        )
-                        .shadow(color: .black, radius: 0, x: 2, y: 2)
-                    
-                    Image(systemName: a[2])
-                        .font(.system(size: 12, weight: .black))
-                        .foregroundColor(.black)
-                }
-                .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
-        }
-        .padding(.horizontal, HIGSpacing.md)
-        .padding(.vertical, HIGSpacing.sm)) : AnyView(EmptyView()) }
-        __s["op_e3e6ecb1d6681846"] = { (_: [String]) in AnyView(RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                .fill(item.isCompleted ? Color(red: 0.94, green: 0.94, blue: 0.94) : cardBgColor(for: item.priority))) }
-        return __s
-    }
-
-    /// Resolved design-system token values for this view's `.hostToken(id)`/
-    /// `.fontToken(id)`/numeric/string token slots. Empty when the view uses none.
-    @MainActor func __patchTokens() -> [String: PatchHostToken] {
-        var __t: [String: PatchHostToken] = [:]
-        __t["nt_98ff9976f3b5d171"] = .number(Double(CartoonMetrics.cardCornerRadius))
-        return __t
-    }
-
-    /// Per-row indexed native-action slots for this view's `.indexedForEachSlot`
-    /// nodes. Each natively evaluates the body-local collection (over `self`) →
-    /// a row count + a per-row factory `(Int) -> AnyView` (closing over `self`, so
-    /// each row's real per-row native action works). Empty when the view has none.
-    @MainActor func __patchRowSlots() -> [String: PatchRowSlot] {
-        [:]
-    }
-
-    /// Native-action slots for this view's `.actionSlotButton` nodes — an actions-list
-    /// Button (`.swipeActions`/`.toolbar`/`.alert`/`Menu`/`.contextMenu`) whose action is a
-    /// native method call. Each closure (`() -> Void`, over `self`) runs the real action;
-    /// the SDK wires it to the reconstituted Button by id. Empty when the view has none.
-    @MainActor func __patchActionSlots() -> [String: () -> Void] {
-        [:]
-    }
-
-    /// Native effect-modifier slots for this view's `.nativeEffectSlot` modifiers — an
-    /// undispatchable `.task`/`.onAppear`/`.refreshable`/`.onSubmit`/gesture whose closure
-    /// runs a native side-effect. Each closure (`(AnyView) -> AnyView`, over `self`) applies
-    /// the real modifier to its content; the SDK applies it to the rendered subtree by id.
-    /// Empty when the view has none.
-    @MainActor func __patchEffectSlots() -> [String: (AnyView) -> AnyView] {
-        [:]
-    }
-
-    /// Child-view callback slots for this view's `.callbackSlot` nodes — a custom child-view
-    /// call whose `() -> Void` closure arg lowers to a WASM dispatch sequence. Each closure
-    /// returns the full child-view `AnyView` with the callback arg replaced by a stable
-    /// forwarder `{ self.__patchDispatchCallback("<id>") }`. The SDK fills the opaque slot
-    /// position from this table by id. Empty when the view has no callback slots.
-    @MainActor func __patchCallbackSlots() -> [String: () -> AnyView] {
-        [:]
-    }
-}
-
-#endif
-// @generated — END OF AUTOGENERATED SECTION. DO NOT EDIT ABOVE (regenerated by `patchcli prepare`).
-// PATCH-THUNKS-END

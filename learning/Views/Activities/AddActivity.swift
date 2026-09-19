@@ -24,6 +24,11 @@ struct AddActivity: View {
     // Scheduler / Jadwal Rutin States (Mirip di Pengaturan)
     @State private var isSchedulerEnabled: Bool = false
     @State private var selectedRecurrence: RecurrenceRule = .daily
+    @State private var selectedCustomSound: String? = "cartoon_bell.caf"
+
+    // Subtasks & Attachments States
+    @State private var subtasks: [SubtaskItem] = []
+    @State private var imageAttachmentData: Data? = nil
 
     dynamic var body: some View {
         NavigationStack {
@@ -121,10 +126,20 @@ struct AddActivity: View {
                             CartoonCalendarView(selectedDate: $dueDate)
                         }
 
-                        // 6. Section Scheduler / Jadwal Rutin
+                        // 6. Checklist & Subtasks (dengan Smart AI Auto-Breakdown)
+                        CartoonSubtaskSectionView(
+                            subtasks: $subtasks,
+                            taskTitle: taskTitle,
+                            taskCategory: selectedCategory
+                        )
+
+                        // 7. Lampiran Foto / Gambar Referensi
+                        CartoonImageAttachmentView(imageData: $imageAttachmentData)
+
+                        // 8. Section Scheduler / Jadwal Rutin
                         schedulerSection
 
-                        // 7. Pengaturan Tambahan (Toggles)
+                        // 9. Pengaturan Tambahan (Toggles)
                         VStack(alignment: .leading, spacing: 6) {
                             Text("PENGATURAN TAMBAHAN")
                                 .font(.system(size: 10, weight: .heavy, design: .rounded))
@@ -154,7 +169,8 @@ struct AddActivity: View {
                             }
                         }
 
-                        // 8. Tombol Simpan (Create Task)
+                        // 10. Tombol Simpan (Create Task)
+                        let isTitleValid = !taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                         Button {
                             createTask()
                         } label: {
@@ -164,20 +180,19 @@ struct AddActivity: View {
                                 Text("Create Task")
                                     .font(.system(size: 16, weight: .heavy, design: .rounded))
                             }
-                            .foregroundColor(.black)
+                            .foregroundColor(isTitleValid ? .black : Color.black.opacity(0.4))
                             .frame(maxWidth: .infinity)
                             .frame(height: 54)
-                            .background(Color.cartoonYellow)
+                            .background(isTitleValid ? Color.cartoonYellow : Color(red: 0.92, green: 0.92, blue: 0.94))
                             .cornerRadius(CartoonMetrics.cardCornerRadius)
                             .overlay(
                                 RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                                     .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                             )
-                            .shadow(color: .black, radius: 0, x: 3, y: 3)
+                            .shadow(color: .black, radius: 0, x: isTitleValid ? 2.5 : 1.5, y: isTitleValid ? 2.5 : 1.5)
                         }
-                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.5))
-                        .disabled(taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                        .opacity(taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? 0.5 : 1.0)
+                        .buttonStyle(CartoonPressButtonStyle(pressOffset: isTitleValid ? 1.5 : 0))
+                        .disabled(!isTitleValid)
                         .padding(.top, HIGSpacing.sm)
                         .padding(.bottom, 60)
                     }
@@ -273,6 +288,13 @@ struct AddActivity: View {
                         .background(Color.cartoonBlue.opacity(0.12))
                         .cornerRadius(8)
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.cartoonBlue.opacity(0.3), lineWidth: 1.0))
+
+                        // Custom Alarm Sound Picker (Presets + Custom MP3)
+                        Divider()
+                            .background(Color.black.opacity(0.1))
+                            .padding(.vertical, 2)
+
+                        CartoonAlarmSoundPicker(selectedSoundName: $selectedCustomSound)
                     }
                     .padding(HIGSpacing.md)
                     .cartoonCard()
@@ -297,7 +319,10 @@ struct AddActivity: View {
             priority: "Normal",
             category: selectedCategory,
             isRecurring: isSchedulerEnabled,
-            recurrenceRule: isSchedulerEnabled ? selectedRecurrence.rawValue : "Sekali Saja"
+            recurrenceRule: isSchedulerEnabled ? selectedRecurrence.rawValue : "Sekali Saja",
+            customSoundName: isSchedulerEnabled ? selectedCustomSound : nil,
+            subtasks: subtasks,
+            imageAttachmentData: imageAttachmentData
         )
 
         modelContext.insert(newItem)
