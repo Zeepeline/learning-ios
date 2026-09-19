@@ -19,26 +19,52 @@ struct ActivityCardView: View {
     @State private var isShowingFullImage: Bool = false
 
     dynamic var body: some View {
-        VStack(alignment: .leading, spacing: HIGSpacing.xs) {
-            HStack(spacing: HIGSpacing.sm) {
-                // 1. 🔘 Tombol Checkbox Kartun
+        VStack(alignment: .leading, spacing: 8) {
+            // MARK: - Baris Utama: Checkbox + Konten Teks Multiline + Aksi
+            HStack(alignment: .top, spacing: 12) {
+                // 1. 🔘 Checkbox Kartun
                 checkboxButton
+                    .padding(.top, 2)
 
-                // 2. 📝 Detail Konten Aktivitas
-                taskContent
+                // 2. 📝 Judul Tugas & Metadata Vertikal (Multiline Rapi)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(item.title)
+                        .font(.system(size: 15, weight: .heavy, design: .rounded))
+                        .foregroundColor(Color.black)
+                        .strikethrough(item.isCompleted, color: Color.black.opacity(0.7))
+                        .multilineTextAlignment(.leading)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .lineSpacing(2)
 
-                Spacer()
+                    // Catatan Singkat (Jika Ada)
+                    if !item.notes.isEmpty {
+                        Text(item.notes)
+                            .font(.system(size: 12, weight: .medium, design: .rounded))
+                            .foregroundColor(Color.black.opacity(0.65))
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
 
-                // Tombol Expand jika memiliki subtask atau foto
-                if !item.subtasks.isEmpty || item.imageAttachmentData != nil {
-                    expandButton
+                    // Baris Metadata (Waktu, Kategori, Subtask Progress, Lampiran)
+                    metadataChipsRow
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    onTap?()
                 }
 
-                // 3. 🗑️ Tombol Hapus
-                deleteButton
+                // 3. 🛠️ Tombol Aksi (Expand & Delete)
+                HStack(spacing: 6) {
+                    if !item.subtasks.isEmpty || item.imageAttachmentData != nil {
+                        expandButton
+                    }
+                    deleteButton
+                }
+                .padding(.top, 2)
             }
 
-            // Expanded Subtasks & Photo
+            // MARK: - Subtasks & Foto Lampiran (Jika Di-expand)
             if isExpanded {
                 expandedDetailsView
             }
@@ -59,8 +85,7 @@ struct ActivityCardView: View {
         }
     }
 
-    // MARK: - Subviews
-
+    // MARK: - 🔘 Checkbox Button
     private var checkboxButton: some View {
         Button {
             withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
@@ -71,66 +96,104 @@ struct ActivityCardView: View {
             ZStack {
                 Circle()
                     .fill(item.isCompleted ? Color.cartoonMint : Color.white)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 28, height: 28)
                     .overlay(Circle().stroke(Color.black, lineWidth: 2.0))
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
-                
+                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+
                 if item.isCompleted {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .black))
+                        .font(.system(size: 13, weight: .black))
                         .foregroundColor(.black)
                 }
             }
-            .frame(width: HIGSpacing.touchTargetMin, height: HIGSpacing.touchTargetMin)
+            .frame(width: 32, height: 32)
             .contentShape(Rectangle())
         }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
     }
 
-    private var taskContent: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(item.title)
-                .font(.system(size: 15, weight: .heavy, design: .rounded))
-                .foregroundColor(Color.black)
-                .strikethrough(item.isCompleted, color: Color.black.opacity(0.8))
-                .multilineTextAlignment(.leading)
-
-            HStack(spacing: HIGSpacing.xs) {
-                HStack(spacing: 4) {
-                    Image(systemName: "clock.fill")
-                        .font(.system(size: 10, weight: .bold))
-                        .foregroundColor(Color.black.opacity(0.65))
-                    Text(item.timestamp, format: Date.FormatStyle(date: .abbreviated, time: .shortened))
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(Color.black.opacity(0.65))
-                }
-
-                // Badge Prioritas Kartun
-                priorityBadge(for: item.priority)
-
-                // Badge Jadwal Rutin (Scheduler)
-                if item.isRecurring {
-                    recurrenceBadge(for: item.recurrence)
-                }
-
-                // Badge Subtask Progress
-                if !item.subtasks.isEmpty {
-                    subtaskBadge(for: item)
-                }
-
-                // Badge Foto Terlampir
-                if item.imageAttachmentData != nil {
-                    attachmentBadge
-                }
+    // MARK: - 🏷️ Metadata Chips Row (Waktu, Kategori, Subtask, Lampiran)
+    private var metadataChipsRow: some View {
+        HStack(spacing: 6) {
+            // Waktu / Jam
+            HStack(spacing: 3) {
+                Image(systemName: "clock.fill")
+                    .font(.system(size: 9.5, weight: .bold))
+                    .foregroundColor(Color.black.opacity(0.6))
+                Text(item.timestamp, format: Date.FormatStyle(date: .omitted, time: .shortened))
+                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                    .foregroundColor(Color.black.opacity(0.75))
             }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .contentShape(Rectangle())
-        .onTapGesture {
-            onTap?()
+            .padding(.horizontal, 6)
+            .padding(.vertical, 3)
+            .background(Color.white.opacity(0.6))
+            .cornerRadius(6)
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black.opacity(0.15), lineWidth: 0.8))
+
+            // Kategori Chip
+            if !item.category.isEmpty {
+                HStack(spacing: 3) {
+                    Image(systemName: "tag.fill")
+                        .font(.system(size: 9, weight: .bold))
+                    Text(item.category)
+                        .font(.system(size: 10.5, weight: .heavy, design: .rounded))
+                }
+                .foregroundColor(.black.opacity(0.8))
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(Color.white.opacity(0.75))
+                .cornerRadius(6)
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black.opacity(0.15), lineWidth: 0.8))
+            }
+
+            // Subtask Progress Badge
+            if !item.subtasks.isEmpty {
+                let completedCount = item.subtasks.filter { $0.isCompleted }.count
+                HStack(spacing: 3) {
+                    Image(systemName: completedCount == item.subtasks.count ? "checkmark.circle.fill" : "list.bullet")
+                        .font(.system(size: 9, weight: .bold))
+                    Text("\(completedCount)/\(item.subtasks.count)")
+                        .font(.system(size: 10.5, weight: .heavy, design: .rounded))
+                }
+                .foregroundColor(.black)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(completedCount == item.subtasks.count ? Color.cartoonMint : Color.cartoonYellow.opacity(0.7))
+                .cornerRadius(6)
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
+            }
+
+            // Recurring Badge
+            if item.isRecurring {
+                HStack(spacing: 3) {
+                    Image(systemName: item.recurrence.icon)
+                        .font(.system(size: 9, weight: .bold))
+                }
+                .foregroundColor(.black)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 3)
+                .background(Color.cartoonLavender)
+                .cornerRadius(6)
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
+            }
+
+            // Photo Attachment Icon
+            if item.imageAttachmentData != nil {
+                Image(systemName: "paperclip")
+                    .font(.system(size: 9.5, weight: .black))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 5)
+                    .padding(.vertical, 3)
+                    .background(Color.cartoonPink.opacity(0.7))
+                    .cornerRadius(6)
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
+            }
+
+            Spacer(minLength: 0)
         }
     }
 
+    // MARK: - 🔼 Expand Button
     private var expandButton: some View {
         Button {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
@@ -139,12 +202,13 @@ struct ActivityCardView: View {
             }
         } label: {
             Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.black.opacity(0.7))
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.black.opacity(0.75))
         }
         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
     }
 
+    // MARK: - 🗑️ Delete Button
     private var deleteButton: some View {
         Button {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
@@ -155,20 +219,21 @@ struct ActivityCardView: View {
             ZStack {
                 Circle()
                     .fill(Color.cartoonPink)
-                    .frame(width: 30, height: 30)
+                    .frame(width: 28, height: 28)
                     .overlay(Circle().stroke(Color.black, lineWidth: 1.8))
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
-                
+                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+
                 Image(systemName: "trash.fill")
                     .font(.system(size: 11, weight: .black))
                     .foregroundColor(.black)
             }
-            .frame(width: 36, height: 36)
+            .frame(width: 32, height: 32)
             .contentShape(Rectangle())
         }
         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
     }
 
+    // MARK: - 📋 Expanded Details View
     private var expandedDetailsView: some View {
         VStack(alignment: .leading, spacing: 6) {
             Divider()
@@ -177,7 +242,7 @@ struct ActivityCardView: View {
 
             // Subtasks Checklist
             if !item.subtasks.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 5) {
                     ForEach(item.subtasks.indices, id: \.self) { index in
                         let subtask = item.subtasks[index]
                         Button {
@@ -187,24 +252,25 @@ struct ActivityCardView: View {
                                 ZStack {
                                     RoundedRectangle(cornerRadius: 4)
                                         .fill(subtask.isCompleted ? Color.cartoonMint : Color.white)
-                                        .frame(width: 17, height: 17)
+                                        .frame(width: 18, height: 18)
                                         .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.black, lineWidth: 1.2))
 
                                     if subtask.isCompleted {
                                         Image(systemName: "checkmark")
-                                            .font(.system(size: 9, weight: .black))
+                                            .font(.system(size: 10, weight: .black))
                                             .foregroundColor(.black)
                                     }
                                 }
 
                                 Text(subtask.title)
-                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
                                     .foregroundColor(.black)
                                     .strikethrough(subtask.isCompleted, color: .black.opacity(0.6))
+                                    .multilineTextAlignment(.leading)
 
                                 Spacer()
                             }
-                            .padding(.vertical, 2)
+                            .padding(.vertical, 3)
                             .padding(.horizontal, 4)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
@@ -212,14 +278,14 @@ struct ActivityCardView: View {
                 }
             }
 
-            // Thumbnail Foto Terlampir (Cached & Downsampled)
+            // Thumbnail Foto Terlampir
             if let imgData = item.imageAttachmentData,
                let uiImg = ImageCacheManager.shared.thumbnail(for: imgData, key: "\(item.id)", targetSize: CGSize(width: 100, height: 100)) {
                 HStack(spacing: 8) {
                     Image(uiImage: uiImg)
                         .resizable()
                         .scaledToFill()
-                        .frame(width: 50, height: 50)
+                        .frame(width: 48, height: 48)
                         .clipped()
                         .cornerRadius(6)
                         .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.2))
@@ -229,7 +295,7 @@ struct ActivityCardView: View {
                         }
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("Foto Lampiran Referensi")
+                        Text("Foto Lampiran")
                             .font(.system(size: 11, weight: .heavy, design: .rounded))
                             .foregroundColor(.black)
                         Text("Ketuk untuk perbesar")
@@ -282,118 +348,13 @@ struct ActivityCardView: View {
         }
     }
 
-    // MARK: - Warna Background Kartu Terang Solid
+    // MARK: - Warna Background Kartu Mewakili Prioritas
     private func cardBgColor(for priority: String) -> Color {
         switch priority {
-        case "Tinggi": return Color(red: 1.0, green: 0.88, blue: 0.88)
-        case "Normal": return Color(red: 1.0, green: 0.95, blue: 0.82)
-        case "Rendah": return Color(red: 0.88, green: 0.95, blue: 1.0)
+        case "Tinggi": return Color(red: 1.0, green: 0.88, blue: 0.88)      // Pastel Coral / Red
+        case "Normal", "Sedang": return Color(red: 1.0, green: 0.95, blue: 0.82) // Pastel Yellow / Orange
+        case "Rendah": return Color(red: 0.88, green: 0.95, blue: 1.0)     // Pastel Sky Blue
         default: return .white
         }
     }
-
-    // MARK: - Badge Prioritas Bergaya Kartun
-    @ViewBuilder
-    private func priorityBadge(for priority: String) -> some View {
-        let (color, text) = badgeData(for: priority)
-        Text(text)
-            .font(.system(size: 9, weight: .heavy, design: .rounded))
-            .foregroundColor(.black)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 3)
-            .background(
-                Capsule().fill(color)
-            )
-            .overlay(
-                Capsule().stroke(Color.black, lineWidth: 1.2)
-            )
-            .shadow(color: .black, radius: 0, x: 1, y: 1)
-    }
-
-    // MARK: - Badge Jadwal Rutin (Scheduler)
-    @ViewBuilder
-    private func recurrenceBadge(for rule: RecurrenceRule) -> some View {
-        HStack(spacing: 3) {
-            Image(systemName: rule.icon)
-                .font(.system(size: 8, weight: .bold))
-            Text(rule.shortTitle)
-                .font(.system(size: 9, weight: .heavy, design: .rounded))
-        }
-        .foregroundColor(.black)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
-        .background(
-            Capsule().fill(rule.badgeColor)
-        )
-        .overlay(
-            Capsule().stroke(Color.black, lineWidth: 1.2)
-        )
-        .shadow(color: .black, radius: 0, x: 1, y: 1)
-    }
-
-    // MARK: - Badge Subtask Checklist
-    @ViewBuilder
-    private func subtaskBadge(for item: Item) -> some View {
-        HStack(spacing: 3) {
-            Image(systemName: "checklist")
-                .font(.system(size: 8, weight: .bold))
-            Text("\(item.completedSubtasksCount)/\(item.totalSubtasksCount)")
-                .font(.system(size: 9, weight: .heavy, design: .rounded))
-        }
-        .foregroundColor(.black)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
-        .background(
-            Capsule().fill(item.subtaskProgress == 1.0 ? Color.cartoonMint : Color.cartoonLavender)
-        )
-        .overlay(
-            Capsule().stroke(Color.black, lineWidth: 1.2)
-        )
-        .shadow(color: .black, radius: 0, x: 1, y: 1)
-    }
-
-    // MARK: - Badge Foto Terlampir
-    @ViewBuilder
-    private var attachmentBadge: some View {
-        HStack(spacing: 3) {
-            Image(systemName: "photo.fill")
-                .font(.system(size: 8, weight: .bold))
-        }
-        .foregroundColor(.black)
-        .padding(.horizontal, 5)
-        .padding(.vertical, 3)
-        .background(
-            Capsule().fill(Color.cartoonPink)
-        )
-        .overlay(
-            Capsule().stroke(Color.black, lineWidth: 1.2)
-        )
-        .shadow(color: .black, radius: 0, x: 1, y: 1)
-    }
-
-    private func badgeData(for priority: String) -> (Color, String) {
-        switch priority {
-        case "Tinggi": return (Color.cartoonPink, "Tinggi")
-        case "Normal": return (Color.cartoonYellow, "Normal")
-        case "Rendah": return (Color.cartoonMint, "Rendah")
-        default: return (Color.white, priority)
-        }
-    }
-}
-
-#Preview {
-    VStack(spacing: 16) {
-        ActivityCardView(
-            item: Item(title: "Mengerjakan Desain UI Baru", timestamp: Date(), isCompleted: false, priority: "Tinggi", isRecurring: true, recurrenceRule: "Setiap Hari"),
-            onToggle: {},
-            onDelete: {}
-        )
-        ActivityCardView(
-            item: Item(title: "Meeting Evaluasi Mingguan", timestamp: Date(), isCompleted: true, priority: "Normal"),
-            onToggle: {},
-            onDelete: {}
-        )
-    }
-    .padding()
-    .background(Color.cartoonBg)
 }
