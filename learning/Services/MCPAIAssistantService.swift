@@ -155,8 +155,64 @@ final class MCPAIAssistantService: ObservableObject {
 
     // MARK: - ⚡ Smart Local Engine & Full MCP Dispatcher
     private func processWithLocalMCP(prompt: String, modelContext: ModelContext) async {
-        try? await Task.sleep(nanoseconds: 350_000_000)
-        let lower = prompt.lowercased()
+        try? await Task.sleep(nanoseconds: 300_000_000)
+        let lower = prompt.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+
+        // 0. Sapaan & Obrolan Santai (Greetings & Small Talk)
+        if lower == "halo" || lower == "hai" || lower == "hi" || lower == "hey" || lower == "hei" || lower.hasPrefix("halo") || lower.hasPrefix("hai ") || lower.hasPrefix("hi ") {
+            let greetings = [
+                "Halo juga! Senang bisa menyapamu! Ada tugas atau fokus yang ingin kita kerjakan hari ini? 😊",
+                "Hai! Siap menjalani hari produktif? Mau aku bantu buat jadwal, mulai pomodoro, atau cek data kesehatanmu? ✨",
+                "Halo! Aku AI Productivity Buddy-mu. Katakan saja apa yang perlu diatur di aplikasi ini! 🚀"
+            ]
+            let reply = greetings.randomElement() ?? greetings[0]
+            messages.append(MCPAIChatMessage(role: .assistant, content: reply))
+            return
+        }
+
+        if lower.contains("selamat pagi") || lower.contains("pagi") && lower.count < 10 {
+            messages.append(MCPAIChatMessage(role: .assistant, content: "Selamat pagi! ☀️ Mari mulai hari dengan menetapkan 1 tugas paling penting hari ini. Mau aku bantu jadwalkan?"))
+            return
+        }
+        if lower.contains("selamat siang") || lower.contains("siang") && lower.count < 10 {
+            messages.append(MCPAIChatMessage(role: .assistant, content: "Selamat siang! 🌤️ Jangan lupa istirahat sejenak dan minum air ya. Mau mulai sesi fokus 25 menit setelah makan siang?"))
+            return
+        }
+        if lower.contains("selamat malam") || lower.contains("malam") && lower.count < 10 {
+            messages.append(MCPAIChatMessage(role: .assistant, content: "Selamat malam! 🌙 Waktunya evaluasi aktivitas hari ini. Mau aku rangkumkan semua tugas yang sudah selesai?"))
+            return
+        }
+        if lower.contains("apa kabar") || lower.contains("gimana kabarmu") {
+            messages.append(MCPAIChatMessage(role: .assistant, content: "Aku selalu siap dan berenergi penuh untuk membantumu tetap produktif! Bagaimana denganmu hari ini? Ada yang bisa kubantu? ⚡"))
+            return
+        }
+        if lower.contains("siapa kamu") || lower.contains("kamu siapa") || lower.contains("tentang kamu") {
+            let reply = """
+            Aku adalah **AI Productivity Buddy** yang terintegrasi dengan protokol **MCP (Model Context Protocol)** di aplikasi ini 🤖
+
+            Aku dirancang untuk membantumu mengelola waktu, tugas, kebiasaan, hingga menjaga fokus dengan langsung berinteraksi dengan fitur-fitur iOS di aplikasi ini.
+            """
+            messages.append(MCPAIChatMessage(role: .assistant, content: reply))
+            return
+        }
+        if lower.contains("bisa apa") || lower.contains("fitur apa") || lower.contains("bantu apa") {
+            let reply = """
+            Aku bisa melakukan banyak hal langsung di aplikasi ini:
+            • 📝 **Tugas**: *"Buat tugas coding Swift prioritas tinggi"* atau *"Selesaikan tugas riset"*
+            • ⏱️ **Fokus & Pomodoro**: *"Mulai fokus 25 menit"* atau *"Stop pomodoro"*
+            • 🏃‍♂️ **Kesehatan**: *"Cek data langkah & kalori hari ini"*
+            • 🔄 **Habit Tracker**: *"Ceklis habit membaca buku"* atau *"Buat habit olahraga"*
+            • 🛡️ **Screen Time**: *"Kunci aplikasi pengganggu"* saat mode fokus
+            • 🚀 **Proyek**: *"Buat rencana proyek website baru"*
+            • 📊 **Rangkuman**: *"Rangkum aktivitas hari ini"*
+            """
+            messages.append(MCPAIChatMessage(role: .assistant, content: reply))
+            return
+        }
+        if lower.contains("terima kasih") || lower.contains("makasih") || lower.contains("thanks") || lower.contains("thank you") {
+            messages.append(MCPAIChatMessage(role: .assistant, content: "Sama-sama! Senang bisa membantu. Sukses selalu untuk aktivitasmu! 🔥"))
+            return
+        }
 
         // 1. Pomodoro / Fokus Timer Tools
         if lower.contains("mulai pomodoro") || lower.contains("mulai fokus") || lower.contains("fokus 25") || lower.contains("fokus 50") || lower.contains("start timer") || lower.contains("mulai timer") {
@@ -263,11 +319,11 @@ final class MCPAIAssistantService: ObservableObject {
             return
         }
 
-        // Default Respon
+        // Default Respon yang Ramah & Interaktif
         let reply = """
-        Diskusi yang menarik! 💡
+        Aku mendengarkanmu! 💡
 
-        Kamu bisa meminta aksi MCP apapun:
+        Kamu bisa mengajakku berdiskusi seputar produktivitas atau meminta aksi langsung:
         • *"Buat tugas Riset UI/UX prioritas tinggi"*
         • *"Mulai fokus 25 menit tugas Swift"*
         • *"Cek data kesehatan & langkah hari ini"*
@@ -287,7 +343,7 @@ final class MCPAIAssistantService: ObservableObject {
             Untuk menggunakan Gemini langsung dari akun Google Anda:
             1. Buka tab **Profil** atau klik ikon ⚙️ Pengaturan di atas.
             2. Tekan tombol **"Sign in with Google"**.
-            3. Setelah login, Gemini AI akan otomatis aktif menggunakan token akun Google Anda secara gratis!
+            3. Setelah login, Gemini AI akan otomatis aktif!
             """
             messages.append(MCPAIChatMessage(role: .assistant, content: reply))
             return
@@ -316,6 +372,7 @@ final class MCPAIAssistantService: ObservableObject {
                         "text": """
                         Kamu adalah AI Productivity Buddy & Universal MCP Engine di aplikasi to-do list iOS.
                         Karaktermu: Sangat bersahabat, terstruktur, energik, dan solutif.
+                        Jika pengguna menyapa (seperti 'Halo', 'Hai'), balaslah dengan ramah dan tanyakan apa yang bisa kamu bantu.
                         Aplikasi ini memiliki fitur lengkap: Tasks (CRUD), Habits (Tracking & Check-in), Pomodoro Timer, HealthKit (Langkah & Tidur), dan Screen Time App Shield.
                         Jika pengguna meminta aksi aplikasi, jawab dengan jelas dan informasikan bahwa aksi tersebut diproses lewat MCP Tool.
                         Jawab dalam format Markdown yang rapi dengan bullet points.
@@ -342,22 +399,21 @@ final class MCPAIAssistantService: ObservableObject {
             request.timeoutInterval = 25
 
             let (data, response) = try await URLSession.shared.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
-                return
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let candidates = json["candidates"] as? [[String: Any]],
+                   let firstCandidate = candidates.first,
+                   let content = firstCandidate["content"] as? [String: Any],
+                   let parts = content["parts"] as? [[String: Any]],
+                   let text = parts.first?["text"] as? String {
+
+                    await dispatchLocalActionIfDetected(prompt: prompt, modelContext: modelContext, fallbackText: text)
+                    return
+                }
             }
 
-            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let candidates = json["candidates"] as? [[String: Any]],
-               let firstCandidate = candidates.first,
-               let content = firstCandidate["content"] as? [String: Any],
-               let parts = content["parts"] as? [[String: Any]],
-               let text = parts.first?["text"] as? String {
-
-                await dispatchLocalActionIfDetected(prompt: prompt, modelContext: modelContext, fallbackText: text)
-            } else {
-                await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
-            }
+            // Jika API Google mengembalikan pembatasan OAuth, gunakan respons smart local conversational
+            await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
         } catch {
             await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
         }
