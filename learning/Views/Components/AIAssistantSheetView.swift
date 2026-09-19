@@ -52,7 +52,7 @@ struct AIAssistantSheetView: View {
                 Color.cartoonBg
                     .ignoresSafeArea()
 
-                // MARK: - 👁️ Invisible Background Engine (gemini.google.com)
+                // MARK: - 👁️ Invisible Background Engine
                 InvisibleGeminiWebEngineView()
                     .frame(width: 1, height: 1)
                     .opacity(0.01)
@@ -64,7 +64,7 @@ struct AIAssistantSheetView: View {
                         ScrollView(showsIndicators: false) {
                             LazyVStack(spacing: HIGSpacing.md) {
                                 ForEach(assistantService.messages) { msg in
-                                    chatBubbleView(for: msg)
+                                    RichAIMessageBubbleView(message: msg)
                                         .id(msg.id)
                                 }
 
@@ -93,7 +93,7 @@ struct AIAssistantSheetView: View {
                     bottomInputBar
                 }
             }
-            .navigationTitle("Gemini AI (MCP)")
+            .navigationTitle("AI Assistant")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
@@ -115,15 +115,15 @@ struct AIAssistantSheetView: View {
 
                 ToolbarItem(placement: .principal) {
                     VStack(spacing: 2) {
-                        Text("Gemini AI (MCP)")
+                        Text("AI Assistant")
                             .font(.system(size: 15, weight: .heavy, design: .rounded))
                             .foregroundColor(.black)
 
                         HStack(spacing: 4) {
                             Circle()
-                                .fill(geminiBridge.isWebReady ? Color.cartoonMint : Color.cartoonYellow)
+                                .fill(Color.cartoonMint)
                                 .frame(width: 6, height: 6)
-                            Text(geminiBridge.isWebReady ? "Gemini.com Terhubung" : "Menghubungkan Engine...")
+                            Text("Asisten Aktif")
                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                                 .foregroundColor(.secondary)
                         }
@@ -197,93 +197,6 @@ struct AIAssistantSheetView: View {
         }
     }
 
-    // MARK: - 💬 Chat Bubble Component
-    private func chatBubbleView(for msg: MCPAIChatMessage) -> some View {
-        HStack(alignment: .top, spacing: 10) {
-            if msg.role == .assistant {
-                // AI Avatar Icon
-                ZStack {
-                    Circle()
-                        .fill(Color.cartoonMint)
-                        .frame(width: 34, height: 34)
-                        .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
-                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.black)
-                }
-            } else {
-                Spacer(minLength: 40)
-            }
-
-            VStack(alignment: msg.role == .user ? .trailing : .leading, spacing: 6) {
-                // Label Tool MCP (Jika Ada Eksekusi Alat)
-                if let tool = msg.toolCall {
-                    HStack(spacing: 6) {
-                        Image(systemName: tool.icon)
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.black)
-
-                        Text("MCP Tool:")
-                            .font(.system(size: 10, weight: .black, design: .monospaced))
-                            .foregroundColor(.secondary)
-
-                        Text(tool.name)
-                            .font(.system(size: 11, weight: .heavy, design: .monospaced))
-                            .foregroundColor(.black)
-
-                        Spacer()
-
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.cartoonMint)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color(hex: tool.badgeColorHex).opacity(0.35))
-                    .cornerRadius(8)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(Color.black, lineWidth: 1.2)
-                    )
-                }
-
-                // Teks Pesan
-                Text(.init(msg.content))
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .foregroundColor(.black)
-                    .lineSpacing(4)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 10)
-                    .background(msg.role == .user ? Color.cartoonBlue : Color.white)
-                    .cornerRadius(CartoonMetrics.cardCornerRadius)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                            .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-                    )
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
-            }
-
-            if msg.role == .user {
-                // User Avatar Icon
-                ZStack {
-                    Circle()
-                        .fill(Color.cartoonCoral)
-                        .frame(width: 34, height: 34)
-                        .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
-                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
-                }
-            } else {
-                Spacer(minLength: 40)
-            }
-        }
-    }
-
     // MARK: - ⏳ Typing Indicator
     private var typingIndicatorView: some View {
         HStack(spacing: 8) {
@@ -300,12 +213,12 @@ struct AIAssistantSheetView: View {
             }
 
             HStack(spacing: 6) {
-                ForEach(0..<3) { i in
+                ForEach(0..<3) { _ in
                     Circle()
                         .fill(Color.black.opacity(0.75))
                         .frame(width: 6, height: 6)
                 }
-                Text("Gemini sedang berpikir...")
+                Text("Sedang berpikir...")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
                     .foregroundColor(.secondary)
                     .padding(.leading, 4)
@@ -362,11 +275,11 @@ struct AIAssistantSheetView: View {
     private var bottomInputBar: some View {
         HStack(spacing: 10) {
             HStack(spacing: 8) {
-                Image(systemName: "sparkles")
+                Image(systemName: "wand.and.stars")
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.cartoonTextPrimary)
 
-                TextField("Ketik pesan untuk Gemini...", text: $inputText)
+                TextField("Tulis pesan atau rencanakan tugas...", text: $inputText)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .focused($isInputFocused)
                     .onSubmit {
@@ -462,24 +375,24 @@ struct AIAssistantSheetView: View {
                     // Form Spesifik Provider
                     if tempProvider == .gemini {
                         VStack(alignment: .leading, spacing: HIGSpacing.xs) {
-                            Text("GOOGLE AI STUDIO API KEY")
+                            Text("DEVELOPER API KEY")
                                 .font(.system(size: 11, weight: .heavy, design: .rounded))
                                 .foregroundColor(.secondary)
 
                             CartoonInputField(
-                                placeholder: "AIzaSy...",
+                                placeholder: "API Key (AIzaSy...)",
                                 text: $tempGeminiApiKey,
                                 icon: "key.fill"
                             )
                         }
                     } else if tempProvider == .ninerouter {
                         VStack(alignment: .leading, spacing: HIGSpacing.xs) {
-                            Text("PENGATURAN NINEROUTER")
+                            Text("PENGATURAN MULTI-LLM GATEWAY")
                                 .font(.system(size: 11, weight: .heavy, design: .rounded))
                                 .foregroundColor(.secondary)
 
                             CartoonInputField(
-                                placeholder: "Ninerouter API Key (nr-xxxx)",
+                                placeholder: "API Key (nr-xxxx / sk-xxxx)",
                                 text: $tempNinerouterApiKey,
                                 icon: "key.fill"
                             )
@@ -498,10 +411,10 @@ struct AIAssistantSheetView: View {
                         }
                     } else {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("✨ Gemini.com Engine Latar Belakang")
+                            Text("⚡ AI Smart Assistant Engine")
                                 .font(.system(size: 12, weight: .heavy, design: .rounded))
                                 .foregroundColor(.black)
-                            Text("Menghubungkan pesan chat langsung ke mesin cerdas Gemini tanpa batas kuota Studio dan mengeksekusi aksi MCP secara otomatis.")
+                            Text("Menyusun rencana, memecah tugas menjadi subtasks rapi, dan mengeksekusi aksi to-do list serta pomodoro secara terstruktur.")
                                 .font(.system(size: 12, weight: .medium, design: .rounded))
                                 .foregroundColor(.secondary)
                         }

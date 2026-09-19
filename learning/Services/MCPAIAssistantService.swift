@@ -12,18 +12,18 @@ import Combine
 
 // MARK: - 🌐 AI Provider Selection
 enum AIProviderType: String, CaseIterable, Identifiable {
-    case googleAccount = "Gemini.com (Background Engine Asli)"
+    case googleAccount = "Cloud AI Engine (Akun Aktif)"
     case local = "Smart Local Co-Planner (Offline)"
-    case gemini = "Google AI Studio (API Key)"
-    case ninerouter = "Ninerouter / DeepSeek (Multi-LLM)"
+    case gemini = "Developer API Key (AI Studio)"
+    case ninerouter = "Multi-LLM Gateway (DeepSeek)"
 
     var id: String { rawValue }
 
     var shortName: String {
         switch self {
-        case .googleAccount: return "Gemini.com"
+        case .googleAccount: return "Cloud Engine"
         case .local: return "Local Engine"
-        case .gemini: return "Gemini Key"
+        case .gemini: return "API Key"
         case .ninerouter: return "DeepSeek"
         }
     }
@@ -38,6 +38,7 @@ struct MCPAIChatMessage: Identifiable, Equatable {
     var toolCall: MCPToolInvocation?
     var toolResult: String?
     var isExecutingTool: Bool
+    var proposal: TaskProposal?
 
     enum MessageRole: String, Codable {
         case user
@@ -52,7 +53,8 @@ struct MCPAIChatMessage: Identifiable, Equatable {
         timestamp: Date = Date(),
         toolCall: MCPToolInvocation? = nil,
         toolResult: String? = nil,
-        isExecutingTool: Bool = false
+        isExecutingTool: Bool = false,
+        proposal: TaskProposal? = nil
     ) {
         self.id = id
         self.role = role
@@ -61,6 +63,7 @@ struct MCPAIChatMessage: Identifiable, Equatable {
         self.toolCall = toolCall
         self.toolResult = toolResult
         self.isExecutingTool = isExecutingTool
+        self.proposal = proposal
     }
 }
 
@@ -73,7 +76,7 @@ struct MCPToolInvocation: Equatable {
 }
 
 // MARK: - 📋 Pending Task Proposal (Interactive Discussion State)
-struct TaskProposal {
+struct TaskProposal: Equatable {
     let title: String
     let category: String
     let priority: String
@@ -97,14 +100,15 @@ final class MCPAIAssistantService: ObservableObject {
             MCPAIChatMessage(
                 role: .assistant,
                 content: """
-                Hai! Aku **Gemini AI (MCP Buddy)** 🤖✨
+                Hai! Aku **AI Productivity Partner** siap membantumu hari ini! 🚀✨
 
-                Semua percakapan berjalan di tampilan chat ini dan ditenagai oleh mesin **Gemini.com**:
-                • 💬 Berdiskusi bebas & brainstorming rencana tanpa batasan kuota Studio.
-                • 📋 Rekomendasi subtasks & pemecahan jadwal otomatis.
-                • ⚡ Eksekusi langsung ke To-Do List, Pomodoro Timer, Apple Health, dan Screen Time!
+                Kamu bisa mengobrol santai atau memintaku:
+                • 📋 Merencanakan jadwal & memecah subtasks secara rapi
+                • ⏱️ Memulai timer fokus Pomodoro & Live Activity
+                • 🏃‍♂️ Cek ringkasan langkah & kalori Apple Health
+                • 🔥 Mencatat progress Habit Tracker harian
 
-                Apa yang ingin kita diskusikan atau rencanakan hari ini?
+                Apa target atau rencana kerja yang ingin kita susun sekarang?
                 """
             )
         )
@@ -137,7 +141,7 @@ final class MCPAIAssistantService: ObservableObject {
             if !cleanApiKey.isEmpty {
                 await processWithGeminiLLM(prompt: trimmed, apiKey: cleanApiKey, modelContext: modelContext)
             } else {
-                await processWithLocalDiscussion(prompt: trimmed, modelContext: modelContext, missingKeyPrompt: "Google AI Studio API Key belum dimasukkan di pengaturan.")
+                await processWithLocalDiscussion(prompt: trimmed, modelContext: modelContext, missingKeyPrompt: "API Key belum dimasukkan di pengaturan.")
             }
 
         case .ninerouter:
@@ -160,7 +164,14 @@ final class MCPAIAssistantService: ObservableObject {
         isProcessing = false
     }
 
-    // MARK: - 🌐 Gemini.com Background Bridge Execution
+    /// Konfirmasi langsung dari tombol kartu di chat UI
+    func confirmProposalDirectly(modelContext: ModelContext) async {
+        guard let proposal = pendingProposal else { return }
+        await executeSaveProposalTool(proposal: proposal, modelContext: modelContext)
+        pendingProposal = nil
+    }
+
+    // MARK: - 🌐 Cloud AI Background Bridge Execution
     private func processWithGoogleUserAccount(prompt: String, modelContext: ModelContext) async {
         do {
             let replyText = try await GeminiBackgroundBridgeManager.shared.sendPromptToGeminiWeb(prompt)
@@ -270,9 +281,9 @@ final class MCPAIAssistantService: ObservableObject {
         }
 
         let reply = """
-        Menarik! Terkait *"\(prompt)"*, mari kita rencanakan atau eksekusi langkah konkretnya.
+        Menarik! Terkait *"\(prompt)"*, mari kita diskusikan dan rencanakan langkah konkretnya.
 
-        💡 Mau aku buatkan rekomendasi langkah-langkah subtasks untuk ini? Balas *"Ya, tolong buatkan rekomendasinya"* atau ceritakan detailnya!\(extraNote)
+        💡 Mau aku buatkan rekomendasi langkah-langkah subtasks untuk ini? Cukup balas *"Ya, tolong buatkan"* atau ceritakan detail target waktumu!\(extraNote)
         """
         messages.append(MCPAIChatMessage(role: .assistant, content: reply))
     }
@@ -314,25 +325,25 @@ final class MCPAIAssistantService: ObservableObject {
         }
 
         let reply = """
-        Bagus sekali! Untuk **\(proposal.title)**, mari kita bedah menjadi subtasks yang jelas agar tidak terasa berat saat dikerjakan:
+        Bagus sekali! Untuk **\(proposal.title)**, mari kita bedah menjadi subtasks yang jelas agar lebih mudah dikerjakan:
 
         📋 **Rekomendasi Langkah / Subtasks:**\(subtasksListStr)
 
         🏷️ **Kategori:** *\(proposal.category)*  
-        ⚡ **Prioritas Disarankan:** *\(proposal.priority)*  
-        ⏱️ **Estimasi Fokus:** ~\(proposal.estimatedMinutes) menit
+        ⚡ **Prioritas:** *\(proposal.priority)*  
+        ⏱️ **Estimasi:** ~\(proposal.estimatedMinutes) menit
 
-        Bagaimana menurutmu? Kalau sudah cocok, balas **"Oke, jadwalkan"** atau **"Buat sekarang"** agar langsung aku masukkan ke to-do list kamu! 👍
+        Tekan tombol di bawah atau balas **"Oke, jadwalkan"** untuk langsung menyimpannya ke daftar tugas!
         """
 
-        messages.append(MCPAIChatMessage(role: .assistant, content: reply))
+        messages.append(MCPAIChatMessage(role: .assistant, content: reply, proposal: proposal))
     }
 
     private func executeSaveProposalTool(proposal: TaskProposal, modelContext: ModelContext) async {
         let subtasks = proposal.subtasks.map { SubtaskItem(title: $0, isCompleted: false) }
         let newItem = Item(
             title: proposal.title,
-            notes: "Direncanakan & didiskusikan bersama Gemini AI Buddy",
+            notes: "Direncanakan & didiskusikan bersama AI Productivity Partner",
             timestamp: Date(),
             isCompleted: false,
             completedAt: nil,
@@ -360,19 +371,17 @@ final class MCPAIAssistantService: ObservableObject {
         )
 
         let reply = """
-        🎉 **Sip, Jadwal Berhasil Dibuat!**
+        🎉 **Jadwal Berhasil Disimpan ke To-Do List!**
 
         🎯 **\(newItem.title)**
         📁 Kategori: *\(newItem.category)* | ⚡ Prioritas: *\(newItem.priority)*
-        📋 **\(subtasks.count) Subtasks** telah tersimpan di daftar tugasmu.
-
-        Mau kita langsung mulai sesi **Pomodoro 25 Menit** untuk langkah pertamanya? ⏱️
+        📋 **\(subtasks.count) Subtasks** siap dikerjakan satu per satu.
         """
 
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Saved"))
     }
 
-    // MARK: - 🌐 Gemini LLM (Google AI Studio API Key)
+    // MARK: - 🌐 Developer API Key LLM
     private func processWithGeminiLLM(prompt: String, apiKey: String, modelContext: ModelContext) async {
         guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\(apiKey)") else {
             await processWithLocalDiscussion(prompt: prompt, modelContext: modelContext)
@@ -392,7 +401,7 @@ final class MCPAIAssistantService: ObservableObject {
         let systemInstruction: [String: Any] = [
             "parts": [
                 [
-                    "text": "Kamu adalah AI Productivity Buddy cerdas dan kolaboratif. Diskusikan rencana dan rekomendasikan subtasks sebelum membuat tugas. Format Markdown rapi."
+                    "text": "Kamu adalah AI Productivity Partner cerdas. Diskusikan rencana dan buatkan subtasks terstruktur sebelum membuat tugas. Format Markdown rapi."
                 ]
             ]
         ]
@@ -450,7 +459,7 @@ final class MCPAIAssistantService: ObservableObject {
         var messagesPayload: [[String: String]] = [
             [
                 "role": "system",
-                "content": "Kamu adalah AI Productivity Buddy cerdas dan kolaboratif. Diskusikan rencana dan rekomendasikan subtasks sebelum membuat tugas. Format Markdown rapi."
+                "content": "Kamu adalah AI Productivity Partner cerdas. Diskusikan rencana dan rekomendasikan subtasks sebelum membuat tugas. Format Markdown rapi."
             ]
         ]
 
@@ -504,7 +513,25 @@ final class MCPAIAssistantService: ObservableObject {
         } else if lower.contains("langkah") || lower.contains("kesehatan") || lower.contains("kalori") {
             await executeGetHealthStatsTool()
         } else {
-            messages.append(MCPAIChatMessage(role: .assistant, content: llmText))
+            // Cek apakah response mengandung rekomendasi langkah/subtasks
+            let lines = llmText.components(separatedBy: .newlines)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { $0.hasPrefix("1.") || $0.hasPrefix("2.") || $0.hasPrefix("3.") || $0.hasPrefix("4.") || $0.hasPrefix("-") || $0.hasPrefix("•") }
+
+            var detectedProposal: TaskProposal? = nil
+            if lines.count >= 2 {
+                let cleanSubtasks = lines.prefix(4).map { $0.replacingOccurrences(of: "^[0-9]+[.\\s-*•]+", with: "", options: .regularExpression) }
+                detectedProposal = TaskProposal(
+                    title: "Rencana Produktivitas",
+                    category: "Pekerjaan",
+                    priority: "Tinggi",
+                    subtasks: Array(cleanSubtasks),
+                    estimatedMinutes: 45
+                )
+                self.pendingProposal = detectedProposal
+            }
+
+            messages.append(MCPAIChatMessage(role: .assistant, content: llmText, proposal: detectedProposal))
         }
     }
 
@@ -547,7 +574,7 @@ final class MCPAIAssistantService: ObservableObject {
             badgeColorHex: "#6EE7B7"
         )
 
-        let reply = "🎉 **Tugas Ditandai Selesai!**\n\n✅ **\(itemToComplete.title)** telah berhasil diselesaikan dan masuk ke riwayat tugas!"
+        let reply = "🎉 **Tugas Selesai!**\n\n✅ **\(itemToComplete.title)** telah ditandai selesai dan dicatat ke riwayat."
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Task completed"))
     }
 
@@ -564,7 +591,7 @@ final class MCPAIAssistantService: ObservableObject {
             titleHeader = "🔥 **Daftar Tugas Prioritas Tinggi:**"
         } else if lower.contains("selesai") {
             filteredItems = items.filter { $0.isCompleted }
-            titleHeader = "✅ **Daftar Tugas yang Telah Selesai:**"
+            titleHeader = "✅ **Daftar Tugas Selesai:**"
         } else {
             filteredItems = items.filter { !$0.isCompleted }
             titleHeader = "📋 **Daftar Tugas Tertunda:**"
@@ -578,7 +605,7 @@ final class MCPAIAssistantService: ObservableObject {
         )
 
         if filteredItems.isEmpty {
-            messages.append(MCPAIChatMessage(role: .assistant, content: "\(titleHeader)\n*Tidak ada tugas dalam kategori ini.*", toolCall: toolCall, toolResult: "0 items"))
+            messages.append(MCPAIChatMessage(role: .assistant, content: "\(titleHeader)\n*Belum ada tugas dalam daftar ini.*", toolCall: toolCall, toolResult: "0 items"))
             return
         }
 
@@ -608,7 +635,7 @@ final class MCPAIAssistantService: ObservableObject {
             badgeColorHex: "#FFD166"
         )
 
-        messages.append(MCPAIChatMessage(role: .assistant, content: "🧹 **Bersih-bersih Selesai!** Berhasil menghapus **\(completed.count) tugas selesai** dari riwayat.", toolCall: toolCall, toolResult: "Cleared \(completed.count)"))
+        messages.append(MCPAIChatMessage(role: .assistant, content: "🧹 **Bersih-bersih Selesai!** Berhasil membersihkan **\(completed.count) tugas selesai**.", toolCall: toolCall, toolResult: "Cleared \(completed.count)"))
     }
 
     private func executeStartPomodoroTool(prompt: String) async {
@@ -632,7 +659,7 @@ final class MCPAIAssistantService: ObservableObject {
             badgeColorHex: "#FFD166"
         )
 
-        let reply = "⏱️ **Sesi Pomodoro Dimulai!**\n\n🎯 Durasi: **\(preset.rawValue)** (\(preset.minutes) menit)\n🔔 Live Activity & Dynamic Island telah aktif untuk memantau fokusmu. Selamat bekerja!"
+        let reply = "⏱️ **Sesi Fokus Dimulai!**\n\n🎯 Durasi: **\(preset.rawValue)** (\(preset.minutes) menit)\n🔔 Live Activity di Dynamic Island telah aktif memantau fokusmu!"
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Timer started"))
     }
 
@@ -689,7 +716,7 @@ final class MCPAIAssistantService: ObservableObject {
         • ⏱️ **Menit Olahraga:** \(Int(summary.exerciseMinutes)) menit
         • 😴 **Durasi Tidur:** \(summary.sleepFormatted)
 
-        \(summary.steps >= 6000 ? "🎉 *Hebat! Target langkah harianmu sudah tercapai!*" : "💡 *Ayo sempatkan jalan santai 10 menit untuk menyegarkan pikiran!*")
+        \(summary.steps >= 6000 ? "🎉 *Target langkah harianmu sudah tercapai!*" : "💡 *Sempatkan jalan santai untuk menyegarkan tubuh!*")
         """
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "HealthKit synced"))
     }
@@ -714,8 +741,8 @@ final class MCPAIAssistantService: ObservableObject {
         )
 
         let reply = isShield
-            ? "🛡️ **Mode Perisai Fokus Aktif!** Aplikasi-aplikasi yang Anda pilih telah dikunci agar konsentrasi terjaga."
-            : "🔓 **Perisai Fokus Dimatikan.** Semua aplikasi kini dapat diakses kembali secara normal."
+            ? "🛡️ **Mode Perisai Fokus Aktif!** Aplikasi-aplikasi yang dipilih telah dikunci agar konsentrasi terjaga."
+            : "🔓 **Perisai Fokus Dimatikan.** Semua aplikasi kini dapat diakses kembali."
 
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Shield: \(isShield)"))
     }
@@ -750,7 +777,7 @@ final class MCPAIAssistantService: ObservableObject {
             badgeColorHex: "#A0C4FF"
         )
 
-        let reply = "🌟 **Target Kebiasaan Baru Didaftarkan!**\n\n📌 **\(newHabit.title)**\n📅 Target: Harian\n\n*Konsistensi kecil setiap hari akan membawa hasil besar!*"
+        let reply = "🌟 **Kebiasaan Baru Didaftarkan!**\n\n📌 **\(newHabit.title)**\n📅 Target: Harian"
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Habit saved"))
     }
 
@@ -786,7 +813,7 @@ final class MCPAIAssistantService: ObservableObject {
             badgeColorHex: "#FFD166"
         )
 
-        let reply = "🔥 **Habit Berhasil Diceklis Hari Ini!**\n\n⭐ **\(habit.title)**\n🔥 Streak saat ini: **\(habit.currentStreak) hari berturut-turut**!\nPertahankan ritme konsistensimu!"
+        let reply = "🔥 **Habit Diceklis Hari Ini!**\n\n⭐ **\(habit.title)**\n🔥 Streak: **\(habit.currentStreak) hari berturut-turut**!"
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Streak: \(habit.currentStreak)"))
     }
 
@@ -802,7 +829,7 @@ final class MCPAIAssistantService: ObservableObject {
         )
 
         if habits.isEmpty {
-            messages.append(MCPAIChatMessage(role: .assistant, content: "🔄 **Daftar Kebiasaan:**\n*Belum ada habit yang didaftarkan. Minta aku 'Buat habit baca buku' untuk memulai!*", toolCall: toolCall, toolResult: "0 habits"))
+            messages.append(MCPAIChatMessage(role: .assistant, content: "🔄 **Daftar Kebiasaan:**\n*Belum ada habit yang terdaftar.*", toolCall: toolCall, toolResult: "0 habits"))
             return
         }
 
@@ -823,7 +850,7 @@ final class MCPAIAssistantService: ObservableObject {
         messages.append(
             MCPAIChatMessage(
                 role: .assistant,
-                content: "Hai! Percakapan telah direset. Mau kita diskusikan rencana atau jalankan aksi MCP apa sekarang? ⚡"
+                content: "Hai! Percakapan telah direset. Mau kita diskusikan rencana apa sekarang? ⚡"
             )
         )
     }
