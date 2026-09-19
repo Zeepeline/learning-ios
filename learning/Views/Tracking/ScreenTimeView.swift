@@ -373,6 +373,7 @@ struct ScreenTimeDailyLimitCard: View {
 // MARK: - 4. ScreenTimeReportCardView (Laporan Penggunaan Aplikasi yang Dibatasi)
 struct ScreenTimeReportCardView: View {
     var manager: ScreenTimeManager
+    @State private var isLoading: Bool = true
     @State private var filter: DeviceActivityFilter = DeviceActivityFilter(
         segment: .daily(
             during: Calendar.current.dateInterval(of: .day, for: Date()) ?? DateInterval(start: Date(), duration: 86400)
@@ -387,33 +388,57 @@ struct ScreenTimeReportCardView: View {
         let totalCount = appCount + categoryCount
         
         if totalCount == 0 {
-            // Header summary card (70) + spacing (10) + empty hint message (35) + padding
-            return 130
+            // Header summary card (~46) + spacing (6) + empty hint message (~20) = ~74
+            return 76
         } else {
-            // Header summary card (70) + spacing (10) + section title (25) + rows (totalCount * 50) + padding
-            return CGFloat(120 + max(totalCount, 1) * 52)
+            // Header summary card (46) + spacing (6) + section title (16) + spacing (4) + per app row (39)
+            let calculated = 74 + CGFloat(totalCount * 39)
+            return min(calculated, 380)
         }
     }
 
     dynamic var body: some View {
-        VStack(alignment: .leading, spacing: HIGSpacing.sm) {
+        VStack(alignment: .leading, spacing: HIGSpacing.xs) {
             Label("PENGGUNAAN APLIKASI DIBATASI HARI INI", systemImage: "chart.bar.xaxis")
                 .font(.system(size: 10, weight: .heavy, design: .rounded))
                 .foregroundColor(.secondary)
 
-            // Extension Report View Apple (Hanya menghitung durasi aplikasi yang dipilih)
-            // allowsHitTesting(false) memungkinkan sentuhan/scroll diteruskan ke parent ScrollView tanpa terblokir
-            DeviceActivityReport(.totalActivity, filter: filter)
-                .frame(height: reportHeight)
-                .allowsHitTesting(false)
+            ZStack {
+                // Extension Report View Apple (Hanya menghitung durasi aplikasi yang dipilih)
+                // allowsHitTesting(false) memungkinkan sentuhan/scroll diteruskan ke parent ScrollView tanpa terblokir
+                DeviceActivityReport(.totalActivity, filter: filter)
+                    .frame(height: reportHeight)
+                    .allowsHitTesting(false)
+                    .opacity(isLoading ? 0 : 1)
+
+                // Shimmer Loading Skeleton saat mengambil/memuat data
+                if isLoading {
+                    ScreenTimeReportSkeletonView(appCount: manager.activitySelection.applicationTokens.count + manager.activitySelection.categoryTokens.count)
+                        .frame(height: reportHeight)
+                        .transition(.opacity)
+                }
+            }
         }
         .padding(HIGSpacing.md)
         .cartoonCard()
         .onAppear {
+            triggerLoadingShimmer()
             updateFilter()
         }
         .onChange(of: manager.activitySelection) {
+            triggerLoadingShimmer()
             updateFilter()
+        }
+    }
+
+    private func triggerLoadingShimmer() {
+        isLoading = true
+        Task {
+            // Berikan waktu animasi shimmer halus saat extension memuat data
+            try? await Task.sleep(nanoseconds: 850_000_000)
+            withAnimation(.easeInOut(duration: 0.3)) {
+                isLoading = false
+            }
         }
     }
 
@@ -437,6 +462,128 @@ struct ScreenTimeReportCardView: View {
                 categories: manager.activitySelection.categoryTokens
             )
         }
+    }
+}
+
+// MARK: - 💫 Shimmer Skeleton Placeholder untuk Laporan ScreenTime
+struct ScreenTimeReportSkeletonView: View {
+    let appCount: Int
+
+    dynamic var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            // 1. Header Ringkasan Skeleton
+            HStack(spacing: 10) {
+                Circle()
+                    .fill(Color(red: 0.90, green: 0.90, blue: 0.92))
+                    .frame(width: 32, height: 32)
+                    .overlay(Circle().stroke(Color.black.opacity(0.15), lineWidth: 1.0))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color(red: 0.88, green: 0.88, blue: 0.90))
+                        .frame(width: 140, height: 8)
+
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color(red: 0.80, green: 0.80, blue: 0.84))
+                        .frame(width: 75, height: 14)
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal, 9)
+            .padding(.vertical, 6)
+            .background(Color.white)
+            .cornerRadius(9)
+            .overlay(RoundedRectangle(cornerRadius: 9).stroke(Color.black.opacity(0.2), lineWidth: 1.0))
+
+            // 2. Baris Aplikasi Skeleton (Jika ada app yang dibatasi)
+            if appCount > 0 {
+                VStack(alignment: .leading, spacing: 4) {
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color(red: 0.88, green: 0.88, blue: 0.90))
+                        .frame(width: 100, height: 7)
+
+                    VStack(spacing: 4) {
+                        ForEach(0..<min(appCount, 3), id: \.self) { _ in
+                            HStack(spacing: 8) {
+                                RoundedRectangle(cornerRadius: 6)
+                                    .fill(Color(red: 0.90, green: 0.88, blue: 0.94))
+                                    .frame(width: 24, height: 24)
+                                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black.opacity(0.15), lineWidth: 0.8))
+
+                                RoundedRectangle(cornerRadius: 3)
+                                    .fill(Color(red: 0.85, green: 0.85, blue: 0.88))
+                                    .frame(width: 110, height: 10)
+
+                                Spacer()
+
+                                RoundedRectangle(cornerRadius: 5)
+                                    .fill(Color(red: 0.95, green: 0.90, blue: 0.75))
+                                    .frame(width: 52, height: 18)
+                                    .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.black.opacity(0.15), lineWidth: 0.8))
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4.5)
+                            .background(Color.white)
+                            .cornerRadius(7)
+                            .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.black.opacity(0.15), lineWidth: 0.8))
+                        }
+                    }
+                }
+            } else {
+                HStack(spacing: 5) {
+                    Circle()
+                        .fill(Color(red: 0.85, green: 0.92, blue: 0.88))
+                        .frame(width: 12, height: 12)
+
+                    RoundedRectangle(cornerRadius: 3)
+                        .fill(Color(red: 0.88, green: 0.88, blue: 0.90))
+                        .frame(width: 180, height: 8)
+                }
+                .padding(.horizontal, 2)
+                .padding(.top, 2)
+            }
+        }
+        .cartoonShimmer()
+    }
+}
+
+// MARK: - 💫 Shimmer Effect Modifier
+struct CartoonShimmerModifier: ViewModifier {
+    @State private var phase: CGFloat = 0
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                GeometryReader { geo in
+                    LinearGradient(
+                        colors: [
+                            .clear,
+                            Color.white.opacity(0.7),
+                            .clear
+                        ],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: geo.size.width * 1.5, height: geo.size.height)
+                    .offset(x: -geo.size.width + (geo.size.width * 2 * phase))
+                }
+                .mask(content)
+            )
+            .onAppear {
+                withAnimation(
+                    .linear(duration: 1.3)
+                    .repeatForever(autoreverses: false)
+                ) {
+                    phase = 1.0
+                }
+            }
+    }
+}
+
+extension View {
+    func cartoonShimmer() -> some View {
+        modifier(CartoonShimmerModifier())
     }
 }
 

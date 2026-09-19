@@ -15,7 +15,6 @@ struct TotalActivityView: View {
         let minutes = Int(duration / 60)
         let hours = minutes / 60
         let remainingMinutes = minutes % 60
-        
         if hours > 0 {
             return remainingMinutes > 0 ? "\(hours)j \(remainingMinutes)m" : "\(hours) Jam"
         } else {
@@ -24,70 +23,70 @@ struct TotalActivityView: View {
     }
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 6) {
             // 1. Ringkasan Durasi Pemakaian Target
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 ZStack {
                     Circle()
                         .fill(Color(red: 0.99, green: 0.88, blue: 0.55))
-                        .frame(width: 40, height: 40)
-                        .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
-                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                        .frame(width: 32, height: 32)
+                        .overlay(Circle().stroke(Color.black, lineWidth: 1.3))
+                        .shadow(color: .black, radius: 0, x: 1.2, y: 1.2)
                     
                     Image(systemName: "hourglass.bottomhalf.filled")
-                        .font(.system(size: 17, weight: .black))
+                        .font(.system(size: 14, weight: .black))
                         .foregroundColor(.black)
                 }
                 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text("TOTAL DURASI APLIKASI DIBATASI")
-                        .font(.system(size: 9.5, weight: .heavy, design: .rounded))
+                        .font(.system(size: 9, weight: .heavy, design: .rounded))
                         .foregroundColor(.secondary)
                     
                     Text(reportData.formattedTotal)
-                        .font(.system(size: 16, weight: .heavy, design: .rounded))
+                        .font(.system(size: 15, weight: .heavy, design: .rounded))
                         .foregroundColor(.black)
                 }
                 
                 Spacer()
             }
-            .padding(10)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 6)
             .background(Color.white)
-            .cornerRadius(10)
-            .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.2))
+            .cornerRadius(9)
+            .overlay(RoundedRectangle(cornerRadius: 9).stroke(Color.black, lineWidth: 1.1))
             
             // 2. Rincian Pemakaian per Aplikasi Target (Jika ada)
             if !reportData.appItems.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: 4) {
                     Text("RINCIAN PER APLIKASI")
-                        .font(.system(size: 9.5, weight: .heavy, design: .rounded))
+                        .font(.system(size: 9, weight: .heavy, design: .rounded))
                         .foregroundColor(.secondary)
-                        .padding(.top, 2)
                     
-                    VStack(spacing: 6) {
+                    VStack(spacing: 4) {
                         ForEach(reportData.appItems) { item in
-                            HStack(spacing: 9) {
+                            HStack(spacing: 8) {
                                 // 1. Kotak Icon Aplikasi
                                 if let token = item.token {
                                     ZStack {
-                                        RoundedRectangle(cornerRadius: 7)
+                                        RoundedRectangle(cornerRadius: 6)
                                             .fill(Color(red: 0.93, green: 0.90, blue: 0.98))
-                                            .frame(width: 28, height: 28)
-                                            .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.black, lineWidth: 1.1))
+                                            .frame(width: 24, height: 24)
+                                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
                                         
                                         Label(token)
                                             .labelStyle(.iconOnly)
-                                            .scaleEffect(0.8)
+                                            .scaleEffect(0.7)
                                     }
                                 } else {
                                     ZStack {
-                                        RoundedRectangle(cornerRadius: 7)
+                                        RoundedRectangle(cornerRadius: 6)
                                             .fill(Color(red: 0.93, green: 0.90, blue: 0.98))
-                                            .frame(width: 28, height: 28)
-                                            .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.black, lineWidth: 1.1))
+                                            .frame(width: 24, height: 24)
+                                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
                                         
                                         Image(systemName: "app.fill")
-                                            .font(.system(size: 13, weight: .bold))
+                                            .font(.system(size: 11, weight: .bold))
                                             .foregroundColor(.black)
                                     }
                                 }
@@ -95,20 +94,20 @@ struct TotalActivityView: View {
                                 // 2. Tulisan Nama Aplikasi di Samping Icon
                                 if !item.name.isEmpty {
                                     Text(item.name)
-                                        .font(.system(size: 12.5, weight: .heavy, design: .rounded))
+                                        .font(.system(size: 12, weight: .heavy, design: .rounded))
                                         .foregroundColor(.black)
                                         .lineLimit(1)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                 } else if let token = item.token {
                                     Label(token)
                                         .labelStyle(.titleOnly)
-                                        .font(.system(size: 12.5, weight: .heavy, design: .rounded))
+                                        .font(.system(size: 12, weight: .heavy, design: .rounded))
                                         .foregroundColor(.black)
                                         .lineLimit(1)
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                 } else {
                                     Text("Aplikasi")
-                                        .font(.system(size: 12.5, weight: .heavy, design: .rounded))
+                                        .font(.system(size: 12, weight: .heavy, design: .rounded))
                                         .foregroundColor(.black)
                                         .lineLimit(1)
                                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -118,45 +117,34 @@ struct TotalActivityView: View {
                                 
                                 // 3. Badge Durasi Pemakaian Tiap App
                                 Text(formatDuration(item.duration))
-                                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                    .font(.system(size: 10.5, weight: .heavy, design: .rounded))
                                     .foregroundColor(.black)
-                                    .padding(.horizontal, 7)
-                                    .padding(.vertical, 3.5)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2.5)
                                     .background(Color(red: 0.99, green: 0.88, blue: 0.55).opacity(0.6))
-                                    .cornerRadius(6)
-                                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
+                                    .cornerRadius(5)
+                                    .overlay(RoundedRectangle(cornerRadius: 5).stroke(Color.black, lineWidth: 0.9))
                             }
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 6)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4.5)
                             .background(Color.white)
-                            .cornerRadius(8)
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.0))
+                            .cornerRadius(7)
+                            .overlay(RoundedRectangle(cornerRadius: 7).stroke(Color.black, lineWidth: 0.9))
                         }
                     }
                 }
             } else {
-                HStack(spacing: 6) {
+                HStack(spacing: 5) {
                     Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundColor(Color(red: 0.35, green: 0.80, blue: 0.65))
                     
                     Text("Aplikasi yang dibatasi belum digunakan hari ini. Tetap fokus!")
-                        .font(.system(size: 10.5, weight: .medium, design: .rounded))
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
                         .foregroundColor(.secondary)
                 }
-                .padding(.horizontal, 4)
+                .padding(.horizontal, 2)
             }
         }
     }
-}
-
-#Preview {
-    TotalActivityView(reportData: AppActivityReportData(
-        totalTargetDuration: 1800,
-        appItems: [
-            AppUsageItem(token: nil, name: "Instagram", duration: 900),
-            AppUsageItem(token: nil, name: "YouTube", duration: 900)
-        ],
-        formattedTotal: "30 Menit"
-    ))
 }
