@@ -16,10 +16,20 @@ struct HabitTrackerView: View {
     @State private var isShowingAddHabit: Bool = false
     @State private var habitToEdit: Habit?
     @State private var selectedCategory: String = "Semua"
+    @State private var isFilterPanelExpanded: Bool = false
     @State private var habitToDelete: Habit?
     @State private var isShowingDeleteDialog: Bool = false
+    @State private var celebrationHabit: Habit? = nil
     
-    private let categories: [String] = ["Semua", "Kesehatan", "Belajar", "Olahraga", "Mindfulness", "Produktivitas"]
+    private let categoryItems: [(name: String, icon: String)] = [
+        ("Semua", "square.grid.2x2.fill"),
+        ("Kesehatan", "heart.fill"),
+        ("Belajar", "book.fill"),
+        ("Olahraga", "figure.run"),
+        ("Mindfulness", "leaf.fill"),
+        ("Produktivitas", "bolt.fill")
+    ]
+    private var categories: [String] { categoryItems.map { $0.name } }
     
     private var filteredHabits: [Habit] {
         if selectedCategory == "Semua" {
@@ -45,7 +55,7 @@ struct HabitTrackerView: View {
     dynamic var body: some View {
         ZStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: HIGSpacing.md) {
+                VStack(spacing: HIGSpacing.sm) {
                     // 1. Kartu Dashboard Ringkasan Kebiasaan Hari Ini
                     HabitDashboardSummaryCard(
                         totalHabits: habits.count,
@@ -54,66 +64,23 @@ struct HabitTrackerView: View {
                         maxStreak: maxStreak
                     )
                     
-                    // 2. Filter Kategori Kartun
+                    // 2. 🎛️ Bar Tombol Tambah Penuh + Tombol Icon Filter Neo-Brutalist
                     if !habits.isEmpty {
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            HStack(spacing: 8) {
-                                ForEach(categories, id: \.self) { category in
-                                    let isSelected = selectedCategory == category
-                                    Button {
-                                        HapticManager.shared.selection()
-                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
-                                            selectedCategory = category
-                                        }
-                                    } label: {
-                                        Text(category)
-                                            .font(.system(size: 11.5, weight: .heavy, design: .rounded))
-                                            .foregroundColor(.black)
-                                            .padding(.horizontal, 12)
-                                            .padding(.vertical, 7)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .fill(isSelected ? Color.cartoonYellow : Color.white)
-                                                    .shadow(color: .black, radius: 0, x: isSelected ? 1.5 : 1, y: isSelected ? 1.5 : 1)
-                                            )
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 10)
-                                                    .stroke(Color.black, lineWidth: isSelected ? 1.5 : 1.0)
-                                            )
-                                    }
-                                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-                                }
-                            }
-                            .padding(.horizontal, HIGSpacing.md)
+                        actionAndFilterHeader
+                        
+                        // Drawer Kategori Filter
+                        if isFilterPanelExpanded {
+                            filterDrawerSection
+                                .transition(.opacity.combined(with: .move(edge: .top)))
                         }
-                        .padding(.horizontal, -HIGSpacing.md)
+                        
+                        // Badge Filter Aktif (Jika Panel Tertutup)
+                        if selectedCategory != "Semua" && !isFilterPanelExpanded {
+                            activeFilterBadgeView
+                        }
                     }
                     
-                    // 3. Tombol Tambah Kebiasaan Cepat
-                    Button {
-                        HapticManager.shared.impact(style: .medium)
-                        selectedCategory = "Semua"
-                        isShowingAddHabit = true
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 14, weight: .black))
-                            Text("Buat Kebiasaan Baru")
-                                .font(.system(size: 13, weight: .heavy, design: .rounded))
-                        }
-                        .foregroundColor(.black)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 11)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12)
-                                .fill(Color.cartoonYellow)
-                                .shadow(color: .black, radius: 0, x: 2, y: 2)
-                        )
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.6))
-                    }
-                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-                    
-                    // 4. Daftar Kartu Kebiasaan (Habits List dengan LazyVStack untuk 120fps)
+                    // 3. Daftar Kartu Kebiasaan (Habits List dengan LazyVStack untuk 120fps)
                     if filteredHabits.isEmpty {
                         HabitEmptyStateView {
                             selectedCategory = "Semua"
@@ -161,6 +128,17 @@ struct HabitTrackerView: View {
                     },
                     onConfirm: {
                         deleteHabit(habit)
+                    }
+                )
+            }
+
+            // 🎊 Fullscreen Confetti & Streak Celebration Modal
+            if let celebration = celebrationHabit {
+                ConfettiCelebrationView(
+                    streakCount: celebration.currentStreak,
+                    habitTitle: celebration.title,
+                    onDismiss: {
+                        celebrationHabit = nil
                     }
                 )
             }
@@ -242,10 +220,17 @@ struct HabitTrackerView: View {
     
     private func toggleHabit(_ habit: Habit) {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.65)) {
+            let previousCompleted = habit.isCompletedToday
             habit.toggleCompletion()
             try? modelContext.save()
             if habit.isCompletedToday {
                 SoundManager.shared.playTaskCompletedSound()
+                // 🎉 Trigger Confetti Milestone Celebration jika streak mencapai milestone penting (misal: 3, 7, 14, 21, 30, dst.)
+                if habit.currentStreak >= 3 && !previousCompleted && (habit.currentStreak % 3 == 0 || habit.currentStreak == 7 || habit.currentStreak == 14 || habit.currentStreak == 30) {
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        celebrationHabit = habit
+                    }
+                }
             } else {
                 HapticManager.shared.impact(style: .medium)
             }
@@ -271,6 +256,175 @@ struct HabitTrackerView: View {
             habitToDelete = nil
             WidgetCenter.shared.reloadAllTimelines()
         }
+    }
+
+    // MARK: - 2. Bar Aksi Tambah Kebiasaan + Tombol Filter Icon Neo-Brutalist
+    private var actionAndFilterHeader: some View {
+        HStack(spacing: HIGSpacing.xs) {
+            // Tombol Buat Kebiasaan Baru Penuh Kartun
+            Button {
+                HapticManager.shared.impact(style: .medium)
+                selectedCategory = "Semua"
+                isShowingAddHabit = true
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 14, weight: .black))
+                    Text("Buat Kebiasaan Baru")
+                        .font(.system(size: 13, weight: .heavy, design: .rounded))
+                }
+                .foregroundColor(.black)
+                .frame(maxWidth: .infinity)
+                .frame(height: 44)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.cartoonYellow)
+                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                )
+                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.6))
+            }
+            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+
+            // Tombol Filter Icon Neo-Brutalist
+            Button {
+                HapticManager.shared.impact(style: .light)
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                    isFilterPanelExpanded.toggle()
+                }
+            } label: {
+                ZStack(alignment: .topTrailing) {
+                    HStack {
+                        Image(systemName: isFilterPanelExpanded ? "line.3.horizontal.decrease.circle.fill" : "slider.horizontal.3")
+                            .font(.system(size: 15, weight: .bold))
+                            .foregroundColor(.black)
+                    }
+                    .frame(width: 44, height: 44)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12)
+                            .fill(selectedCategory != "Semua" ? Color.cartoonMint : (isFilterPanelExpanded ? Color.cartoonLavender : Color.white))
+                            .shadow(color: .black, radius: 0, x: 2, y: 2)
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.black, lineWidth: 1.6)
+                    )
+
+                    // Dot penanda filter aktif
+                    if selectedCategory != "Semua" {
+                        Circle()
+                            .fill(Color.cartoonCoral)
+                            .frame(width: 9, height: 9)
+                            .overlay(Circle().stroke(Color.black, lineWidth: 1.2))
+                            .offset(x: 2, y: -2)
+                    }
+                }
+            }
+            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+        }
+    }
+
+    // MARK: - Drawer Kategori Filter
+    private var filterDrawerSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text("FILTER KATEGORI")
+                    .font(.system(size: 9.5, weight: .heavy, design: .rounded))
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                if selectedCategory != "Semua" {
+                    Button {
+                        HapticManager.shared.impact(style: .light)
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                            selectedCategory = "Semua"
+                        }
+                    } label: {
+                        Text("Reset Filter")
+                            .font(.system(size: 10, weight: .heavy, design: .rounded))
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 2.5)
+                            .background(Color.cartoonPink.opacity(0.8))
+                            .cornerRadius(6)
+                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 0.8))
+                    }
+                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.6))
+                }
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(categoryItems, id: \.name) { item in
+                        let isSelected = selectedCategory == item.name
+                        Button {
+                            HapticManager.shared.selection()
+                            withAnimation(.spring(response: 0.28, dampingFraction: 0.75)) {
+                                selectedCategory = item.name
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: item.icon)
+                                    .font(.system(size: 10, weight: .bold))
+                                Text(item.name)
+                                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                            }
+                            .foregroundColor(.black)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 5)
+                            .background(isSelected ? Color.cartoonYellow : Color.white)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.black, lineWidth: isSelected ? 1.4 : 0.9)
+                            )
+                            .shadow(color: isSelected ? .black : .black.opacity(0.08), radius: 0, x: isSelected ? 1.2 : 0.8, y: isSelected ? 1.2 : 0.8)
+                        }
+                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.6))
+                    }
+                }
+                .padding(.vertical, 2)
+            }
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color.white)
+                .shadow(color: .black, radius: 0, x: 2, y: 2)
+        )
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.4))
+    }
+
+    // MARK: - Badge Filter Aktif
+    private var activeFilterBadgeView: some View {
+        HStack(spacing: 6) {
+            HStack(spacing: 4) {
+                Image(systemName: "line.3.horizontal.decrease.circle.fill")
+                    .font(.system(size: 10, weight: .bold))
+                Text("Kategori: \(selectedCategory)")
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+            }
+            .foregroundColor(.black)
+
+            Button {
+                HapticManager.shared.impact(style: .light)
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                    selectedCategory = "Semua"
+                }
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.black.opacity(0.6))
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(Color.cartoonYellow.opacity(0.45))
+        .cornerRadius(8)
+        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 0.9))
     }
 }
 

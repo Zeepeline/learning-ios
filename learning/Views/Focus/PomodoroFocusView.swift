@@ -216,9 +216,41 @@ struct PomodoroPresetSelector: View {
 struct FocusSessionSettingsCard: View {
     @Bindable var pomodoro: PomodoroManager
     var screenTime: ScreenTimeManager
+    @Query(filter: #Predicate<Item> { !$0.isCompleted }, sort: \Item.timestamp) private var activeTasks: [Item]
+    @State private var isTaskPickerPresented: Bool = false
 
     dynamic var body: some View {
         VStack(spacing: HIGSpacing.sm) {
+            // Header Bar & Tombol Pilih Tugas
+            HStack {
+                Text("AKTIVITAS YANG DIKERJAKAN")
+                    .font(.system(size: 10, weight: .heavy, design: .rounded))
+                    .foregroundColor(.secondary)
+
+                Spacer()
+
+                if !activeTasks.isEmpty && pomodoro.state == .idle {
+                    Button {
+                        isTaskPickerPresented = true
+                        HapticManager.shared.selection()
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "list.bullet.clipboard.fill")
+                                .font(.system(size: 9, weight: .bold))
+                            Text("Pilih dari Tugas")
+                                .font(.system(size: 9.5, weight: .heavy, design: .rounded))
+                        }
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 3)
+                        .background(Color.cartoonLavender.opacity(0.8))
+                        .cornerRadius(6)
+                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 0.9))
+                    }
+                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
+                }
+            }
+
             // Input Nama Tugas
             HStack(spacing: 8) {
                 Image(systemName: "pencil")
@@ -272,6 +304,80 @@ struct FocusSessionSettingsCard: View {
         }
         .padding(HIGSpacing.md)
         .cartoonCard()
+        .sheet(isPresented: $isTaskPickerPresented) {
+            NavigationStack {
+                ZStack {
+                    Color.cartoonBg.ignoresSafeArea()
+
+                    ScrollView(showsIndicators: false) {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text("PILIH TUGAS UNTUK FOKUS")
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, 4)
+
+                            ForEach(activeTasks) { item in
+                                Button {
+                                    pomodoro.taskTitle = item.title
+                                    isTaskPickerPresented = false
+                                    HapticManager.shared.success()
+                                } label: {
+                                    HStack(spacing: 10) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.cartoonYellow)
+                                                .frame(width: 28, height: 28)
+                                                .overlay(Circle().stroke(Color.black, lineWidth: 1.2))
+                                            Image(systemName: "bolt.fill")
+                                                .font(.system(size: 11, weight: .black))
+                                                .foregroundColor(.black)
+                                        }
+
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text(item.title)
+                                                .font(.system(size: 13, weight: .heavy, design: .rounded))
+                                                .foregroundColor(.black)
+                                                .multilineTextAlignment(.leading)
+
+                                            if !item.subtasks.isEmpty {
+                                                Text("\(item.completedSubtasksCount)/\(item.totalSubtasksCount) Subtask selesai")
+                                                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                                                    .foregroundColor(.secondary)
+                                            }
+                                        }
+
+                                        Spacer()
+
+                                        Image(systemName: "chevron.right")
+                                            .font(.system(size: 11, weight: .bold))
+                                            .foregroundColor(.black.opacity(0.6))
+                                    }
+                                    .padding(10)
+                                    .background(Color.white)
+                                    .cornerRadius(10)
+                                    .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.2))
+                                    .shadow(color: .black.opacity(0.08), radius: 0, x: 1.5, y: 1.5)
+                                }
+                                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+                            }
+                        }
+                        .padding(HIGSpacing.md)
+                    }
+                }
+                .navigationTitle("Tugas Aktif")
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button("Tutup") {
+                            isTaskPickerPresented = false
+                        }
+                        .font(.system(.body, design: .rounded).weight(.bold))
+                        .foregroundColor(.black)
+                    }
+                }
+            }
+            .presentationDetents([.medium, .large])
+        }
     }
 }
 
