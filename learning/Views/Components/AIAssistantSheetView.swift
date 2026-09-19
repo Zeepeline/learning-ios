@@ -7,7 +7,6 @@
 
 import SwiftUI
 import SwiftData
-import GoogleSignIn
 
 struct AIAssistantSheetView: View {
     @Environment(\.dismiss) private var dismiss
@@ -22,7 +21,6 @@ struct AIAssistantSheetView: View {
 
     @State private var inputText: String = ""
     @State private var isShowingSettings: Bool = false
-    @State private var isShowingGeminiCustomTab: Bool = false
     @State private var tempProvider: AIProviderType = .local
     @State private var tempGeminiApiKey: String = ""
     @State private var tempNinerouterApiKey: String = ""
@@ -54,9 +52,6 @@ struct AIAssistantSheetView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // MARK: - 🌐 Banner Akses Cepat Gemini Safari Custom Tab
-                    geminiCustomTabQuickBanner
-
                     // MARK: - 💬 Chat Messages ScrollView
                     ScrollViewReader { proxy in
                         ScrollView(showsIndicators: false) {
@@ -87,7 +82,7 @@ struct AIAssistantSheetView: View {
                     // MARK: - ⚡ Quick Prompt Chips
                     quickPromptChipsSection
 
-                    // MARK: - ✍️ Bottom Message Input Bar
+                    // MARK: - ✍️ Bottom Message Input Bar (Native In-App)
                     bottomInputBar
                 }
             }
@@ -119,9 +114,9 @@ struct AIAssistantSheetView: View {
 
                         HStack(spacing: 4) {
                             Circle()
-                                .fill(currentProvider == .local ? Color.cartoonMint : Color.cartoonBlue)
+                                .fill(Color.cartoonMint)
                                 .frame(width: 6, height: 6)
-                            Text(currentProvider.shortName)
+                            Text("In-App Chat Engine")
                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                                 .foregroundColor(.secondary)
                         }
@@ -130,27 +125,6 @@ struct AIAssistantSheetView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 8) {
-                        // Tombol Buka Gemini Safari Custom Tab (Otomatis Sync Sesi Akun Google)
-                        Button {
-                            HapticManager.shared.impact(style: .medium)
-                            isShowingGeminiCustomTab = true
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 11, weight: .black))
-                                Text("Gemini.com")
-                                    .font(.system(size: 11, weight: .black, design: .rounded))
-                            }
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 8)
-                            .frame(height: 32)
-                            .background(Color.cartoonBlue)
-                            .cornerRadius(8)
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
-                            .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-                        }
-                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-
                         // Tombol Clear Chat
                         Button {
                             HapticManager.shared.selection()
@@ -193,45 +167,7 @@ struct AIAssistantSheetView: View {
             .sheet(isPresented: $isShowingSettings) {
                 aiSettingsSheet
             }
-            .sheet(isPresented: $isShowingGeminiCustomTab) {
-                // Safari Custom Tab: Berbagi cookies & sesi Google otomatis dari Safari iOS
-                SafariView(url: URL(string: "https://gemini.google.com")!)
-                    .ignoresSafeArea()
-            }
         }
-    }
-
-    // MARK: - 🌐 Banner Akses Cepat Gemini Safari Custom Tab
-    private var geminiCustomTabQuickBanner: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "safari.fill")
-                .font(.system(size: 13, weight: .bold))
-                .foregroundColor(.cartoonBlue)
-
-            Text("Akun Google Otomatis Tersinkron (Safari Tab)")
-                .font(.system(size: 11.5, weight: .bold, design: .rounded))
-                .foregroundColor(.black)
-
-            Spacer()
-
-            Button {
-                HapticManager.shared.impact(style: .light)
-                isShowingGeminiCustomTab = true
-            } label: {
-                Text("Buka Gemini ↗")
-                    .font(.system(size: 11, weight: .heavy, design: .rounded))
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.cartoonYellow)
-                    .cornerRadius(6)
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
-            }
-        }
-        .padding(.horizontal, HIGSpacing.md)
-        .padding(.vertical, 6)
-        .background(Color.white.opacity(0.85))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(Color.black.opacity(0.1)), alignment: .bottom)
     }
 
     // MARK: - 🌊 Smooth Scrolling Helpers
@@ -391,11 +327,10 @@ struct AIAssistantSheetView: View {
                         HStack(spacing: 6) {
                             Image(systemName: prompt.icon)
                                 .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.black)
                             Text(prompt.title)
                                 .font(.system(size: 12, weight: .heavy, design: .rounded))
-                                .foregroundColor(.black)
                         }
+                        .foregroundColor(.black)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
                         .background(prompt.color)
@@ -416,7 +351,7 @@ struct AIAssistantSheetView: View {
         .overlay(Rectangle().frame(height: 1).foregroundColor(Color.black.opacity(0.1)), alignment: .top)
     }
 
-    // MARK: - ✍️ Bottom Input Bar
+    // MARK: - ✍️ Bottom Input Bar (Native SwiftUI Input)
     private var bottomInputBar: some View {
         HStack(spacing: 10) {
             HStack(spacing: 8) {
@@ -424,7 +359,7 @@ struct AIAssistantSheetView: View {
                     .font(.system(size: 15, weight: .bold))
                     .foregroundColor(.cartoonTextPrimary)
 
-                TextField("Diskusikan rencana atau minta aksi aplikasi...", text: $inputText)
+                TextField("Ketik pesan, tanya saran, atau minta jadwalkan tugas...", text: $inputText)
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .focused($isInputFocused)
                     .onSubmit {
@@ -441,7 +376,7 @@ struct AIAssistantSheetView: View {
             )
             .shadow(color: .black, radius: 0, x: 2, y: 2)
 
-            // Tombol Kirim
+            // Tombol Kirim Pesan
             Button {
                 sendCurrentMessage()
             } label: {
@@ -465,47 +400,15 @@ struct AIAssistantSheetView: View {
         .background(Color.cartoonBg)
     }
 
-    // MARK: - ⚙️ AI Provider & API Key Settings Sheet
+    // MARK: - ⚙️ AI Provider & Settings Sheet
     private var aiSettingsSheet: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: HIGSpacing.lg) {
 
-                    // Banner Buka Gemini Custom Tab
-                    Button {
-                        isShowingSettings = false
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            isShowingGeminiCustomTab = true
-                        }
-                    } label: {
-                        HStack {
-                            Image(systemName: "safari.fill")
-                                .font(.system(size: 18, weight: .bold))
-                                .foregroundColor(.cartoonBlue)
-
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Buka Gemini di Safari Custom Tab")
-                                    .font(.system(size: 13, weight: .heavy, design: .rounded))
-                                    .foregroundColor(.black)
-                                Text("Otomatis sinkron dengan akun Google yang aktif di perangkat")
-                                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                                    .foregroundColor(.secondary)
-                            }
-                            Spacer()
-                            Image(systemName: "arrow.up.right.square.fill")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.black)
-                        }
-                        .padding(12)
-                        .background(Color.cartoonBlue.opacity(0.3))
-                        .cornerRadius(12)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.2))
-                    }
-                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-
-                    // 1. Pilihan Provider
+                    // Pilihan Provider
                     VStack(alignment: .leading, spacing: HIGSpacing.xs) {
-                        Text("PILIHAN ENGINE IN-APP")
+                        Text("PILIHAN ENGINE AI")
                             .font(.system(size: 11, weight: .heavy, design: .rounded))
                             .foregroundColor(.secondary)
 
@@ -549,10 +452,10 @@ struct AIAssistantSheetView: View {
                         }
                     }
 
-                    // 2. Form Spesifik Provider
+                    // Form Spesifik Provider
                     if tempProvider == .gemini {
                         VStack(alignment: .leading, spacing: HIGSpacing.xs) {
-                            Text("GOOGLE AI STUDIO API KEY (OPSIONAL)")
+                            Text("GOOGLE AI STUDIO API KEY")
                                 .font(.system(size: 11, weight: .heavy, design: .rounded))
                                 .foregroundColor(.secondary)
 
@@ -588,10 +491,10 @@ struct AIAssistantSheetView: View {
                         }
                     } else {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("ℹ️ Smart Local Co-Planning Engine")
+                            Text("⚡ Smart In-App Co-Planning Engine")
                                 .font(.system(size: 12, weight: .heavy, design: .rounded))
                                 .foregroundColor(.black)
-                            Text("Bekerja secara offline langsung di perangkat tanpa API Key. Mampu berdiskusi rencana dan merekomendasikan subtasks sebelum dibuat!")
+                            Text("Berjalan 100% di dalam chat aplikasi tanpa perlu membuka web atau login browser. Siap berdiskusi jadwal, menyarankan subtasks, dan mengontrol semua fitur aplikasi!")
                                 .font(.system(size: 12, weight: .medium, design: .rounded))
                                 .foregroundColor(.secondary)
                         }
@@ -601,7 +504,7 @@ struct AIAssistantSheetView: View {
                         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.2))
                     }
 
-                    // 3. Tombol Simpan
+                    // Tombol Simpan
                     Button {
                         selectedProviderRaw = tempProvider.rawValue
                         geminiApiKey = tempGeminiApiKey.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -630,7 +533,7 @@ struct AIAssistantSheetView: View {
                 .padding(HIGSpacing.lg)
             }
             .background(Color.cartoonBg)
-            .navigationTitle("Konfigurasi AI Engine")
+            .navigationTitle("Pengaturan Engine AI")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -647,13 +550,13 @@ struct AIAssistantSheetView: View {
     private func providerIcon(for prov: AIProviderType) -> String {
         switch prov {
         case .local: return "bolt.shield.fill"
-        case .googleAccount: return "safari.fill"
+        case .googleAccount: return "person.crop.circle.fill"
         case .gemini: return "sparkles"
         case .ninerouter: return "network"
         }
     }
 
-    // MARK: - 📤 Action Kirim Pesan
+    // MARK: - 📤 Action Kirim Pesan Native
     private func sendCurrentMessage() {
         let text = inputText
         inputText = ""
