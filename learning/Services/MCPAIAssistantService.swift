@@ -100,15 +100,16 @@ final class MCPAIAssistantService: ObservableObject {
             MCPAIChatMessage(
                 role: .assistant,
                 content: """
-                Hai! Aku **AI Productivity Partner** siap membantumu hari ini! 🚀✨
+                Hai! Aku **AI Productivity Partner** yang terhubung langsung ke aplikasimu via **MCP (Model Context Protocol)**! 🚀✨
 
-                Kamu bisa mengobrol santai atau memintaku:
-                • 📋 Menambahkan tugas & memecah subtasks otomatis
-                • ⏱️ Memulai timer fokus Pomodoro & Live Activity
-                • 🏃‍♂️ Cek ringkasan langkah & kalori Apple Health
-                • 🔥 Mencatat progress Habit Tracker harian
+                Aku bisa membaca data aplikasimu dan mengeksekusi aksi secara nyata:
+                • 📋 Tambah / selesaikan tugas & rincian subtasks di To-Do List
+                • ⏱️ Nyalakan / atur timer Pomodoro & Live Activity Dynamic Island
+                • 🏃‍♂️ Ambil data langkah & kalori dari Apple Health
+                • 🔥 Ceklis dan buat target Habit harian
+                • 🛡️ Kunci aplikasi distraksi dengan Screen Time Shield
 
-                Apa tugas atau target yang ingin kamu tambahkan sekarang?
+                Apa yang ingin kita kerjakan atau diskusikan hari ini?
                 """
             )
         )
@@ -137,7 +138,7 @@ final class MCPAIAssistantService: ObservableObject {
             return
         }
 
-        // 2. Jika Bukan Action App Langsung, Jalankan Provider AI untuk Diskusi & Chat
+        // 2. Jika Bukan Action App Sederhana, Jalankan Provider AI dengan Live Context Injection
         let cleanApiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
 
         switch provider {
@@ -178,7 +179,33 @@ final class MCPAIAssistantService: ObservableObject {
         pendingProposal = nil
     }
 
-    // MARK: - 🛠️ MCP Intent Interceptor (Menjamin Aksi Aplikasi Selalu Berhasil)
+    // MARK: - 📊 MCP Live Context Generator (Memberi Tahu LLM Data Terkini Aplikasi)
+    private func buildMCPLiveContext(modelContext: ModelContext) -> String {
+        let descriptor = FetchDescriptor<Item>()
+        let items = (try? modelContext.fetch(descriptor)) ?? []
+        let pendingItems = items.filter { !$0.isCompleted }
+        let completedItems = items.filter { $0.isCompleted }
+
+        let habitDesc = FetchDescriptor<Habit>()
+        let habits = (try? modelContext.fetch(habitDesc)) ?? []
+
+        let pomodoro = PomodoroManager.shared
+        let health = HealthKitManager.shared.todaySummary
+        let isShieldActive = ScreenTimeManager.shared.isShieldActive
+
+        var context = """
+        [MCP_APP_CONTEXT]
+        - Status Tugas: \(pendingItems.count) tugas tertunda, \(completedItems.count) selesai.
+        - Daftar Tugas Tertunda: \(pendingItems.prefix(5).map { $0.title }.joined(separator: ", "))
+        - Total Habit Aktif: \(habits.count) habit (\(habits.prefix(3).map { "\($0.title) (streak: \($0.currentStreak)d)" }.joined(separator: ", ")))
+        - Pomodoro Timer: \(pomodoro.isRunning ? "Sedang aktif (\(pomodoro.remainingSeconds / 60)m tersisa)" : "Standby")
+        - Apple Health: \(health.steps) langkah, \(Int(health.activeCalories)) kkal
+        - Screen Time Shield: \(isShieldActive ? "Aktif (Aplikasi Terkunci)" : "Nonaktif")
+        """
+        return context
+    }
+
+    // MARK: - 🛠️ MCP Intent Interceptor (Menjamin Aksi Aplikasi Selalu Berhasil 100%)
     private func handleMCPAppActionIntents(prompt: String, modelContext: ModelContext) async -> Bool {
         let lower = prompt.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -261,6 +288,12 @@ final class MCPAIAssistantService: ObservableObject {
             return true
         }
 
+        // G. Rangkuman Aplikasi Lengkap (Get App Summary Tool)
+        if lower.contains("rangkum") || lower.contains("status hari ini") || lower.contains("ringkasan produktivitas") || lower.contains("progress hari ini") {
+            await executeGetAppSummaryTool(modelContext: modelContext)
+            return true
+        }
+
         return false
     }
 
@@ -302,7 +335,7 @@ final class MCPAIAssistantService: ObservableObject {
 
         let newItem = Item(
             title: cleanTitle.capitalized,
-            notes: "Ditambahkan otomatis oleh AI Assistant",
+            notes: "Ditambahkan otomatis via MCP Assistant",
             timestamp: Date(),
             isCompleted: false,
             completedAt: nil,
@@ -350,8 +383,11 @@ final class MCPAIAssistantService: ObservableObject {
 
     // MARK: - 🌐 Cloud AI Background Bridge Execution
     private func processWithGoogleUserAccount(prompt: String, modelContext: ModelContext) async {
+        let liveContext = buildMCPLiveContext(modelContext: modelContext)
+        let enrichedPrompt = "\(prompt)\n\n(Catatan sistem aplikasi: Kamu adalah AI Productivity Partner dengan akses ke database aplikasi lewat MCP Tools. Konteks aplikasi saat ini: \(liveContext))"
+
         do {
-            let replyText = try await GeminiBackgroundBridgeManager.shared.sendPromptToGeminiWeb(prompt)
+            let replyText = try await GeminiBackgroundBridgeManager.shared.sendPromptToGeminiWeb(enrichedPrompt)
             await dispatchActionOrDisplayLLMResponse(llmText: replyText, prompt: prompt, modelContext: modelContext)
         } catch {
             await processWithLocalDiscussion(
@@ -391,7 +427,7 @@ final class MCPAIAssistantService: ObservableObject {
         let reply = """
         Menarik! Terkait *"\(prompt)"*, apa ada tugas spesifik yang ingin kamu tambahkan atau jadwalkan? 
 
-        💡 Kamu bisa langsung bilang *"Tambahkan tugas \(prompt)"* agar langsung tersimpan di to-do list kamu!\(extraNote)
+        💡 Kamu bisa langsung minta *"Tambahkan tugas \(prompt)"* agar langsung tersimpan di to-do list kamu!\(extraNote)
         """
         messages.append(MCPAIChatMessage(role: .assistant, content: reply))
     }
@@ -451,7 +487,7 @@ final class MCPAIAssistantService: ObservableObject {
         let subtasks = proposal.subtasks.map { SubtaskItem(title: $0, isCompleted: false) }
         let newItem = Item(
             title: proposal.title,
-            notes: "Direncanakan & didiskusikan bersama AI Productivity Partner",
+            notes: "Direncanakan & didiskusikan bersama AI Productivity Partner via MCP",
             timestamp: Date(),
             isCompleted: false,
             completedAt: nil,
@@ -496,6 +532,8 @@ final class MCPAIAssistantService: ObservableObject {
             return
         }
 
+        let liveContext = buildMCPLiveContext(modelContext: modelContext)
+
         var contentsPayload: [[String: Any]] = []
         let recentMessages = messages.suffix(10)
         for msg in recentMessages {
@@ -509,7 +547,7 @@ final class MCPAIAssistantService: ObservableObject {
         let systemInstruction: [String: Any] = [
             "parts": [
                 [
-                    "text": "Kamu adalah AI Productivity Partner cerdas. Diskusikan rencana dan buatkan subtasks terstruktur sebelum membuat tugas. Format Markdown rapi."
+                    "text": "Kamu adalah AI Productivity Partner cerdas dengan integrasi MCP langsung ke aplikasi to-do, pomodoro, habit, dan health. Konteks aplikasi saat ini: \(liveContext). Format Markdown rapi dengan list kartu."
                 ]
             ]
         ]
@@ -564,10 +602,12 @@ final class MCPAIAssistantService: ObservableObject {
             return
         }
 
+        let liveContext = buildMCPLiveContext(modelContext: modelContext)
+
         var messagesPayload: [[String: String]] = [
             [
                 "role": "system",
-                "content": "Kamu adalah AI Productivity Partner cerdas. Diskusikan rencana dan rekomendasikan subtasks sebelum membuat tugas. Format Markdown rapi."
+                "content": "Kamu adalah AI Productivity Partner cerdas dengan integrasi MCP langsung ke aplikasi to-do, pomodoro, habit, dan health. Konteks aplikasi saat ini: \(liveContext). Format Markdown rapi dengan list kartu."
             ]
         ]
 
@@ -937,6 +977,48 @@ final class MCPAIAssistantService: ObservableObject {
         }
 
         messages.append(MCPAIChatMessage(role: .assistant, content: text, toolCall: toolCall, toolResult: "\(habits.count) habits"))
+    }
+
+    // MARK: - 📊 Rangkuman Seluruh Fitur Aplikasi (Get App Summary Tool)
+    private func executeGetAppSummaryTool(modelContext: ModelContext) async {
+        let descriptor = FetchDescriptor<Item>()
+        let items = (try? modelContext.fetch(descriptor)) ?? []
+        let pending = items.filter { !$0.isCompleted }
+        let completed = items.filter { $0.isCompleted }
+
+        let habitDesc = FetchDescriptor<Habit>()
+        let habits = (try? modelContext.fetch(habitDesc)) ?? []
+        let habitDoneToday = habits.filter { $0.isCompleted(on: Date()) }
+
+        await HealthKitManager.shared.fetchAllTodayHealthData(force: true)
+        let health = HealthKitManager.shared.todaySummary
+        let pomodoro = PomodoroManager.shared
+
+        let toolCall = MCPToolInvocation(
+            name: "get_app_summary",
+            argumentsSummary: "pendingTasks: \(pending.count), habits: \(habitDoneToday.count)/\(habits.count), steps: \(health.steps)",
+            icon: "chart.pie.fill",
+            badgeColorHex: "#6EE7B7"
+        )
+
+        let reply = """
+        📊 **Rangkuman Produktivitas & Kesehatan Hari Ini:**
+
+        📋 **To-Do List:**
+        • \(pending.count) Tugas Menunggu (\(pending.filter { $0.priority == "Tinggi" }.count) Prioritas Tinggi)
+        • \(completed.count) Tugas Telah Selesai ✅
+
+        🔥 **Habit Tracker:**
+        • \(habitDoneToday.count) dari \(habits.count) Kebiasaan Selesai Hari Ini
+
+        ⏱️ **Fokus Pomodoro:**
+        • \(pomodoro.completedSessionsCount) Sesi Selesai (\(pomodoro.isRunning ? "Sesi Sedang Berjalan" : "Standby"))
+
+        🏃‍♂️ **Apple Health:**
+        • 👟 \(health.steps.formatted()) Langkah | 🔥 \(Int(health.activeCalories)) kkal
+        """
+
+        messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Summary generated"))
     }
 
     /// Bersihkan riwayat percakapan chat
