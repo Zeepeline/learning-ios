@@ -138,25 +138,27 @@ struct ContentView: View {
 
     private var navigationTitleForTab: String {
         switch quickActionManager.selectedTab {
-        case 0: return "Aktivitas"
+        case 0: return "Beranda"
         case 1: return "Hari Ini"
         case 2: return "Kebiasaan"
         case 3: return "Fokus"
         case 4: return "Profil Saya"
-        default: return "Aktivitas"
+        default: return "Beranda"
         }
     }
 
     private func toggleItemCompletion(_ item: Item) {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
             item.isCompleted.toggle()
-            try? modelContext.save()
             if item.isCompleted {
+                item.completedAt = Date()
                 SoundManager.shared.playTaskCompletedSound()
                 NotificationManager.shared.cancelNotification(for: item)
             } else {
+                item.completedAt = nil
                 HapticManager.shared.impact(style: .medium)
             }
+            try? modelContext.save()
             WidgetCenter.shared.reloadAllTimelines()
         }
     }

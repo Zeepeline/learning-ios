@@ -53,6 +53,34 @@ struct ProfileView: View {
         return remainder / 200.0
     }
 
+    private var last7DaysCompletionStats: [DailyCompletionStat] {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: Date())
+        var stats: [DailyCompletionStat] = []
+
+        for offset in (0..<7).reversed() {
+            guard let date = calendar.date(byAdding: .day, value: -offset, to: today) else { continue }
+            
+            // 1. Tugas yang diselesaikan pada tanggal tersebut (berdasarkan completedAt atau fallback timestamp)
+            let taskCount = allItems.filter { item in
+                guard item.isCompleted else { return false }
+                let completionDate = item.completedAt ?? item.timestamp
+                return calendar.isDate(completionDate, inSameDayAs: date)
+            }.count
+
+            // 2. Kebiasaan yang diselesaikan pada tanggal tersebut
+            let habitCount = allHabits.filter { habit in
+                habit.isCompleted(on: date)
+            }.count
+
+            let totalCount = taskCount + habitCount
+            let dayName = CalendarDateCache.shared.formatWeekday(date)
+            let isToday = calendar.isDateInToday(date)
+            stats.append(DailyCompletionStat(dayName: dayName, completedCount: totalCount, isToday: isToday))
+        }
+        return stats
+    }
+
     dynamic var body: some View {
         ZStack {
             ScrollView(showsIndicators: false) {
@@ -73,12 +101,13 @@ struct ProfileView: View {
                         }
                     )
 
-                    // 2. Statistik Aktivitas Kartun (Grid 2 Kolom Real-Time)
+                    // 2. Statistik Aktivitas Kartun (Grid 2 Kolom Real-Time + Weekly Chart)
                     ProfileStatsView(
                         completedTasksCount: completedTasksCount,
                         allItemsCount: allItems.count,
                         importantCompletedCount: importantCompletedCount,
-                        maxHabitStreak: maxHabitStreak
+                        maxHabitStreak: maxHabitStreak,
+                        weeklyStats: last7DaysCompletionStats
                     )
 
                     // 3. Pengaturan & Preferensi

@@ -11,10 +11,10 @@ struct CustomBottomNavBar: View {
     @Binding var selectedTab: Int
 
     private let tabs: [(icon: String, title: String, color: Color)] = [
-        ("list.clipboard.fill", "Tugas", .cartoonYellow),
+        ("house.fill", "Beranda", .cartoonYellow),
         ("sun.max.fill", "Hari Ini", .cartoonPink),
         ("flame.fill", "Kebiasaan", .cartoonOrange),
-        ("hourglass.circle.fill", "Fokus", .cartoonLavender),
+        ("timer", "Fokus", .cartoonLavender),
         ("person.crop.circle.fill", "Profil", .cartoonMint)
     ]
 
@@ -68,12 +68,13 @@ struct CartoonTabButton: View {
                     Text(title)
                         .font(.system(size: 11, weight: .heavy, design: .rounded))
                         .lineLimit(1)
+                        .minimumScaleFactor(0.8)
                         .transition(.scale(scale: 0.85).combined(with: .opacity))
                 }
             }
             .foregroundColor(.cartoonTextPrimary)
-            .padding(.vertical, 8)
-            .padding(.horizontal, isSelected ? 10 : 8)
+            .padding(.vertical, 7)
+            .padding(.horizontal, isSelected ? 8 : 6)
             .frame(maxWidth: isSelected ? .infinity : nil)
             .frame(minHeight: 40)
             .background(isSelected ? activeColor : Color.clear)

@@ -16,6 +16,7 @@ struct ProfileSettingsSection: View {
     @AppStorage("isICloudSyncEnabled") private var isICloudSyncEnabled: Bool = true
     var healthManager = HealthKitManager.shared
     var soundManager = SoundManager.shared
+    var iCloudSyncManager = ICloudSyncManager.shared
 
     dynamic var body: some View {
         VStack(alignment: .leading, spacing: HIGSpacing.sm) {
@@ -28,13 +29,13 @@ struct ProfileSettingsSection: View {
                 // MARK: - GRUP 1: Keamanan & Data
                 settingsGroup(title: "KEAMANAN & DATA") {
                     VStack(spacing: HIGSpacing.xs) {
-                        // 1. ☁️ Toggle Sinkronisasi iCloud
+                        // 1. ☁️ Toggle Sinkronisasi iCloud (Bersih & Elegan tanpa duplikasi kartu)
                         CartoonToggleRow(
                             icon: "icloud.fill",
                             iconColor: .black,
                             iconBgColor: Color.cartoonBlue,
                             title: "Sinkronisasi iCloud",
-                            subtitle: "Cadangkan tugas & kebiasaan otomatis",
+                            subtitle: isICloudSyncEnabled ? "Cadangkan tugas & kebiasaan otomatis via CloudKit" : "Sinkronisasi cloud dinonaktifkan",
                             isOn: $isICloudSyncEnabled,
                             activeColor: Color.cartoonBlue
                         )
