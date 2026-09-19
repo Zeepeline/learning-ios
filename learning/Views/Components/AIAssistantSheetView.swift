@@ -59,7 +59,7 @@ struct AIAssistantSheetView: View {
                     .allowsHitTesting(false)
 
                 VStack(spacing: 0) {
-                    // MARK: - 💬 Chat Messages ScrollView
+                    // MARK: - 💬 Chat Messages ScrollView (Lebar Maksimal Bersih)
                     ScrollViewReader { proxy in
                         ScrollView(showsIndicators: false) {
                             LazyVStack(spacing: HIGSpacing.md) {
@@ -197,37 +197,29 @@ struct AIAssistantSheetView: View {
         }
     }
 
-    // MARK: - ⏳ Typing Indicator
+    // MARK: - ⏳ Typing Indicator (Tanpa Avatar, Bersih & Lebar)
     private var typingIndicatorView: some View {
-        HStack(spacing: 8) {
-            ZStack {
-                Circle()
-                    .fill(Color.cartoonYellow)
-                    .frame(width: 34, height: 34)
-                    .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
-                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-
-                Image(systemName: "sparkles")
-                    .font(.system(size: 15, weight: .black))
-                    .foregroundColor(.black)
-            }
-
+        HStack {
             HStack(spacing: 6) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 13, weight: .black))
+                    .foregroundColor(Color.black.opacity(0.8))
+
+                Text("Sedang memproses...")
+                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                    .foregroundColor(Color.black.opacity(0.7))
+
                 ForEach(0..<3) { _ in
                     Circle()
-                        .fill(Color.black.opacity(0.75))
-                        .frame(width: 6, height: 6)
+                        .fill(Color.black.opacity(0.6))
+                        .frame(width: 5, height: 5)
                 }
-                Text("Sedang berpikir...")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundColor(.secondary)
-                    .padding(.leading, 4)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .background(Color.white)
-            .cornerRadius(16)
-            .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.black, lineWidth: 1.5))
+            .cornerRadius(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.5))
             .shadow(color: .black, radius: 0, x: 2, y: 2)
 
             Spacer()
@@ -238,259 +230,182 @@ struct AIAssistantSheetView: View {
     private var quickPromptChipsSection: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
-                ForEach(quickPrompts, id: \.title) { prompt in
+                ForEach(quickPrompts, id: \.title) { item in
                     Button {
                         HapticManager.shared.impact(style: .light)
-                        inputText = prompt.title
-                        sendCurrentMessage()
+                        sendQuickPrompt(item.title)
                     } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: prompt.icon)
-                                .font(.system(size: 11, weight: .bold))
-                            Text(prompt.title)
-                                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                        HStack(spacing: 5) {
+                            Image(systemName: item.icon)
+                                .font(.system(size: 10.5, weight: .heavy))
+                            Text(item.title)
+                                .font(.system(size: 11.5, weight: .heavy, design: .rounded))
                         }
                         .foregroundColor(.black)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(prompt.color)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.black, lineWidth: 1.4)
-                        )
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(item.color.opacity(0.9))
+                        .cornerRadius(10)
+                        .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.4))
                         .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
                     }
                     .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                 }
             }
             .padding(.horizontal, HIGSpacing.md)
-            .padding(.vertical, HIGSpacing.xs)
+            .padding(.vertical, 6)
         }
-        .background(Color.white.opacity(0.7))
-        .overlay(Rectangle().frame(height: 1).foregroundColor(Color.black.opacity(0.1)), alignment: .top)
     }
 
-    // MARK: - ✍️ Bottom Input Bar (Native SwiftUI Input)
+    // MARK: - ✍️ Bottom Native Input Bar
     private var bottomInputBar: some View {
-        HStack(spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "wand.and.stars")
-                    .font(.system(size: 15, weight: .bold))
-                    .foregroundColor(.cartoonTextPrimary)
-
-                TextField("Tulis pesan atau rencanakan tugas...", text: $inputText)
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+        HStack(spacing: 8) {
+            HStack {
+                TextField("Tanya jadwal, habit, atau ketik perintah...", text: $inputText, axis: .vertical)
+                    .font(.system(size: 14, weight: .medium, design: .rounded))
+                    .lineLimit(1...4)
                     .focused($isInputFocused)
-                    .onSubmit {
-                        sendCurrentMessage()
-                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 10)
             }
-            .padding(.horizontal, 14)
-            .frame(height: 48)
             .background(Color.white)
-            .cornerRadius(CartoonMetrics.cardCornerRadius)
-            .overlay(
-                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                    .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-            )
+            .cornerRadius(14)
+            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.black, lineWidth: 1.6))
             .shadow(color: .black, radius: 0, x: 2, y: 2)
 
-            // Tombol Kirim Pesan
             Button {
-                sendCurrentMessage()
+                sendMessage()
             } label: {
-                Image(systemName: "arrow.up")
-                    .font(.system(size: 16, weight: .black))
-                    .foregroundColor(.black)
-                    .frame(width: 48, height: 48)
-                    .background(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.gray.opacity(0.3) : Color.cartoonMint)
-                    .cornerRadius(CartoonMetrics.cardCornerRadius)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                            .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-                    )
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                ZStack {
+                    Circle()
+                        .fill(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.gray.opacity(0.3) : Color.cartoonMint)
+                        .frame(width: 44, height: 44)
+                        .overlay(Circle().stroke(Color.black, lineWidth: 1.8))
+                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 16, weight: .black))
+                        .foregroundColor(.black)
+                }
             }
             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
             .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || assistantService.isProcessing)
         }
         .padding(.horizontal, HIGSpacing.md)
-        .padding(.vertical, HIGSpacing.sm)
+        .padding(.vertical, 8)
         .background(Color.cartoonBg)
     }
 
-    // MARK: - ⚙️ AI Provider & Settings Sheet
+    // MARK: - ⚙️ Modal Pengaturan AI Provider & API Keys
     private var aiSettingsSheet: some View {
         NavigationStack {
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: HIGSpacing.lg) {
+            Form {
+                Section(header: Text("PILIH SUMBER AI").font(.system(size: 11, weight: .heavy, design: .rounded))) {
+                    Picker("Provider", selection: $tempProvider) {
+                        ForEach(AIProviderType.allCases) { provider in
+                            Text(provider.shortName).tag(provider)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                    .padding(.vertical, 4)
 
-                    // Pilihan Provider
-                    VStack(alignment: .leading, spacing: HIGSpacing.xs) {
-                        Text("PILIHAN ENGINE AI")
-                            .font(.system(size: 11, weight: .heavy, design: .rounded))
-                            .foregroundColor(.secondary)
+                    Text(tempProvider.rawValue)
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(.secondary)
+                }
 
-                        VStack(spacing: 8) {
-                            ForEach(AIProviderType.allCases) { prov in
-                                Button {
-                                    HapticManager.shared.selection()
-                                    withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
-                                        tempProvider = prov
-                                    }
-                                } label: {
-                                    HStack {
-                                        Image(systemName: providerIcon(for: prov))
-                                            .font(.system(size: 14, weight: .bold))
-                                            .foregroundColor(.black)
+                if tempProvider == .gemini {
+                    Section(header: Text("GEMINI API KEY").font(.system(size: 11, weight: .heavy, design: .rounded))) {
+                        SecureField("Tempel Google AI Studio API Key", text: $tempGeminiApiKey)
+                            .font(.system(size: 13, design: .monospaced))
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
 
-                                        Text(prov.rawValue)
-                                            .font(.system(size: 13, weight: .heavy, design: .rounded))
-                                            .foregroundColor(.black)
-
-                                        Spacer()
-
-                                        if tempProvider == prov {
-                                            Image(systemName: "checkmark.circle.fill")
-                                                .font(.system(size: 16, weight: .bold))
-                                                .foregroundColor(.cartoonMint)
-                                        }
-                                    }
-                                    .padding(.horizontal, 14)
-                                    .frame(height: 48)
-                                    .background(tempProvider == prov ? Color.cartoonYellow.opacity(0.4) : Color.white)
-                                    .cornerRadius(12)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12)
-                                            .stroke(Color.black, lineWidth: tempProvider == prov ? 2.0 : 1.2)
-                                    )
-                                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-                                }
-                                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+                        Link(destination: URL(string: "https://aistudio.google.com/app/apikey")!) {
+                            HStack {
+                                Text("Dapatkan API Key Gratis di AI Studio")
+                                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                                Spacer()
+                                Image(systemName: "arrow.up.right")
+                                    .font(.system(size: 11, weight: .bold))
                             }
                         }
                     }
+                } else if tempProvider == .ninerouter {
+                    Section(header: Text("NINEROUTER CONFIG").font(.system(size: 11, weight: .heavy, design: .rounded))) {
+                        SecureField("Tempel 9Router / OpenRouter API Key", text: $tempNinerouterApiKey)
+                            .font(.system(size: 13, design: .monospaced))
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
 
-                    // Form Spesifik Provider
-                    if tempProvider == .gemini {
-                        VStack(alignment: .leading, spacing: HIGSpacing.xs) {
-                            Text("DEVELOPER API KEY")
-                                .font(.system(size: 11, weight: .heavy, design: .rounded))
-                                .foregroundColor(.secondary)
+                        TextField("Base URL (e.g. https://api.ninerouter.com/v1)", text: $tempNinerouterBaseUrl)
+                            .font(.system(size: 13, design: .monospaced))
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
 
-                            CartoonInputField(
-                                placeholder: "API Key (AIzaSy...)",
-                                text: $tempGeminiApiKey,
-                                icon: "key.fill"
-                            )
-                        }
-                    } else if tempProvider == .ninerouter {
-                        VStack(alignment: .leading, spacing: HIGSpacing.xs) {
-                            Text("PENGATURAN MULTI-LLM GATEWAY")
-                                .font(.system(size: 11, weight: .heavy, design: .rounded))
-                                .foregroundColor(.secondary)
-
-                            CartoonInputField(
-                                placeholder: "API Key (nr-xxxx / sk-xxxx)",
-                                text: $tempNinerouterApiKey,
-                                icon: "key.fill"
-                            )
-
-                            CartoonInputField(
-                                placeholder: "Model (cth: deepseek/deepseek-chat)",
-                                text: $tempNinerouterModel,
-                                icon: "cpu"
-                            )
-
-                            CartoonInputField(
-                                placeholder: "Base URL (https://api.ninerouter.com/v1)",
-                                text: $tempNinerouterBaseUrl,
-                                icon: "link"
-                            )
-                        }
-                    } else {
+                        TextField("Model (e.g. deepseek/deepseek-chat)", text: $tempNinerouterModel)
+                            .font(.system(size: 13, design: .monospaced))
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                    }
+                } else {
+                    Section(header: Text("AKUN GOOGLE").font(.system(size: 11, weight: .heavy, design: .rounded))) {
                         VStack(alignment: .leading, spacing: 6) {
-                            Text("⚡ AI Smart Assistant Engine")
-                                .font(.system(size: 12, weight: .heavy, design: .rounded))
-                                .foregroundColor(.black)
-                            Text("Menyusun rencana, memecah tugas menjadi subtasks rapi, dan mengeksekusi aksi to-do list serta pomodoro secara terstruktur.")
+                            Text("Mode Headless Otomatis Aktif")
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                            Text("Aplikasi otomatis menghubungkan sesi Google tanpa perlu menyalin API Key secara manual.")
                                 .font(.system(size: 12, weight: .medium, design: .rounded))
                                 .foregroundColor(.secondary)
                         }
-                        .padding(12)
-                        .background(Color.white)
-                        .cornerRadius(12)
-                        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.2))
+                        .padding(.vertical, 4)
                     }
-
-                    // Tombol Simpan
-                    Button {
-                        selectedProviderRaw = tempProvider.rawValue
-                        geminiApiKey = tempGeminiApiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-                        ninerouterApiKey = tempNinerouterApiKey.trimmingCharacters(in: .whitespacesAndNewlines)
-                        ninerouterBaseUrl = tempNinerouterBaseUrl.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "https://api.ninerouter.com/v1" : tempNinerouterBaseUrl
-                        ninerouterModel = tempNinerouterModel.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "deepseek/deepseek-chat" : tempNinerouterModel
-
-                        HapticManager.shared.success()
-                        isShowingSettings = false
-                    } label: {
-                        Text("Simpan Konfigurasi")
-                            .font(.system(size: 14, weight: .heavy, design: .rounded))
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 48)
-                            .background(Color.cartoonMint)
-                            .cornerRadius(CartoonMetrics.cardCornerRadius)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                                    .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-                            )
-                            .shadow(color: .black, radius: 0, x: 2, y: 2)
-                    }
-                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                 }
-                .padding(HIGSpacing.lg)
             }
-            .background(Color.cartoonBg)
-            .navigationTitle("Pengaturan Engine AI")
+            .navigationTitle("Pengaturan AI")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Tutup") {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Batal") {
                         isShowingSettings = false
                     }
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundColor(.black)
+                }
+
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Simpan") {
+                        selectedProviderRaw = tempProvider.rawValue
+                        geminiApiKey = tempGeminiApiKey
+                        ninerouterApiKey = tempNinerouterApiKey
+                        ninerouterBaseUrl = tempNinerouterBaseUrl.isEmpty ? "https://api.ninerouter.com/v1" : tempNinerouterBaseUrl
+                        ninerouterModel = tempNinerouterModel.isEmpty ? "deepseek/deepseek-chat" : tempNinerouterModel
+                        isShowingSettings = false
+                        HapticManager.shared.success()
+                    }
+                    .font(.system(.body, design: .rounded).weight(.bold))
                 }
             }
         }
+        .presentationDetents([.medium, .large])
     }
 
-    private func providerIcon(for prov: AIProviderType) -> String {
-        switch prov {
-        case .local: return "bolt.shield.fill"
-        case .googleAccount: return "sparkles"
-        case .gemini: return "key.fill"
-        case .ninerouter: return "network"
+    // MARK: - 🚀 Actions
+    private func sendMessage() {
+        let text = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+
+        HapticManager.shared.impact(style: .light)
+        inputText = ""
+
+        Task {
+            await assistantService.sendMessage(text, modelContext: modelContext)
         }
     }
 
-    // MARK: - 📤 Action Kirim Pesan Native
-    private func sendCurrentMessage() {
-        let text = inputText
-        inputText = ""
-        isInputFocused = false
+    private func sendQuickPrompt(_ prompt: String) {
+        let cleanPrompt = prompt.replacingOccurrences(of: "^[^a-zA-Z0-9]+", with: "", options: .regularExpression).trimmingCharacters(in: .whitespaces)
+        HapticManager.shared.impact(style: .light)
 
         Task {
-            await assistantService.sendMessage(
-                text,
-                modelContext: modelContext,
-                provider: currentProvider,
-                apiKey: currentProvider == .gemini ? geminiApiKey : (currentProvider == .ninerouter ? ninerouterApiKey : ""),
-                ninerouterBaseUrl: ninerouterBaseUrl,
-                ninerouterModel: ninerouterModel
-            )
+            await assistantService.sendMessage(cleanPrompt, modelContext: modelContext)
         }
     }
 }

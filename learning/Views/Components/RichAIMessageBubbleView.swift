@@ -27,91 +27,68 @@ enum AIContentBlock: Identifiable {
     }
 }
 
-// MARK: - 🎨 Rich AI Message Bubble with List Formatting & MCP Badge
+// MARK: - 🎨 Rich AI Message Bubble (Lebar Penuh, Bersih Tanpa Avatar)
 struct RichAIMessageBubbleView: View {
     let message: MCPAIChatMessage
     @Environment(\.modelContext) private var modelContext
     @ObservedObject private var assistantService = MCPAIAssistantService.shared
 
     var body: some View {
-        HStack(alignment: .top, spacing: 10) {
-            if message.role == .assistant {
-                // AI Avatar Icon
-                ZStack {
-                    Circle()
-                        .fill(Color.cartoonMint)
-                        .frame(width: 34, height: 34)
-                        .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
-                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+        Group {
+            if message.role == .user {
+                // MARK: - Bubble Pengguna (Kanan, Lebar Proporsional, Tanpa Avatar)
+                HStack {
+                    Spacer(minLength: 28)
 
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.black)
-                }
-            } else {
-                Spacer(minLength: 40)
-            }
-
-            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 8) {
-                // 1. Tool Call Badge (Jika AI Mengeksekusi Alat MCP)
-                if let tool = message.toolCall {
-                    HStack(spacing: 6) {
-                        Image(systemName: tool.icon)
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.black)
-
-                        Text("MCP Tool:")
-                            .font(.system(size: 10, weight: .black, design: .monospaced))
-                            .foregroundColor(.secondary)
-
-                        Text(tool.name)
-                            .font(.system(size: 11, weight: .heavy, design: .monospaced))
-                            .foregroundColor(.black)
-
-                        Spacer()
-
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.cartoonMint)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color(hex: tool.badgeColorHex).opacity(0.35))
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-                }
-
-                // 2. Body Konten (User Bubble / Assistant Rich Blocks)
-                if message.role == .user {
                     Text(message.content)
-                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .font(.system(size: 14.5, weight: .bold, design: .rounded))
                         .foregroundColor(.black)
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 10)
+                        .lineSpacing(3)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 12)
                         .background(Color.cartoonBlue)
                         .cornerRadius(CartoonMetrics.cardCornerRadius)
-                        .overlay(RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius).stroke(Color.black, lineWidth: CartoonMetrics.borderWidth))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+                        )
                         .shadow(color: .black, radius: 0, x: 2, y: 2)
-                } else {
-                    renderAssistantRichBlocks()
-                }
-            }
-
-            if message.role == .user {
-                // User Avatar Icon
-                ZStack {
-                    Circle()
-                        .fill(Color.cartoonCoral)
-                        .frame(width: 34, height: 34)
-                        .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
-                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-
-                    Image(systemName: "person.fill")
-                        .font(.system(size: 14, weight: .bold))
-                        .foregroundColor(.white)
                 }
             } else {
-                Spacer(minLength: 40)
+                // MARK: - Bubble AI Asisten (Lebar Penuh Maksimal, Tanpa Avatar)
+                VStack(alignment: .leading, spacing: 8) {
+                    // 1. Tool Call Badge (Jika AI Mengeksekusi Alat MCP)
+                    if let tool = message.toolCall {
+                        HStack(spacing: 6) {
+                            Image(systemName: tool.icon)
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.black)
+
+                            Text("MCP Tool:")
+                                .font(.system(size: 10, weight: .black, design: .monospaced))
+                                .foregroundColor(.secondary)
+
+                            Text(tool.name)
+                                .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                                .foregroundColor(.black)
+
+                            Spacer()
+
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.cartoonMint)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color(hex: tool.badgeColorHex).opacity(0.35))
+                        .cornerRadius(8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
+                    }
+
+                    // 2. Body Konten Assistant (Lebar Penuh)
+                    renderAssistantRichBlocks()
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -126,7 +103,7 @@ struct RichAIMessageBubbleView: View {
                 switch block {
                 case .header(let text):
                     Text(.init(text))
-                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                        .font(.system(size: 14.5, weight: .heavy, design: .rounded))
                         .foregroundColor(.black)
                         .padding(.top, 2)
 
@@ -147,7 +124,7 @@ struct RichAIMessageBubbleView: View {
                             .lineSpacing(3)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Spacer()
+                        Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
@@ -169,7 +146,7 @@ struct RichAIMessageBubbleView: View {
                             .lineSpacing(3)
                             .fixedSize(horizontal: false, vertical: true)
 
-                        Spacer()
+                        Spacer(minLength: 0)
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
@@ -179,7 +156,7 @@ struct RichAIMessageBubbleView: View {
 
                 case .paragraph(let text):
                     Text(.init(text))
-                        .font(.system(size: 13.5, weight: .medium, design: .rounded))
+                        .font(.system(size: 14, weight: .medium, design: .rounded))
                         .foregroundColor(.black)
                         .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
@@ -187,7 +164,7 @@ struct RichAIMessageBubbleView: View {
                 case .infoBox(let title, let details):
                     VStack(alignment: .leading, spacing: 6) {
                         Text(title)
-                            .font(.system(size: 12, weight: .heavy, design: .rounded))
+                            .font(.system(size: 12.5, weight: .heavy, design: .rounded))
                             .foregroundColor(.black)
                         ForEach(details, id: \.self) { d in
                             Text("• \(d)")
@@ -195,17 +172,22 @@ struct RichAIMessageBubbleView: View {
                                 .foregroundColor(.secondary)
                         }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(10)
                     .background(Color.cartoonBg)
                     .cornerRadius(8)
                 }
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.white)
         .cornerRadius(CartoonMetrics.cardCornerRadius)
-        .overlay(RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius).stroke(Color.black, lineWidth: CartoonMetrics.borderWidth))
+        .overlay(
+            RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+        )
         .shadow(color: .black, radius: 0, x: 2, y: 2)
     }
 
@@ -222,33 +204,26 @@ struct RichAIMessageBubbleView: View {
         var blocks: [AIContentBlock] = []
 
         for line in rawLines {
-            // Check Header
-            if line.hasPrefix("#") || (line.hasPrefix("**") && line.hasSuffix("**") && line.count < 60) {
-                let cleanHeader = line.replacingOccurrences(of: "^#+\\s*", with: "", options: .regularExpression)
+            if let match = line.range(of: #"^\d+[\.\)]\s*"#, options: .regularExpression) {
+                let numPrefix = line[match]
+                let numStr = numPrefix.filter { $0.isNumber }
+                let itemNum = Int(numStr) ?? (blocks.count + 1)
+                let itemBody = String(line[match.upperBound...]).trimmingCharacters(in: .whitespaces)
+                blocks.append(.numberedItem(number: itemNum, text: itemBody))
+            } else if line.hasPrefix("• ") || line.hasPrefix("- ") || line.hasPrefix("* ") {
+                let body = String(line.dropFirst(2)).trimmingCharacters(in: .whitespaces)
+                blocks.append(.bulletItem(text: body))
+            } else if line.hasPrefix("### ") || line.hasPrefix("## ") || line.hasPrefix("# ") {
+                let heading = line.replacingOccurrences(of: "^#+\\s*", with: "", options: .regularExpression)
+                blocks.append(.header(heading))
+            } else if line.hasPrefix("**") && line.hasSuffix("**") && line.count < 60 {
+                let cleanHeader = line.replacingOccurrences(of: "**", with: "")
                 blocks.append(.header(cleanHeader))
-                continue
+            } else {
+                blocks.append(.paragraph(line))
             }
-
-            // Check Numbered List (1. , 2. , 3. ...)
-            if let numMatch = line.range(of: "^[0-9]+[.)]\\s*", options: .regularExpression) {
-                let numStr = String(line[numMatch]).filter { $0.isNumber }
-                let num = Int(numStr) ?? (blocks.count + 1)
-                let text = String(line[numMatch.upperBound...]).trimmingCharacters(in: .whitespaces)
-                blocks.append(.numberedItem(number: num, text: text))
-                continue
-            }
-
-            // Check Bullet List (•, -, *, 🔹, 📌, 🎯, 👟, 🔥, 😴)
-            if let bulletMatch = line.range(of: "^([•*\\-🔹📌🎯👟🔥😴]|\\*\\s+)\\s*", options: .regularExpression) {
-                let text = String(line[bulletMatch.upperBound...]).trimmingCharacters(in: .whitespaces)
-                blocks.append(.bulletItem(text: text))
-                continue
-            }
-
-            // Fallback: Paragraph
-            blocks.append(.paragraph(line))
         }
 
-        return blocks
+        return blocks.isEmpty ? [.paragraph(rawContent)] : blocks
     }
 }
