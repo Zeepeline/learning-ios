@@ -195,8 +195,7 @@ struct AIAssistantSheetView: View {
                 aiSettingsSheet
             }
             .sheet(isPresented: $isShowingGeminiWeb) {
-                SafariView(url: URL(string: "https://gemini.google.com")!)
-                    .ignoresSafeArea()
+                GeminiWebMCPView()
             }
         }
     }
@@ -470,7 +469,7 @@ struct AIAssistantSheetView: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: HIGSpacing.lg) {
-                    
+
                     // Banner Buka Gemini.com
                     Button {
                         isShowingSettings = false
