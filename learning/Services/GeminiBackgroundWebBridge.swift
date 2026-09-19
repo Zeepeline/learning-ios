@@ -5,33 +5,33 @@
 //  Created by macbook on 9/19/26.
 //
 
-import SwiftUI
+import Foundation
 import WebKit
+import SwiftUI
 import Combine
 
-// MARK: - 🧠 Background Gemini.com Engine Bridge
+// MARK: - 🌐 Gemini Background Bridge Manager (Headless WebKit Engine)
 @MainActor
-final class GeminiBackgroundBridgeManager: NSObject, ObservableObject {
+final class GeminiBackgroundBridgeManager: ObservableObject {
     static let shared = GeminiBackgroundBridgeManager()
 
-    @Published var isWebReady: Bool = false
+    @Published var isBridgeReady: Bool = false
     @Published var isBusy: Bool = false
-    @Published var statusText: String = "Standby"
+    @Published var statusText: String = "Engine Siap"
+    @Published var lastExtractedText: String = ""
 
-    var webView: WKWebView?
+    weak var webView: WKWebView? = nil
 
-    override init() {
-        super.init()
-    }
+    private init() {}
 
-    /// Mengirim prompt langsung ke mesin gemini.google.com di latar belakang dan mengembalikan teks jawabannya
+    /// Injeksi prompt ke chat box gemini.google.com dan ekstrak responsenya secara headless
     func sendPromptToGeminiWeb(_ prompt: String) async throws -> String {
         guard let wv = webView else {
-            throw NSError(domain: "GeminiBridge", code: -1, userInfo: [NSLocalizedDescriptionKey: "Engine Gemini Web belum siap"])
+            throw NSError(domain: "GeminiBridge", code: 404, userInfo: [NSLocalizedDescriptionKey: "WebView engine belum siap"])
         }
 
         self.isBusy = true
-        self.statusText = "Mengirim pesan ke Gemini..."
+        self.statusText = "Mengirim prompt..."
 
         let escaped = prompt
             .replacingOccurrences(of: "\\", with: "\\\\")
@@ -39,13 +39,14 @@ final class GeminiBackgroundBridgeManager: NSObject, ObservableObject {
             .replacingOccurrences(of: "\n", with: "\\n")
             .replacingOccurrences(of: "\r", with: "")
 
-        // 1. Injeksi teks ke textarea/rich-textarea gemini.google.com dan trigger submit
+        // 1. Injeksi prompt teks ke editor gemini.google.com
         let injectJS = """
         (function() {
             var target = document.querySelector('rich-textarea div[contenteditable="true"]') ||
-                         document.querySelector('textarea.textarea') ||
                          document.querySelector('textarea') ||
-                         document.querySelector('div[contenteditable="true"]');
+                         document.querySelector('input[type="text"]') ||
+                         document.querySelector('.ql-editor');
+
             if (!target) return "NO_INPUT";
 
             target.focus();
@@ -87,20 +88,39 @@ final class GeminiBackgroundBridgeManager: NSObject, ObservableObject {
             throw NSError(domain: "GeminiBridge", code: 401, userInfo: [NSLocalizedDescriptionKey: "Input chat gemini.google.com tidak ditemukan"])
         }
 
-        // 2. Tunggu dan ekstrak teks balasan dari Gemini
+        // 2. Tunggu dan ekstrak teks balasan dari Gemini dengan mempertahankan struktur list & spasi
         return try await pollGeminiResponse(wv: wv)
     }
 
     private func pollGeminiResponse(wv: WKWebView) async throws -> String {
-        self.statusText = "Menunggu balasan Gemini..."
+        self.statusText = "Menunggu balasan AI..."
         try? await Task.sleep(nanoseconds: 2_500_000_000)
 
+        // JavaScript ekstraktor cerdas yang mempertahankan paragraf, enter, dan format list <li> / <br>
         let extractJS = """
         (function() {
             var bubbles = document.querySelectorAll('message-content, .model-response-text, [data-test-id="model-response"], .response-container-content, div.markdown');
             if (bubbles.length > 0) {
                 var last = bubbles[bubbles.length - 1];
-                return last.innerText || last.textContent;
+                var clone = last.cloneNode(true);
+
+                // Format <br> jadi enter baru
+                clone.querySelectorAll('br').forEach(function(el) {
+                    var textNode = document.createTextNode('\\n');
+                    el.parentNode.replaceChild(textNode, el);
+                });
+
+                // Format <li> jadi poin list
+                clone.querySelectorAll('li').forEach(function(el) {
+                    el.prepend(document.createTextNode('\\n• '));
+                });
+
+                // Format heading & paragraf dengan jarak spasi
+                clone.querySelectorAll('p, h1, h2, h3, h4, h5, h6').forEach(function(el) {
+                    el.append(document.createTextNode('\\n\\n'));
+                });
+
+                return clone.innerText || clone.textContent || "";
             }
             return "";
         })();
@@ -134,7 +154,7 @@ final class GeminiBackgroundBridgeManager: NSObject, ObservableObject {
             return previousText
         }
 
-        throw NSError(domain: "GeminiBridge", code: 408, userInfo: [NSLocalizedDescriptionKey: "Timeout menunggu respons dari Gemini.com"])
+        throw NSError(domain: "GeminiBridge", code: 408, userInfo: [NSLocalizedDescriptionKey: "Timeout menunggu respons dari engine AI"])
     }
 }
 
@@ -142,20 +162,20 @@ final class GeminiBackgroundBridgeManager: NSObject, ObservableObject {
 struct InvisibleGeminiWebEngineView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
-        config.websiteDataStore = WKWebsiteDataStore.default() // Share cookies / Google sessions
+        config.websiteDataStore = WKWebsiteDataStore.default()
         config.allowsInlineMediaPlayback = true
 
         let wv = WKWebView(frame: CGRect(x: 0, y: 0, width: 375, height: 667), configuration: config)
         wv.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
         wv.navigationDelegate = context.coordinator
 
+        GeminiBackgroundBridgeManager.shared.webView = wv
+
         if let url = URL(string: "https://gemini.google.com/app") {
-            wv.load(URLRequest(url: url))
+            let req = URLRequest(url: url)
+            wv.load(req)
         }
 
-        DispatchQueue.main.async {
-            GeminiBackgroundBridgeManager.shared.webView = wv
-        }
         return wv
     }
 
@@ -167,9 +187,15 @@ struct InvisibleGeminiWebEngineView: UIViewRepresentable {
 
     class Coordinator: NSObject, WKNavigationDelegate {
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            DispatchQueue.main.async {
-                GeminiBackgroundBridgeManager.shared.isWebReady = true
-                GeminiBackgroundBridgeManager.shared.statusText = "Gemini AI Siap"
+            Task { @MainActor in
+                GeminiBackgroundBridgeManager.shared.isBridgeReady = true
+                GeminiBackgroundBridgeManager.shared.statusText = "Engine Siap"
+            }
+        }
+
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+            Task { @MainActor in
+                GeminiBackgroundBridgeManager.shared.statusText = "Gagal memuat engine"
             }
         }
     }
