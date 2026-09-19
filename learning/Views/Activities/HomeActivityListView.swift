@@ -84,15 +84,15 @@ struct HomeActivityListView: View {
             let matchesFilter: Bool
             switch selectedStatusFilter {
             case "recurring":
-                matchesFilter = item.isRecurring
+                matchesFilter = item.isRecurring && !item.isCompleted
             case "pending":
                 matchesFilter = !item.isCompleted
             case "completed":
                 matchesFilter = item.isCompleted
             case "high":
-                matchesFilter = item.priority == "Tinggi"
-            default:
-                matchesFilter = true
+                matchesFilter = item.priority == "Tinggi" && !item.isCompleted
+            default: // "all" -> Hanya menampilkan tugas yang belum selesai di Home
+                matchesFilter = !item.isCompleted
             }
 
             let matchesCategory: Bool = (selectedCategoryFilter == "all") || (item.category.lowercased() == selectedCategoryFilter.lowercased())
@@ -375,7 +375,7 @@ struct HomeActivityListView: View {
 
                 Spacer()
 
-                if todayCompletedCount > 0 && selectedStatusFilter != "pending" && selectedStatusFilter != "high" {
+                if todayCompletedCount > 0 && selectedStatusFilter == "completed" {
                     Button {
                         HapticManager.shared.impact(style: .light)
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {

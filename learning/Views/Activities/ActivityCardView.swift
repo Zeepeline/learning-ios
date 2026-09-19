@@ -11,7 +11,7 @@ import SwiftData
 struct ActivityCardView: View {
     @Environment(\.modelContext) private var modelContext
     let item: Item
-    var onToggle: () -> Void
+    var onToggle: (() -> Void)? = nil
     var onDelete: () -> Void
     var onTap: (() -> Void)?
 
@@ -20,17 +20,13 @@ struct ActivityCardView: View {
 
     dynamic var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // MARK: - Baris Utama: Checkbox + Ikon Kategori Bulat + Judul Multiline + Aksi
-            HStack(alignment: .top, spacing: 10) {
-                // 1. 🔘 Checkbox Kartun
-                checkboxButton
-                    .padding(.top, 2)
-
-                // 2. 🏷️ Ikon Kategori dalam Lingkaran di Samping Kiri Judul
+            // MARK: - Baris Utama: Ikon Kategori Bulat + Judul Multiline + Aksi
+            HStack(alignment: .top, spacing: 12) {
+                // 1. 🏷️ Ikon Kategori dalam Lingkaran di Samping Kiri Judul
                 categoryIconCircle
                     .padding(.top, 2)
 
-                // 3. 📝 Judul Tugas & Metadata Bawah (Multiline Rapi)
+                // 2. 📝 Judul Tugas & Metadata Bawah (Multiline Rapi)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(item.title)
                         .font(.system(size: 15, weight: .heavy, design: .rounded))
@@ -58,7 +54,7 @@ struct ActivityCardView: View {
                     onTap?()
                 }
 
-                // 4. 🛠️ Tombol Aksi (Expand & Delete)
+                // 3. 🛠️ Tombol Aksi (Expand & Delete)
                 HStack(spacing: 6) {
                     if !item.subtasks.isEmpty || item.imageAttachmentData != nil {
                         expandButton
@@ -89,45 +85,18 @@ struct ActivityCardView: View {
         }
     }
 
-    // MARK: - 🔘 Checkbox Button
-    private var checkboxButton: some View {
-        Button {
-            withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
-                SoundManager.shared.playPop()
-                onToggle()
-            }
-        } label: {
-            ZStack {
-                Circle()
-                    .fill(item.isCompleted ? Color.cartoonMint : Color.white)
-                    .frame(width: 28, height: 28)
-                    .overlay(Circle().stroke(Color.black, lineWidth: 2.0))
-                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-
-                if item.isCompleted {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 13, weight: .black))
-                        .foregroundColor(.black)
-                }
-            }
-            .frame(width: 30, height: 30)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-    }
-
     // MARK: - 🏷️ Lingkaran Ikon Kategori (Samping Kiri Judul)
     private var categoryIconCircle: some View {
         let (icon, color) = categoryIconAndColor(for: item.category)
         return ZStack {
             Circle()
                 .fill(color)
-                .frame(width: 28, height: 28)
-                .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
-                .shadow(color: .black, radius: 0, x: 1.2, y: 1.2)
+                .frame(width: 30, height: 30)
+                .overlay(Circle().stroke(Color.black, lineWidth: 1.6))
+                .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
 
             Image(systemName: icon)
-                .font(.system(size: 12, weight: .heavy))
+                .font(.system(size: 13, weight: .heavy))
                 .foregroundColor(.black)
         }
     }
