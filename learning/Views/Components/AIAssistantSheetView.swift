@@ -34,13 +34,17 @@ struct AIAssistantSheetView: View {
         AIProviderType(rawValue: selectedProviderRaw) ?? .local
     }
 
-    // Saran Prompt Cepat
+    // Saran Prompt Cepat MCP Multi-Feature
     private let quickPrompts: [(title: String, icon: String, color: Color)] = [
-        ("⚡ Buat tugas Swift prioritas tinggi", "bolt.fill", Color.cartoonYellow),
-        ("📊 Rangkum jadwal hari ini", "chart.bar.fill", Color.cartoonMint),
-        ("🧩 Pecah tugas besar jadi subtasks", "square.split.2x2.fill", Color.cartoonPink),
-        ("🌱 Buat kebiasaan baca buku", "repeat.circle.fill", Color.cartoonBlue),
-        ("💡 Berikan tips fokus Pomodoro", "lightbulb.fill", Color.cartoonOrange)
+        ("⚡ Buat tugas Coding prioritas tinggi", "bolt.fill", Color.cartoonYellow),
+        ("⏱️ Mulai fokus 25 menit", "timer", Color.cartoonCoral),
+        ("🏃‍♂️ Cek data kesehatan & langkah", "heart.fill", Color.cartoonPink),
+        ("📊 Rangkum aktivitas hari ini", "chart.bar.fill", Color.cartoonMint),
+        ("🔥 Ceklis habit hari ini", "flame.fill", Color.cartoonOrange),
+        ("🚀 Buat rencana proyek Website", "folder.badge.plus", Color.cartoonBlue),
+        ("🛡️ Kunci aplikasi pengganggu", "shield.lefthalf.filled", Color.cartoonLavender),
+        ("📋 Lihat daftar tugas penting", "list.bullet.rectangle.portrait", Color.cartoonMint),
+        ("🧹 Bersihkan tugas selesai", "trash.slash.fill", Color.cartoonYellow)
     ]
 
     dynamic var body: some View {
