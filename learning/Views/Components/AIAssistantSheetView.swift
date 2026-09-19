@@ -22,13 +22,12 @@ struct AIAssistantSheetView: View {
 
     @State private var inputText: String = ""
     @State private var isShowingSettings: Bool = false
-    @State private var isShowingGeminiWeb: Bool = false
+    @State private var isShowingGeminiCustomTab: Bool = false
     @State private var tempProvider: AIProviderType = .local
     @State private var tempGeminiApiKey: String = ""
     @State private var tempNinerouterApiKey: String = ""
     @State private var tempNinerouterBaseUrl: String = ""
     @State private var tempNinerouterModel: String = ""
-    @State private var isGoogleSigningIn: Bool = false
     @FocusState private var isInputFocused: Bool
 
     private var currentProvider: AIProviderType {
@@ -55,8 +54,8 @@ struct AIAssistantSheetView: View {
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // MARK: - 🌐 Banner Akses Cepat Gemini.com
-                    geminiWebQuickBanner
+                    // MARK: - 🌐 Banner Akses Cepat Gemini Safari Custom Tab
+                    geminiCustomTabQuickBanner
 
                     // MARK: - 💬 Chat Messages ScrollView
                     ScrollViewReader { proxy in
@@ -131,10 +130,10 @@ struct AIAssistantSheetView: View {
 
                 ToolbarItem(placement: .topBarTrailing) {
                     HStack(spacing: 8) {
-                        // Tombol Buka Gemini.com Web Resmi
+                        // Tombol Buka Gemini Safari Custom Tab (Otomatis Sync Sesi Akun Google)
                         Button {
                             HapticManager.shared.impact(style: .medium)
-                            isShowingGeminiWeb = true
+                            isShowingGeminiCustomTab = true
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "sparkles")
@@ -194,20 +193,22 @@ struct AIAssistantSheetView: View {
             .sheet(isPresented: $isShowingSettings) {
                 aiSettingsSheet
             }
-            .sheet(isPresented: $isShowingGeminiWeb) {
-                GeminiWebMCPView()
+            .sheet(isPresented: $isShowingGeminiCustomTab) {
+                // Safari Custom Tab: Berbagi cookies & sesi Google otomatis dari Safari iOS
+                SafariView(url: URL(string: "https://gemini.google.com")!)
+                    .ignoresSafeArea()
             }
         }
     }
 
-    // MARK: - 🌐 Banner Akses Cepat Gemini.com
-    private var geminiWebQuickBanner: some View {
+    // MARK: - 🌐 Banner Akses Cepat Gemini Safari Custom Tab
+    private var geminiCustomTabQuickBanner: some View {
         HStack(spacing: 8) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundColor(.black)
+            Image(systemName: "safari.fill")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundColor(.cartoonBlue)
 
-            Text("Mau ngobrol langsung di akun Gemini biasa?")
+            Text("Akun Google Otomatis Tersinkron (Safari Tab)")
                 .font(.system(size: 11.5, weight: .bold, design: .rounded))
                 .foregroundColor(.black)
 
@@ -215,9 +216,9 @@ struct AIAssistantSheetView: View {
 
             Button {
                 HapticManager.shared.impact(style: .light)
-                isShowingGeminiWeb = true
+                isShowingGeminiCustomTab = true
             } label: {
-                Text("Buka Gemini.com ↗")
+                Text("Buka Gemini ↗")
                     .font(.system(size: 11, weight: .heavy, design: .rounded))
                     .foregroundColor(.black)
                     .padding(.horizontal, 8)
@@ -470,23 +471,23 @@ struct AIAssistantSheetView: View {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: HIGSpacing.lg) {
 
-                    // Banner Buka Gemini.com
+                    // Banner Buka Gemini Custom Tab
                     Button {
                         isShowingSettings = false
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            isShowingGeminiWeb = true
+                            isShowingGeminiCustomTab = true
                         }
                     } label: {
                         HStack {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.black)
+                            Image(systemName: "safari.fill")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.cartoonBlue)
 
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Buka Gemini Web Resmi (gemini.google.com)")
+                                Text("Buka Gemini di Safari Custom Tab")
                                     .font(.system(size: 13, weight: .heavy, design: .rounded))
                                     .foregroundColor(.black)
-                                Text("Gunakan langsung akun Google konsumen tanpa API Key")
+                                Text("Otomatis sinkron dengan akun Google yang aktif di perangkat")
                                     .font(.system(size: 11, weight: .medium, design: .rounded))
                                     .foregroundColor(.secondary)
                             }
@@ -646,7 +647,7 @@ struct AIAssistantSheetView: View {
     private func providerIcon(for prov: AIProviderType) -> String {
         switch prov {
         case .local: return "bolt.shield.fill"
-        case .googleAccount: return "person.crop.circle.fill.badge.checkmark"
+        case .googleAccount: return "safari.fill"
         case .gemini: return "sparkles"
         case .ninerouter: return "network"
         }
