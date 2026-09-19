@@ -12,19 +12,19 @@ import Combine
 
 // MARK: - 🌐 AI Provider Selection
 enum AIProviderType: String, CaseIterable, Identifiable {
-    case local = "Smart Local (Gratis & Offline)"
-    case googleAccount = "Akun Google Login (Gemini AI)"
-    case gemini = "Google AI Studio (API Key)"
-    case ninerouter = "Ninerouter (Multi-LLM)"
+    case gemini = "Google AI Studio (Gemini 1.5 Flash)"
+    case ninerouter = "Ninerouter / DeepSeek (Multi-LLM)"
+    case local = "Smart Local Engine (Gratis & Offline)"
+    case googleAccount = "Akun Google Login (Gemini OAuth)"
 
     var id: String { rawValue }
 
     var shortName: String {
         switch self {
-        case .local: return "Local MCP"
-        case .googleAccount: return "Gemini (Google)"
-        case .gemini: return "Gemini (Key)"
-        case .ninerouter: return "Ninerouter"
+        case .gemini: return "Gemini 1.5"
+        case .ninerouter: return "DeepSeek / LLM"
+        case .local: return "Local Engine"
+        case .googleAccount: return "Gemini (OAuth)"
         }
     }
 }
@@ -72,6 +72,15 @@ struct MCPToolInvocation: Equatable {
     let badgeColorHex: String
 }
 
+// MARK: - 📋 Pending Task Proposal (Interactive Discussion State)
+struct TaskProposal {
+    let title: String
+    let category: String
+    let priority: String
+    let subtasks: [String]
+    let estimatedMinutes: Int
+}
+
 // MARK: - 🧠 MCP AI Assistant Service (Model Context Protocol Engine)
 @MainActor
 final class MCPAIAssistantService: ObservableObject {
@@ -81,23 +90,22 @@ final class MCPAIAssistantService: ObservableObject {
     @Published var isProcessing: Bool = false
     @Published var lastCreatedItem: Item? = nil
     @Published var lastCreatedHabit: Habit? = nil
+    @Published var pendingProposal: TaskProposal? = nil
 
     private init() {
         messages.append(
             MCPAIChatMessage(
                 role: .assistant,
                 content: """
-                Hai! Aku **AI Productivity Buddy (MCP Universal)** ⚡
+                Hai! Aku **AI Productivity Buddy (Co-Planner & MCP Engine)** 🤖✨
 
-                Aku bisa mengontrol & mengakses **seluruh fitur aplikasi ini** lewat protokol MCP:
-                • 📝 **Tugas**: Tambah, selesaikan, hapus, daftar tugas & bersihkan riwayat.
-                • 🔄 **Habit Tracker**: Buat target kebiasaan baru, ceklis harian, & lihat streak.
-                • ⏱️ **Fokus & Pomodoro**: Mulai/hentikan timer fokus (25m/50m) & Live Activity.
-                • 🏃‍♂️ **Apple Health**: Cek langkah kaki, kalori, & durasi tidur hari ini.
-                • 🛡️ **Screen Time**: Kunci aplikasi pengganggu (*App Shield*) saat mode fokus.
-                • 🧩 **AI Planning**: Pecah ide besar jadi subtasks atau buat rencana proyek utuh!
+                Kita bisa **berdiskusi layaknya asisten pribadi**:
+                • 💬 Ceritakan rencana/tujuanmu, aku akan bantu analisis & rekomendasikan subtasks sebelum dibuat.
+                • 📝 Eksekusi tugas to-do list, habit tracker, dan rencana proyek multi-fase.
+                • ⏱️ Jalankan sesi Pomodoro (25m/50m) & Live Activity.
+                • 🏃‍♂️ Cek data kesehatan Apple Health & kontrol Screen Time App Shield.
 
-                Mau kita atur atau kerjakan apa sekarang?
+                Apa rencana atau tugas yang ingin kita diskusikan hari ini?
                 """
             )
         )
@@ -123,14 +131,11 @@ final class MCPAIAssistantService: ObservableObject {
         let cleanApiKey = apiKey.trimmingCharacters(in: .whitespacesAndNewlines)
 
         switch provider {
-        case .googleAccount:
-            await processWithGoogleUserAccount(prompt: trimmed, modelContext: modelContext)
-
         case .gemini:
             if !cleanApiKey.isEmpty {
                 await processWithGeminiLLM(prompt: trimmed, apiKey: cleanApiKey, modelContext: modelContext)
             } else {
-                await processWithLocalMCP(prompt: trimmed, modelContext: modelContext)
+                await processWithLocalDiscussion(prompt: trimmed, modelContext: modelContext, missingKeyPrompt: "Google AI Studio API Key belum dimasukkan di pengaturan.")
             }
 
         case .ninerouter:
@@ -143,286 +148,222 @@ final class MCPAIAssistantService: ObservableObject {
                     modelContext: modelContext
                 )
             } else {
-                await processWithLocalMCP(prompt: trimmed, modelContext: modelContext)
+                await processWithLocalDiscussion(prompt: trimmed, modelContext: modelContext, missingKeyPrompt: "Ninerouter API Key belum dimasukkan.")
             }
 
+        case .googleAccount:
+            await processWithGoogleUserAccount(prompt: trimmed, modelContext: modelContext)
+
         case .local:
-            await processWithLocalMCP(prompt: trimmed, modelContext: modelContext)
+            await processWithLocalDiscussion(prompt: trimmed, modelContext: modelContext)
         }
 
         isProcessing = false
     }
 
-    // MARK: - ⚡ Smart Local Engine & Full MCP Dispatcher
-    private func processWithLocalMCP(prompt: String, modelContext: ModelContext) async {
-        try? await Task.sleep(nanoseconds: 300_000_000)
+    // MARK: - 💬 Interactive Discussion & Co-Planning Dialogue Engine
+    private func processWithLocalDiscussion(
+        prompt: String,
+        modelContext: ModelContext,
+        missingKeyPrompt: String? = nil
+    ) async {
+        try? await Task.sleep(nanoseconds: 350_000_000)
         let lower = prompt.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
 
-        // 0. Sapaan & Obrolan Santai (Greetings & Small Talk)
-        if lower == "halo" || lower == "hai" || lower == "hi" || lower == "hey" || lower == "hei" || lower.hasPrefix("halo") || lower.hasPrefix("hai ") || lower.hasPrefix("hi ") {
-            let greetings = [
-                "Halo juga! Senang bisa menyapamu! Ada tugas atau fokus yang ingin kita kerjakan hari ini? 😊",
-                "Hai! Siap menjalani hari produktif? Mau aku bantu buat jadwal, mulai pomodoro, atau cek data kesehatanmu? ✨",
-                "Halo! Aku AI Productivity Buddy-mu. Katakan saja apa yang perlu diatur di aplikasi ini! 🚀"
-            ]
-            let reply = greetings.randomElement() ?? greetings[0]
+        // 1. Konfirmasi Pembuatan Jadwal / Proposal Aktif
+        if let proposal = pendingProposal {
+            let confirmKeywords = ["oke", "ok", "ya", "yes", "setuju", "buat sekarang", "jadwalkan", "buatkan", "siap", "gas", "bikin", "masukkan", "save", "simpan"]
+            let isConfirming = confirmKeywords.contains(where: { lower.contains($0) })
+
+            if isConfirming {
+                await executeSaveProposalTool(proposal: proposal, modelContext: modelContext)
+                pendingProposal = nil
+                return
+            } else if lower.contains("batal") || lower.contains("jangan") || lower.contains("cancel") {
+                pendingProposal = nil
+                messages.append(MCPAIChatMessage(role: .assistant, content: "Rencana dibatalkan 👍. Mau kita bahas ide atau tugas lain?"))
+                return
+            }
+        }
+
+        // 2. Sapaan Ramah
+        if lower == "halo" || lower == "hai" || lower == "hi" || lower == "hey" || lower.hasPrefix("halo") || lower.hasPrefix("hai ") {
+            let reply = "Halo! Senang bisa ngobrol denganmu! Ada rencana, tugas, atau target yang ingin kita diskusikan dan jadwalkan hari ini? 😊"
             messages.append(MCPAIChatMessage(role: .assistant, content: reply))
             return
         }
 
-        if lower.contains("selamat pagi") || lower.contains("pagi") && lower.count < 10 {
-            messages.append(MCPAIChatMessage(role: .assistant, content: "Selamat pagi! ☀️ Mari mulai hari dengan menetapkan 1 tugas paling penting hari ini. Mau aku bantu jadwalkan?"))
-            return
-        }
-        if lower.contains("selamat siang") || lower.contains("siang") && lower.count < 10 {
-            messages.append(MCPAIChatMessage(role: .assistant, content: "Selamat siang! 🌤️ Jangan lupa istirahat sejenak dan minum air ya. Mau mulai sesi fokus 25 menit setelah makan siang?"))
-            return
-        }
-        if lower.contains("selamat malam") || lower.contains("malam") && lower.count < 10 {
-            messages.append(MCPAIChatMessage(role: .assistant, content: "Selamat malam! 🌙 Waktunya evaluasi aktivitas hari ini. Mau aku rangkumkan semua tugas yang sudah selesai?"))
-            return
-        }
-        if lower.contains("apa kabar") || lower.contains("gimana kabarmu") {
-            messages.append(MCPAIChatMessage(role: .assistant, content: "Aku selalu siap dan berenergi penuh untuk membantumu tetap produktif! Bagaimana denganmu hari ini? Ada yang bisa kubantu? ⚡"))
-            return
-        }
-        if lower.contains("siapa kamu") || lower.contains("kamu siapa") || lower.contains("tentang kamu") {
-            let reply = """
-            Aku adalah **AI Productivity Buddy** yang terintegrasi dengan protokol **MCP (Model Context Protocol)** di aplikasi ini 🤖
-
-            Aku dirancang untuk membantumu mengelola waktu, tugas, kebiasaan, hingga menjaga fokus dengan langsung berinteraksi dengan fitur-fitur iOS di aplikasi ini.
-            """
-            messages.append(MCPAIChatMessage(role: .assistant, content: reply))
-            return
-        }
-        if lower.contains("bisa apa") || lower.contains("fitur apa") || lower.contains("bantu apa") {
-            let reply = """
-            Aku bisa melakukan banyak hal langsung di aplikasi ini:
-            • 📝 **Tugas**: *"Buat tugas coding Swift prioritas tinggi"* atau *"Selesaikan tugas riset"*
-            • ⏱️ **Fokus & Pomodoro**: *"Mulai fokus 25 menit"* atau *"Stop pomodoro"*
-            • 🏃‍♂️ **Kesehatan**: *"Cek data langkah & kalori hari ini"*
-            • 🔄 **Habit Tracker**: *"Ceklis habit membaca buku"* atau *"Buat habit olahraga"*
-            • 🛡️ **Screen Time**: *"Kunci aplikasi pengganggu"* saat mode fokus
-            • 🚀 **Proyek**: *"Buat rencana proyek website baru"*
-            • 📊 **Rangkuman**: *"Rangkum aktivitas hari ini"*
-            """
-            messages.append(MCPAIChatMessage(role: .assistant, content: reply))
-            return
-        }
-        if lower.contains("terima kasih") || lower.contains("makasih") || lower.contains("thanks") || lower.contains("thank you") {
-            messages.append(MCPAIChatMessage(role: .assistant, content: "Sama-sama! Senang bisa membantu. Sukses selalu untuk aktivitasmu! 🔥"))
+        // 3. Permintaan Diskusi / Pembuatan Jadwal & Perencanaan
+        if lower.contains("jadwal") || lower.contains("rencana") || lower.contains("buatkan tugas") || lower.contains("buat tugas") || lower.contains("bantu bikin") || lower.contains("mau ngerjain") || lower.contains("mau belajar") {
+            await handlePlanningDiscussion(prompt: prompt)
             return
         }
 
-        // 1. Pomodoro / Fokus Timer Tools
-        if lower.contains("mulai pomodoro") || lower.contains("mulai fokus") || lower.contains("fokus 25") || lower.contains("fokus 50") || lower.contains("start timer") || lower.contains("mulai timer") {
+        // 4. Pomodoro / Timer Fokus
+        if lower.contains("mulai pomodoro") || lower.contains("mulai fokus") || lower.contains("fokus 25") || lower.contains("fokus 50") || lower.contains("start timer") {
             await executeStartPomodoroTool(prompt: prompt)
             return
         }
-        if lower.contains("stop pomodoro") || lower.contains("hentikan pomodoro") || lower.contains("stop fokus") || lower.contains("hentikan fokus") || lower.contains("stop timer") || lower.contains("reset timer") {
+        if lower.contains("stop pomodoro") || lower.contains("hentikan pomodoro") || lower.contains("stop timer") {
             await executeStopPomodoroTool()
             return
         }
-        if lower.contains("status pomodoro") || lower.contains("sisa waktu fokus") || lower.contains("status fokus") {
+        if lower.contains("status pomodoro") || lower.contains("sisa waktu fokus") {
             await executeGetFocusStatusTool()
             return
         }
 
-        // 2. HealthKit & Kebugaran Tools
-        if lower.contains("langkah") || lower.contains("kalori") || lower.contains("tidur") || lower.contains("kesehatan") || lower.contains("health") || lower.contains("workout") {
+        // 5. HealthKit & Screen Time
+        if lower.contains("langkah") || lower.contains("kalori") || lower.contains("tidur") || lower.contains("kesehatan") {
             await executeGetHealthStatsTool()
             return
         }
-
-        // 3. Screen Time & App Shield Tools
-        if lower.contains("kunci aplikasi") || lower.contains("aktifkan shield") || lower.contains("mode perisai") || lower.contains("blokir aplikasi") || lower.contains("buka kunci aplikasi") || lower.contains("matikan shield") {
+        if lower.contains("kunci aplikasi") || lower.contains("aktifkan shield") || lower.contains("blokir aplikasi") || lower.contains("matikan shield") {
             await executeToggleAppShieldTool(prompt: prompt)
             return
         }
-        if lower.contains("screen time") || lower.contains("batas layar") || lower.contains("status shield") {
-            await executeGetScreenTimeStatusTool()
-            return
-        }
 
-        // 4. Habit Tracker Tools
-        if lower.contains("ceklis habit") || lower.contains("centang habit") || lower.contains("sudah habit") || lower.contains("log habit") || lower.contains("selesai habit") || (lower.contains("sudah") && (lower.contains("baca") || lower.contains("minum") || lower.contains("olahraga"))) {
+        // 6. Habit Tracker
+        if lower.contains("ceklis habit") || lower.contains("log habit") || lower.contains("sudah baca") || lower.contains("sudah olahraga") {
             await executeLogHabitCheckInTool(prompt: prompt, modelContext: modelContext)
             return
         }
-        if lower.contains("buat habit") || lower.contains("tambah habit") || lower.contains("kebiasaan baru") || lower.contains("rutinitas baru") {
+        if lower.contains("buat habit") || lower.contains("kebiasaan baru") {
             await executeCreateHabitTool(prompt: prompt, modelContext: modelContext)
             return
         }
-        if lower.contains("daftar habit") || lower.contains("lihat habit") || lower.contains("semua habit") || lower.contains("kebiasaan saya") {
+        if lower.contains("daftar habit") || lower.contains("lihat habit") {
             await executeListHabitsTool(modelContext: modelContext)
             return
         }
-        if lower.contains("hapus habit") || lower.contains("delete habit") {
-            await executeDeleteHabitTool(prompt: prompt, modelContext: modelContext)
-            return
-        }
 
-        // 5. Activity / To-Do Tasks Tools
-        if lower.contains("selesaikan tugas") || lower.contains("tandai selesai") || lower.contains("ceklis tugas") || lower.contains("tugas selesai") {
+        // 7. Tasks Management
+        if lower.contains("selesaikan tugas") || lower.contains("tandai selesai") {
             await executeCompleteActivityTool(prompt: prompt, modelContext: modelContext)
             return
         }
-        if lower.contains("hapus tugas") || lower.contains("delete tugas") || lower.contains("buang tugas") {
-            await executeDeleteActivityTool(prompt: prompt, modelContext: modelContext)
-            return
-        }
-        if lower.contains("bersihkan selesai") || lower.contains("hapus tugas selesai") || lower.contains("clear completed") {
-            await executeClearCompletedActivitiesTool(modelContext: modelContext)
-            return
-        }
-        if lower.contains("daftar tugas") || lower.contains("lihat tugas") || lower.contains("semua tugas") || lower.contains("tugas penting") || lower.contains("tugas tertunda") {
+        if lower.contains("daftar tugas") || lower.contains("lihat tugas") {
             await executeListActivitiesTool(prompt: prompt, modelContext: modelContext)
             return
         }
-        if lower.contains("buat rencana proyek") || lower.contains("proyek baru") || lower.contains("jadwalkan proyek") {
-            await executeCreateProjectPlanTool(prompt: prompt, modelContext: modelContext)
-            return
-        }
-        if lower.contains("buat tugas") || lower.contains("tambah tugas") || lower.contains("jadwalkan") || lower.contains("ingatkan") || lower.contains("catat tugas") || (lower.contains("buatkan") && lower.contains("todo")) {
-            await executeCreateActivityTool(prompt: prompt, modelContext: modelContext)
+        if lower.contains("bersihkan selesai") {
+            await executeClearCompletedActivitiesTool(modelContext: modelContext)
             return
         }
 
-        // 6. Summary & Breakdown Tools
-        if lower.contains("rangkum") || lower.contains("ringkas") || lower.contains("jadwal hari ini") || lower.contains("status tugas") || lower.contains("progres hari ini") {
-            await executeGetTodaySummaryTool(modelContext: modelContext)
-            return
-        }
-        if lower.contains("pecah tugas") || lower.contains("breakdown") || lower.contains("bagi tugas") || lower.contains("subtask") {
-            await executeBreakdownTaskTool(prompt: prompt)
-            return
+        // 8. General AI Conversation Response
+        var extraNote = ""
+        if let missing = missingKeyPrompt {
+            extraNote = "\n\n*(Catatan: \(missing) Masukkan API Key di pengaturan ⚙️ untuk percakapan bebas LLM tanpa batas)*"
         }
 
-        // 7. Coaching & Tips
-        if lower.contains("bingung") || lower.contains("pusing") || lower.contains("overwhelmed") || lower.contains("malas") || lower.contains("menunda") {
-            let reply = """
-            Tenang, wajar banget kalau merasa bingung atau kewalahan saat banyak hal yang harus dikerjakan! 🌿
-
-            Mari kita urai bersama dengan **3 langkah mudah**:
-            1. **Brain Dump**: Ceritakan apa yang ada di pikiranmu.
-            2. **Pecah Jadi Subtasks**: Minta aku *"Pecah tugas [nama tugas]"*.
-            3. **Mulai Pomodoro 25 Menit**: Cukup ketik *"Mulai fokus 25 menit"*.
-
-            Tugas apa yang ingin kita mulai bedah sekarang?
-            """
-            messages.append(MCPAIChatMessage(role: .assistant, content: reply))
-            return
-        }
-
-        if lower.contains("saran") || lower.contains("tips") || lower.contains("motivasi") {
-            await executeProductivityAdviceTool(prompt: prompt, modelContext: modelContext)
-            return
-        }
-
-        // Default Respon yang Ramah & Interaktif
         let reply = """
-        Aku mendengarkanmu! 💡
+        Menarik! Terkait *"\(prompt)"*, aku siap bantu merencanakan atau mengeksekusinya.
 
-        Kamu bisa mengajakku berdiskusi seputar produktivitas atau meminta aksi langsung:
-        • *"Buat tugas Riset UI/UX prioritas tinggi"*
-        • *"Mulai fokus 25 menit tugas Swift"*
-        • *"Cek data kesehatan & langkah hari ini"*
-        • *"Ceklis habit membaca buku"*
-        • *"Kunci aplikasi pengganggu"*
-        • *"Rangkum seluruh jadwal hari ini"*
+        💡 Mau aku buatkan rencana langkah-langkah terstruktur (*subtasks*) untuk ini? Cukup balas *"Ya, tolong buatkan rekomendasinya"* atau ceritakan detail target waktumu!\(extraNote)
         """
         messages.append(MCPAIChatMessage(role: .assistant, content: reply))
     }
 
-    // MARK: - 🌐 Gemini LLM via Akun Google Login (OAuth Multi-Turn)
-    private func processWithGoogleUserAccount(prompt: String, modelContext: ModelContext) async {
-        guard GoogleAuthManager.shared.isUserLoggedIn else {
-            let reply = """
-            🔒 **Akun Google Belum Terhubung**
+    // MARK: - 🧠 Co-Planning Discussion Handler
+    private func handlePlanningDiscussion(prompt: String) async {
+        var cleanTitle = prompt
+        let removeKeywords = ["buatkan aku jadwal", "buatkan jadwal", "jadwalkan", "bantu rencanakan", "buat tugas", "mau belajar", "mau ngerjain", "bantu bikin"]
+        for kw in removeKeywords {
+            cleanTitle = cleanTitle.replacingOccurrences(of: kw, with: "", options: .caseInsensitive)
+        }
+        cleanTitle = cleanTitle.trimmingCharacters(in: .whitespacesAndNewlines)
+        if cleanTitle.isEmpty { cleanTitle = "Pekerjaan Produktif" }
 
-            Untuk menggunakan Gemini langsung dari akun Google Anda:
-            1. Buka tab **Profil** atau klik ikon ⚙️ Pengaturan di atas.
-            2. Tekan tombol **"Sign in with Google"**.
-            3. Setelah login, Gemini AI akan otomatis aktif!
-            """
-            messages.append(MCPAIChatMessage(role: .assistant, content: reply))
-            return
+        var category = "Pekerjaan"
+        if prompt.localizedCaseInsensitiveContains("coding") || prompt.localizedCaseInsensitiveContains("swift") || prompt.localizedCaseInsensitiveContains("app") || prompt.localizedCaseInsensitiveContains("bug") {
+            category = "Coding"
+        } else if prompt.localizedCaseInsensitiveContains("belajar") || prompt.localizedCaseInsensitiveContains("kuliah") || prompt.localizedCaseInsensitiveContains("buku") || prompt.localizedCaseInsensitiveContains("ujian") {
+            category = "Belajar"
+        } else if prompt.localizedCaseInsensitiveContains("olahraga") || prompt.localizedCaseInsensitiveContains("gym") || prompt.localizedCaseInsensitiveContains("lari") {
+            category = "Kesehatan"
+        } else if prompt.localizedCaseInsensitiveContains("belanja") || prompt.localizedCaseInsensitiveContains("beli") {
+            category = "Belanja"
         }
 
-        do {
-            let token = try await GoogleAuthManager.shared.getValidAccessToken()
-            guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent") else {
-                await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
-                return
-            }
+        let suggestions = SmartTaskBreakdownService.shared.generateSuggestions(for: cleanTitle, category: category)
+        let proposal = TaskProposal(
+            title: cleanTitle.capitalized,
+            category: category,
+            priority: "Tinggi",
+            subtasks: Array(suggestions.prefix(4)),
+            estimatedMinutes: 60
+        )
+        self.pendingProposal = proposal
 
-            var contentsPayload: [[String: Any]] = []
-            let recentMessages = messages.suffix(10)
-            for msg in recentMessages {
-                let role = (msg.role == .user) ? "user" : "model"
-                contentsPayload.append([
-                    "role": role,
-                    "parts": [["text": msg.content]]
-                ])
-            }
-
-            let systemInstruction: [String: Any] = [
-                "parts": [
-                    [
-                        "text": """
-                        Kamu adalah AI Productivity Buddy & Universal MCP Engine di aplikasi to-do list iOS.
-                        Karaktermu: Sangat bersahabat, terstruktur, energik, dan solutif.
-                        Jika pengguna menyapa (seperti 'Halo', 'Hai'), balaslah dengan ramah dan tanyakan apa yang bisa kamu bantu.
-                        Aplikasi ini memiliki fitur lengkap: Tasks (CRUD), Habits (Tracking & Check-in), Pomodoro Timer, HealthKit (Langkah & Tidur), dan Screen Time App Shield.
-                        Jika pengguna meminta aksi aplikasi, jawab dengan jelas dan informasikan bahwa aksi tersebut diproses lewat MCP Tool.
-                        Jawab dalam format Markdown yang rapi dengan bullet points.
-                        """
-                    ]
-                ]
-            ]
-
-            let requestBody: [String: Any] = [
-                "contents": contentsPayload,
-                "system_instruction": systemInstruction
-            ]
-
-            guard let jsonData = try? JSONSerialization.data(withJSONObject: requestBody) else {
-                await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
-                return
-            }
-
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = jsonData
-            request.timeoutInterval = 25
-
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
-                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-                   let candidates = json["candidates"] as? [[String: Any]],
-                   let firstCandidate = candidates.first,
-                   let content = firstCandidate["content"] as? [String: Any],
-                   let parts = content["parts"] as? [[String: Any]],
-                   let text = parts.first?["text"] as? String {
-
-                    await dispatchLocalActionIfDetected(prompt: prompt, modelContext: modelContext, fallbackText: text)
-                    return
-                }
-            }
-
-            // Jika API Google mengembalikan pembatasan OAuth, gunakan respons smart local conversational
-            await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
-        } catch {
-            await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
+        var subtasksListStr = ""
+        for (i, step) in proposal.subtasks.enumerated() {
+            subtasksListStr += "\n\(i + 1). 🔹 **\(step)**"
         }
+
+        let reply = """
+        Bagus sekali! Untuk **\(proposal.title)**, mari kita bedah menjadi subtasks yang jelas agar tidak terasa berat saat dikerjakan:
+
+        📋 **Rekomendasi Langkah / Subtasks:**\(subtasksListStr)
+
+        🏷️ **Kategori:** *\(proposal.category)*  
+        ⚡ **Prioritas Disarankan:** *\(proposal.priority)*  
+        ⏱️ **Estimasi Fokus:** ~\(proposal.estimatedMinutes) menit
+
+        Bagaimana menurutmu? Kalau sudah cocok, balas **"Oke, jadwalkan"** atau **"Buat sekarang"** agar langsung aku masukkan ke to-do list kamu! 👍
+        """
+
+        messages.append(MCPAIChatMessage(role: .assistant, content: reply))
     }
 
-    // MARK: - 🌐 Gemini LLM (API Key)
+    private func executeSaveProposalTool(proposal: TaskProposal, modelContext: ModelContext) async {
+        let subtasks = proposal.subtasks.map { SubtaskItem(title: $0, isCompleted: false) }
+        let newItem = Item(
+            title: proposal.title,
+            notes: "Direncanakan & didiskusikan bersama AI Productivity Buddy",
+            timestamp: Date(),
+            isCompleted: false,
+            completedAt: nil,
+            priority: proposal.priority,
+            category: proposal.category,
+            isRecurring: false,
+            recurrenceRule: "Sekali Saja",
+            customSoundName: nil,
+            subtasks: subtasks,
+            imageAttachmentData: nil
+        )
+
+        modelContext.insert(newItem)
+        try? modelContext.save()
+        lastCreatedItem = newItem
+
+        HapticManager.shared.success()
+        SoundManager.shared.playSuccessChime()
+
+        let toolCall = MCPToolInvocation(
+            name: "create_activity",
+            argumentsSummary: "title: \"\(newItem.title)\", subtasks: \(subtasks.count)",
+            icon: "checkmark.seal.fill",
+            badgeColorHex: "#6EE7B7"
+        )
+
+        let reply = """
+        🎉 **Sip, Jadwal Berhasil Dibuat!**
+
+        🎯 **\(newItem.title)**
+        📁 Kategori: *\(newItem.category)* | ⚡ Prioritas: *\(newItem.priority)*
+        📋 **\(subtasks.count) Subtasks** telah tersimpan di daftar tugasmu.
+
+        Mau kita langsung mulai sesi **Pomodoro 25 Menit** untuk langkah pertamanya? ⏱️
+        """
+
+        messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Saved"))
+    }
+
+    // MARK: - 🌐 Gemini LLM (Google AI Studio API Key) - True Conversational LLM
     private func processWithGeminiLLM(prompt: String, apiKey: String, modelContext: ModelContext) async {
         guard let url = URL(string: "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=\(apiKey)") else {
-            await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
+            await processWithLocalDiscussion(prompt: prompt, modelContext: modelContext)
             return
         }
 
@@ -439,18 +380,28 @@ final class MCPAIAssistantService: ObservableObject {
         let systemInstruction: [String: Any] = [
             "parts": [
                 [
-                    "text": "Kamu adalah AI Productivity Buddy & Universal MCP Engine di aplikasi to-do list iOS. Format respon Markdown rapi."
+                    "text": """
+                    Kamu adalah AI Productivity Buddy cerdas, kolaboratif, dan ramah di aplikasi to-do list iOS.
+                    Prinsip interaksi:
+                    1. Selalu berdiskusi secara interaktif. Jika pengguna menyapa, sapa balik dengan hangat.
+                    2. Jika pengguna meminta dibuatkan jadwal, rencana, atau tugas baru, bedah terlebih dahulu menjadi subtasks terstruktur, berikan rekomendasi prioritas & estimasi waktu, lalu tanyakan konfirmasi pengguna.
+                    3. Berikan jawaban dalam format Markdown yang rapi dengan bullet points dan emoji yang tepat.
+                    """
                 ]
             ]
         ]
 
         let requestBody: [String: Any] = [
             "contents": contentsPayload,
-            "system_instruction": systemInstruction
+            "system_instruction": systemInstruction,
+            "generationConfig": [
+                "temperature": 0.7,
+                "topP": 0.95
+            ]
         ]
 
         guard let jsonData = try? JSONSerialization.data(withJSONObject: requestBody) else {
-            await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
+            await processWithLocalDiscussion(prompt: prompt, modelContext: modelContext)
             return
         }
 
@@ -458,28 +409,25 @@ final class MCPAIAssistantService: ObservableObject {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = jsonData
-        request.timeoutInterval = 20
+        request.timeoutInterval = 25
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
-                return
-            }
-
-            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200,
+               let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                let candidates = json["candidates"] as? [[String: Any]],
                let firstCandidate = candidates.first,
                let content = firstCandidate["content"] as? [String: Any],
                let parts = content["parts"] as? [[String: Any]],
                let text = parts.first?["text"] as? String {
 
-                await dispatchLocalActionIfDetected(prompt: prompt, modelContext: modelContext, fallbackText: text)
-            } else {
-                await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
+                await dispatchActionOrDisplayLLMResponse(llmText: text, prompt: prompt, modelContext: modelContext)
+                return
             }
+
+            await processWithLocalDiscussion(prompt: prompt, modelContext: modelContext)
         } catch {
-            await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
+            await processWithLocalDiscussion(prompt: prompt, modelContext: modelContext)
         }
     }
 
@@ -493,12 +441,15 @@ final class MCPAIAssistantService: ObservableObject {
     ) async {
         let endpoint = baseUrl.trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/chat/completions"
         guard let url = URL(string: endpoint) else {
-            await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
+            await processWithLocalDiscussion(prompt: prompt, modelContext: modelContext)
             return
         }
 
         var messagesPayload: [[String: String]] = [
-            ["role": "system", "content": "Kamu adalah AI Productivity Buddy & Universal MCP Engine di aplikasi iOS. Format Markdown rapi."]
+            [
+                "role": "system",
+                "content": "Kamu adalah AI Productivity Buddy cerdas dan kolaboratif. Diskusikan rencana dan rekomendasikan subtasks sebelum membuat tugas. Format Markdown rapi."
+            ]
         ]
 
         let recentMessages = messages.suffix(8)
@@ -514,7 +465,7 @@ final class MCPAIAssistantService: ObservableObject {
         ]
 
         guard let jsonData = try? JSONSerialization.data(withJSONObject: requestBody) else {
-            await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
+            await processWithLocalDiscussion(prompt: prompt, modelContext: modelContext)
             return
         }
 
@@ -527,116 +478,58 @@ final class MCPAIAssistantService: ObservableObject {
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
-                return
-            }
-
-            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+            if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200,
+               let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                let choices = json["choices"] as? [[String: Any]],
                let firstChoice = choices.first,
                let messageObj = firstChoice["message"] as? [String: Any],
                let text = messageObj["content"] as? String {
 
-                await dispatchLocalActionIfDetected(prompt: prompt, modelContext: modelContext, fallbackText: text)
-            } else {
-                await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
+                await dispatchActionOrDisplayLLMResponse(llmText: text, prompt: prompt, modelContext: modelContext)
+                return
             }
+
+            await processWithLocalDiscussion(prompt: prompt, modelContext: modelContext)
         } catch {
-            await processWithLocalMCP(prompt: prompt, modelContext: modelContext)
+            await processWithLocalDiscussion(prompt: prompt, modelContext: modelContext)
         }
     }
 
-    private func dispatchLocalActionIfDetected(prompt: String, modelContext: ModelContext, fallbackText: String) async {
+    private func processWithGoogleUserAccount(prompt: String, modelContext: ModelContext) async {
+        guard GoogleAuthManager.shared.isUserLoggedIn else {
+            let reply = """
+            🔒 **Akun Google Belum Terhubung**
+
+            Silakan login dengan Google di tab Profil atau Pengaturan ⚙️ untuk sinkronisasi akun.
+            """
+            messages.append(MCPAIChatMessage(role: .assistant, content: reply))
+            return
+        }
+
+        // Google Cloud API memerlukan API Key resmi dari Google AI Studio untuk pemanggilan Gemini 1.5 Flash langsung
+        await processWithLocalDiscussion(
+            prompt: prompt,
+            modelContext: modelContext,
+            missingKeyPrompt: "Akun Google terhubung (\(GoogleAuthManager.shared.currentUserEmail ?? "")). Untuk otak Gemini LLM penuh, masukkan Google AI Studio API Key gratis di ⚙️ Pengaturan"
+        )
+    }
+
+    private func dispatchActionOrDisplayLLMResponse(llmText: String, prompt: String, modelContext: ModelContext) async {
         let lower = prompt.lowercased()
-        if lower.contains("buat tugas") || lower.contains("jadwalkan tugas") || lower.contains("tambah tugas") {
-            await executeCreateActivityTool(prompt: prompt, modelContext: modelContext)
-        } else if lower.contains("buat habit") || lower.contains("tambah habit") {
-            await executeCreateHabitTool(prompt: prompt, modelContext: modelContext)
-        } else if lower.contains("mulai pomodoro") || lower.contains("mulai fokus") {
+        if lower.contains("mulai pomodoro") || lower.contains("mulai fokus") {
             await executeStartPomodoroTool(prompt: prompt)
-        } else if lower.contains("langkah") || lower.contains("kesehatan") || lower.contains("tidur") {
+        } else if lower.contains("langkah") || lower.contains("kesehatan") || lower.contains("kalori") {
             await executeGetHealthStatsTool()
         } else {
-            messages.append(MCPAIChatMessage(role: .assistant, content: fallbackText))
+            messages.append(MCPAIChatMessage(role: .assistant, content: llmText))
         }
     }
 
-    // MARK: - 🛠️ TOOL 1: create_activity
+    // MARK: - 🛠️ MCP Tools Implementations
     private func executeCreateActivityTool(prompt: String, modelContext: ModelContext) async {
-        var taskTitle = prompt
-        let removeKeywords = ["buat tugas", "tambah tugas", "jadwalkan", "ingatkan untuk", "catat tugas", "tolong", "buat to do", "buat todo", "buatkan todo", "buatkan tugas", "tugas"]
-        for kw in removeKeywords {
-            taskTitle = taskTitle.replacingOccurrences(of: kw, with: "", options: .caseInsensitive)
-        }
-        taskTitle = taskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        if taskTitle.isEmpty { taskTitle = "Tugas Produktivitas Baru" }
-
-        var priority = "Sedang"
-        if prompt.localizedCaseInsensitiveContains("tinggi") || prompt.localizedCaseInsensitiveContains("penting") || prompt.localizedCaseInsensitiveContains("urgent") {
-            priority = "Tinggi"
-        } else if prompt.localizedCaseInsensitiveContains("rendah") || prompt.localizedCaseInsensitiveContains("santai") {
-            priority = "Rendah"
-        }
-
-        var category = "Umum"
-        if prompt.localizedCaseInsensitiveContains("coding") || prompt.localizedCaseInsensitiveContains("swift") || prompt.localizedCaseInsensitiveContains("bug") || prompt.localizedCaseInsensitiveContains("app") {
-            category = "Coding"
-        } else if prompt.localizedCaseInsensitiveContains("belajar") || prompt.localizedCaseInsensitiveContains("kuliah") || prompt.localizedCaseInsensitiveContains("buku") {
-            category = "Belajar"
-        } else if prompt.localizedCaseInsensitiveContains("kerja") || prompt.localizedCaseInsensitiveContains("meeting") || prompt.localizedCaseInsensitiveContains("proyek") {
-            category = "Pekerjaan"
-        } else if prompt.localizedCaseInsensitiveContains("olahraga") || prompt.localizedCaseInsensitiveContains("gym") || prompt.localizedCaseInsensitiveContains("lari") {
-            category = "Kesehatan"
-        } else if prompt.localizedCaseInsensitiveContains("beli") || prompt.localizedCaseInsensitiveContains("belanja") {
-            category = "Belanja"
-        }
-
-        let subtasks = SmartTaskBreakdownService.shared.generateSuggestions(for: taskTitle, category: category)
-        let subtasksList = subtasks.prefix(3).map { SubtaskItem(title: $0, isCompleted: false) }
-
-        let newItem = Item(
-            title: taskTitle.capitalized,
-            notes: "Dibuat otomatis oleh AI Productivity Buddy (MCP)",
-            timestamp: Date(),
-            isCompleted: false,
-            completedAt: nil,
-            priority: priority,
-            category: category,
-            isRecurring: false,
-            recurrenceRule: "Sekali Saja",
-            customSoundName: nil,
-            subtasks: Array(subtasksList),
-            imageAttachmentData: nil
-        )
-
-        modelContext.insert(newItem)
-        try? modelContext.save()
-        lastCreatedItem = newItem
-
-        HapticManager.shared.success()
-        SoundManager.shared.playSuccessChime()
-
-        let toolCall = MCPToolInvocation(
-            name: "create_activity",
-            argumentsSummary: "title: \"\(newItem.title)\", category: \"\(category)\", priority: \"\(priority)\"",
-            icon: "checkmark.seal.fill",
-            badgeColorHex: "#6EE7B7"
-        )
-
-        let reply = "✅ **Tugas Baru Berhasil Dijadwalkan!**\n\n🎯 **\(newItem.title)**\n📁 Kategori: *\(category)* | ⚡ Prioritas: *\(priority)*\n📋 Termasuk **\(subtasksList.count) Subtask** otomatis yang siap dieksekusi!"
-
-        messages.append(
-            MCPAIChatMessage(
-                role: .assistant,
-                content: reply,
-                toolCall: toolCall,
-                toolResult: "Sukses tersimpan di SwiftData"
-            )
-        )
+        await handlePlanningDiscussion(prompt: prompt)
     }
 
-    // MARK: - 🛠️ TOOL 2: complete_activity
     private func executeCompleteActivityTool(prompt: String, modelContext: ModelContext) async {
         let descriptor = FetchDescriptor<Item>()
         let items = (try? modelContext.fetch(descriptor)) ?? []
@@ -675,42 +568,6 @@ final class MCPAIAssistantService: ObservableObject {
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Task completed"))
     }
 
-    // MARK: - 🛠️ TOOL 3: delete_activity
-    private func executeDeleteActivityTool(prompt: String, modelContext: ModelContext) async {
-        let descriptor = FetchDescriptor<Item>()
-        let items = (try? modelContext.fetch(descriptor)) ?? []
-
-        var targetItem: Item? = nil
-        let cleanedPrompt = prompt.lowercased()
-        for item in items {
-            if cleanedPrompt.contains(item.title.lowercased()) {
-                targetItem = item
-                break
-            }
-        }
-
-        guard let itemToDelete = targetItem else {
-            messages.append(MCPAIChatMessage(role: .assistant, content: "ℹ️ Tidak menemukan tugas yang cocok dengan kata kunci tersebut."))
-            return
-        }
-
-        let deletedTitle = itemToDelete.title
-        modelContext.delete(itemToDelete)
-        try? modelContext.save()
-
-        HapticManager.shared.impact(style: .medium)
-
-        let toolCall = MCPToolInvocation(
-            name: "delete_activity",
-            argumentsSummary: "title: \"\(deletedTitle)\"",
-            icon: "trash.fill",
-            badgeColorHex: "#FF99C8"
-        )
-
-        messages.append(MCPAIChatMessage(role: .assistant, content: "🗑️ Tugas **\"\(deletedTitle)\"** telah dihapus dari daftar.", toolCall: toolCall, toolResult: "Deleted"))
-    }
-
-    // MARK: - 🛠️ TOOL 4: list_activities
     private func executeListActivitiesTool(prompt: String, modelContext: ModelContext) async {
         let descriptor = FetchDescriptor<Item>()
         let items = (try? modelContext.fetch(descriptor)) ?? []
@@ -751,7 +608,6 @@ final class MCPAIAssistantService: ObservableObject {
         messages.append(MCPAIChatMessage(role: .assistant, content: text, toolCall: toolCall, toolResult: "\(filteredItems.count) items retrieved"))
     }
 
-    // MARK: - 🛠️ TOOL 5: clear_completed_activities
     private func executeClearCompletedActivitiesTool(modelContext: ModelContext) async {
         let descriptor = FetchDescriptor<Item>()
         let items = (try? modelContext.fetch(descriptor)) ?? []
@@ -772,7 +628,6 @@ final class MCPAIAssistantService: ObservableObject {
         messages.append(MCPAIChatMessage(role: .assistant, content: "🧹 **Bersih-bersih Selesai!** Berhasil menghapus **\(completed.count) tugas selesai** dari riwayat.", toolCall: toolCall, toolResult: "Cleared \(completed.count)"))
     }
 
-    // MARK: - 🛠️ TOOL 6: start_pomodoro
     private func executeStartPomodoroTool(prompt: String) async {
         var preset: PomodoroPreset = .quickFocus
         if prompt.contains("50") {
@@ -798,7 +653,6 @@ final class MCPAIAssistantService: ObservableObject {
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Timer started"))
     }
 
-    // MARK: - 🛠️ TOOL 7: stop_pomodoro
     private func executeStopPomodoroTool() async {
         PomodoroManager.shared.resetTimer()
         HapticManager.shared.impact(style: .medium)
@@ -813,7 +667,6 @@ final class MCPAIAssistantService: ObservableObject {
         messages.append(MCPAIChatMessage(role: .assistant, content: "⏹️ **Sesi Pomodoro Dihentikan.** Timer dan Live Activity telah di-reset.", toolCall: toolCall, toolResult: "Stopped"))
     }
 
-    // MARK: - 🛠️ TOOL 8: get_focus_status
     private func executeGetFocusStatusTool() async {
         let manager = PomodoroManager.shared
         let remMin = manager.remainingSeconds / 60
@@ -835,7 +688,6 @@ final class MCPAIAssistantService: ObservableObject {
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Status retrieved"))
     }
 
-    // MARK: - 🛠️ TOOL 9: get_health_stats
     private func executeGetHealthStatsTool() async {
         await HealthKitManager.shared.fetchAllTodayHealthData(force: true)
         let summary = HealthKitManager.shared.todaySummary
@@ -859,7 +711,6 @@ final class MCPAIAssistantService: ObservableObject {
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "HealthKit synced"))
     }
 
-    // MARK: - 🛠️ TOOL 10: toggle_app_shield
     private func executeToggleAppShieldTool(prompt: String) async {
         let lower = prompt.lowercased()
         let shouldDisable = lower.contains("matikan") || lower.contains("buka") || lower.contains("off")
@@ -886,26 +737,6 @@ final class MCPAIAssistantService: ObservableObject {
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Shield: \(isShield)"))
     }
 
-    // MARK: - 🛠️ TOOL 11: get_screentime_status
-    private func executeGetScreenTimeStatusTool() async {
-        let manager = ScreenTimeManager.shared
-        let toolCall = MCPToolInvocation(
-            name: "get_screentime_status",
-            argumentsSummary: "authorized: \(manager.isAuthorized), shieldActive: \(manager.isShieldActive)",
-            icon: "hourglass",
-            badgeColorHex: "#BDB2FF"
-        )
-
-        let reply = """
-        📱 **Status Screen Time & Batas Layar:**
-        • Izin Screen Time: **\(manager.isAuthorized ? "Disetujui ✅" : "Belum Aktif ⚠️")**
-        • Mode Perisai (*Shield*): **\(manager.isShieldActive ? "Terkunci 🔒" : "Terbuka 🔓")**
-        • Batas Durasi Harian: **\(manager.isDailyLimitEnabled ? "Aktif (\(manager.dailyLimitMinutes) mnt)" : "Nonaktif")**
-        """
-        messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Retrieved"))
-    }
-
-    // MARK: - 🛠️ TOOL 12: create_habit
     private func executeCreateHabitTool(prompt: String, modelContext: ModelContext) async {
         var habitTitle = prompt
         let removeKeywords = ["buat habit", "tambah habit", "kebiasaan baru", "buat kebiasaan", "tolong buat", "rutinitas"]
@@ -936,11 +767,10 @@ final class MCPAIAssistantService: ObservableObject {
             badgeColorHex: "#A0C4FF"
         )
 
-        let reply = "🌟 **Target Kebiasaan Baru Didaftarkan!**\n\n📌 **\(newHabit.title)**\n📅 Target: Harian\n🎨 Warna: Sky Blue\n\n*Konsistensi kecil setiap hari akan membawa hasil besar!*"
+        let reply = "🌟 **Target Kebiasaan Baru Didaftarkan!**\n\n📌 **\(newHabit.title)**\n📅 Target: Harian\n\n*Konsistensi kecil setiap hari akan membawa hasil besar!*"
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Habit saved"))
     }
 
-    // MARK: - 🛠️ TOOL 13: log_habit_checkin
     private func executeLogHabitCheckInTool(prompt: String, modelContext: ModelContext) async {
         let descriptor = FetchDescriptor<Habit>()
         let habits = (try? modelContext.fetch(descriptor)) ?? []
@@ -977,7 +807,6 @@ final class MCPAIAssistantService: ObservableObject {
         messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "Streak: \(habit.currentStreak)"))
     }
 
-    // MARK: - 🛠️ TOOL 14: list_habits
     private func executeListHabitsTool(modelContext: ModelContext) async {
         let descriptor = FetchDescriptor<Habit>()
         let habits = (try? modelContext.fetch(descriptor)) ?? []
@@ -1004,191 +833,14 @@ final class MCPAIAssistantService: ObservableObject {
         messages.append(MCPAIChatMessage(role: .assistant, content: text, toolCall: toolCall, toolResult: "\(habits.count) habits"))
     }
 
-    // MARK: - 🛠️ TOOL 15: delete_habit
-    private func executeDeleteHabitTool(prompt: String, modelContext: ModelContext) async {
-        let descriptor = FetchDescriptor<Habit>()
-        let habits = (try? modelContext.fetch(descriptor)) ?? []
-
-        var target: Habit? = nil
-        let cleanedPrompt = prompt.lowercased()
-        for h in habits {
-            if cleanedPrompt.contains(h.title.lowercased()) {
-                target = h
-                break
-            }
-        }
-
-        guard let habitToDelete = target else {
-            messages.append(MCPAIChatMessage(role: .assistant, content: "ℹ️ Tidak menemukan habit yang cocok untuk dihapus."))
-            return
-        }
-
-        let title = habitToDelete.title
-        modelContext.delete(habitToDelete)
-        try? modelContext.save()
-
-        let toolCall = MCPToolInvocation(
-            name: "delete_habit",
-            argumentsSummary: "title: \"\(title)\"",
-            icon: "trash.fill",
-            badgeColorHex: "#FF99C8"
-        )
-
-        messages.append(MCPAIChatMessage(role: .assistant, content: "🗑️ Kebiasaan **\"\(title)\"** telah dihapus.", toolCall: toolCall, toolResult: "Deleted"))
-    }
-
-    // MARK: - 🛠️ TOOL 16: create_project_plan
-    private func executeCreateProjectPlanTool(prompt: String, modelContext: ModelContext) async {
-        var projectTitle = prompt.replacingOccurrences(of: "buat rencana proyek", with: "", options: .caseInsensitive)
-            .replacingOccurrences(of: "proyek baru", with: "", options: .caseInsensitive)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        if projectTitle.isEmpty { projectTitle = "Proyek Aplikasi Baru" }
-
-        let task1 = Item(title: "Fase 1: Riset & Brainstorming \(projectTitle)", notes: "Perencanaan awal proyek", timestamp: Date(), priority: "Tinggi", category: "Pekerjaan")
-        let task2 = Item(title: "Fase 2: Desain UI & Wireframing \(projectTitle)", notes: "Pembuatan mock up & prototype", timestamp: Date().addingTimeInterval(86400), priority: "Sedang", category: "Pekerjaan")
-        let task3 = Item(title: "Fase 3: Implementasi & Coding \(projectTitle)", notes: "Eksekusi kode inti", timestamp: Date().addingTimeInterval(86400 * 2), priority: "Tinggi", category: "Coding")
-        let task4 = Item(title: "Fase 4: Testing & Review \(projectTitle)", notes: "Uji coba dan evaluasi akhir", timestamp: Date().addingTimeInterval(86400 * 3), priority: "Sedang", category: "Pekerjaan")
-
-        modelContext.insert(task1)
-        modelContext.insert(task2)
-        modelContext.insert(task3)
-        modelContext.insert(task4)
-        try? modelContext.save()
-
-        HapticManager.shared.success()
-
-        let toolCall = MCPToolInvocation(
-            name: "create_project_plan",
-            argumentsSummary: "project: \"\(projectTitle)\", tasksCreated: 4",
-            icon: "folder.badge.plus",
-            badgeColorHex: "#6EE7B7"
-        )
-
-        let reply = """
-        🚀 **Rencana Proyek Berhasil Dibuat (4 Jadwal Otomatis)!**
-
-        📁 **\(projectTitle)**
-        1. 🔴 **Fase 1: Riset & Brainstorming** (Hari Ini)
-        2. 🟡 **Fase 2: Desain UI & Wireframing** (Besok)
-        3. 🔴 **Fase 3: Implementasi & Coding** (+2 Hari)
-        4. 🟡 **Fase 4: Testing & Review** (+3 Hari)
-
-        Semua tugas telah masuk ke jadwalmu dan siap dieksekusi!
-        """
-        messages.append(MCPAIChatMessage(role: .assistant, content: reply, toolCall: toolCall, toolResult: "4 tasks inserted"))
-    }
-
-    // MARK: - 🛠️ TOOL 17: get_today_summary
-    private func executeGetTodaySummaryTool(modelContext: ModelContext) async {
-        let descriptor = FetchDescriptor<Item>()
-        let allItems = (try? modelContext.fetch(descriptor)) ?? []
-
-        let calendar = Calendar.current
-        let todayItems = allItems.filter { calendar.isDateInToday($0.timestamp) }
-        let completedToday = todayItems.filter { $0.isCompleted }.count
-        let pendingToday = todayItems.filter { !$0.isCompleted }.count
-
-        let habitDescriptor = FetchDescriptor<Habit>()
-        let allHabits = (try? modelContext.fetch(habitDescriptor)) ?? []
-        let activeHabits = allHabits.count
-
-        let toolCall = MCPToolInvocation(
-            name: "get_today_summary",
-            argumentsSummary: "items: \(todayItems.count), habits: \(activeHabits)",
-            icon: "chart.bar.xaxis",
-            badgeColorHex: "#FFD166"
-        )
-
-        let reply = """
-        📊 **Rangkuman Aktivitas Hari Ini**
-
-        • ⏳ **Tugas Menunggu:** \(pendingToday) tugas
-        • ✅ **Tugas Selesai:** \(completedToday) tugas
-        • 🔄 **Kebiasaan Aktif:** \(activeHabits) kebiasaan
-
-        \(pendingToday > 0 ? "🔥 *Fokus selesaikan tugas tertunda sebelum sore ya! Semangat!*" : "🎉 *Luar biasa! Semua tugas hari ini sudah terselesaikan dengan sempurna!*")
-        """
-
-        messages.append(
-            MCPAIChatMessage(
-                role: .assistant,
-                content: reply,
-                toolCall: toolCall,
-                toolResult: "Total item: \(allItems.count)"
-            )
-        )
-    }
-
-    // MARK: - 🛠️ TOOL 18: breakdown_complex_task
-    private func executeBreakdownTaskTool(prompt: String) async {
-        let taskTitle = prompt
-            .replacingOccurrences(of: "pecah tugas", with: "", options: .caseInsensitive)
-            .replacingOccurrences(of: "breakdown", with: "", options: .caseInsensitive)
-            .replacingOccurrences(of: "tugas", with: "", options: .caseInsensitive)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        let suggestions = SmartTaskBreakdownService.shared.generateSuggestions(for: taskTitle)
-
-        let toolCall = MCPToolInvocation(
-            name: "breakdown_complex_task",
-            argumentsSummary: "target: \"\(taskTitle.isEmpty ? "Tugas Utama" : taskTitle)\"",
-            icon: "square.split.2x2.fill",
-            badgeColorHex: "#FF99C8"
-        )
-
-        var listText = ""
-        for (index, step) in suggestions.enumerated() {
-            listText += "\n\(index + 1). 🔹 \(step)"
-        }
-
-        let reply = "🧩 **Rekomendasi Pemecahan Subtask:**\n\(listText)\n\n*Tips: Mulai dari langkah pertama dengan sesi Pomodoro 25 menit!*"
-
-        messages.append(
-            MCPAIChatMessage(
-                role: .assistant,
-                content: reply,
-                toolCall: toolCall,
-                toolResult: "\(suggestions.count) subtasks generated"
-            )
-        )
-    }
-
-    // MARK: - 🛠️ TOOL 19: get_productivity_advice
-    private func executeProductivityAdviceTool(prompt: String, modelContext: ModelContext) async {
-        let quotes = [
-            "Gunakan **Teknik 2 Menit**: Jika suatu tugas butuh waktu kurang dari 2 menit, selesaikan sekarang juga tanpa menunda!",
-            "Fokus pada **1 Tugas Prioritas Tinggi (Eat The Frog)** di pagi hari saat energimu berada di titik puncak.",
-            "Gunakan **Pomodoro Timer (25 menit kerja, 5 menit istirahat)** untuk mempertahankan fokus tajam tanpa burnout.",
-            "Kelompokkan tugas-tugas sejenis (*Batch Processing*) seperti membalas email atau merapikan to-do list di jam tertentu."
-        ]
-        let advice = quotes.randomElement() ?? quotes[0]
-
-        let toolCall = MCPToolInvocation(
-            name: "get_productivity_advice",
-            argumentsSummary: "strategy: TimeManagement",
-            icon: "lightbulb.fill",
-            badgeColorHex: "#FFAA00"
-        )
-
-        let reply = "💡 **Tips Produktivitas Khusus untukmu:**\n\n\(advice)"
-
-        messages.append(
-            MCPAIChatMessage(
-                role: .assistant,
-                content: reply,
-                toolCall: toolCall,
-                toolResult: "Advice delivered"
-            )
-        )
-    }
-
     /// Bersihkan riwayat percakapan chat
     func clearMessages() {
         messages.removeAll()
+        pendingProposal = nil
         messages.append(
             MCPAIChatMessage(
                 role: .assistant,
-                content: "Hai! Percakapan telah direset. Mau kita diskusikan atau jalankan aksi MCP apa sekarang? ⚡"
+                content: "Hai! Percakapan telah direset. Mau kita diskusikan rencana atau jalankan aksi MCP apa sekarang? ⚡"
             )
         )
     }
