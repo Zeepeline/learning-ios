@@ -134,7 +134,7 @@ struct HomeActivityListView: View {
                             color: .cartoonMint
                         )
 
-                        // Kartu Riwayat Semua Tugas Selesai (Buka Fullscreen Cover)
+                        // Kartu Riwayat Semua Tugas Selesai (Buka Fullscreen Sheet)
                         Button {
                             HapticManager.shared.impact(style: .light)
                             isShowingHistorySheet = true
@@ -375,6 +375,29 @@ struct HomeActivityListView: View {
 
                 Spacer()
 
+                // 🌟 Tombol Cepat: Lihat Riwayat Selesai (Selalu Ada & Mudah Diakses)
+                if totalCompletedAllTimeCount > 0 {
+                    Button {
+                        HapticManager.shared.impact(style: .light)
+                        isShowingHistorySheet = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "clock.arrow.circlepath")
+                                .font(.system(size: 10, weight: .black))
+                            Text("Riwayat (\(totalCompletedAllTimeCount))")
+                                .font(.system(size: 10.5, weight: .heavy, design: .rounded))
+                        }
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.cartoonLavender)
+                        .cornerRadius(8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
+                        .shadow(color: .black, radius: 0, x: 1, y: 1)
+                    }
+                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
+                }
+
                 if todayCompletedCount > 0 && selectedStatusFilter == "completed" {
                     Button {
                         HapticManager.shared.impact(style: .light)
@@ -385,7 +408,7 @@ struct HomeActivityListView: View {
                         HStack(spacing: 3) {
                             Image(systemName: "trash")
                                 .font(.system(size: 9, weight: .bold))
-                            Text("Bersihkan Selesai")
+                            Text("Bersihkan")
                                 .font(.system(size: 10.5, weight: .heavy, design: .rounded))
                         }
                         .foregroundColor(.black)
