@@ -1,3 +1,5 @@
+import Foundation
+import UIKit
 import SwiftUI
 import GoogleSignIn
 
@@ -56,22 +58,17 @@ final class GoogleAuthManager {
         return refreshedUser.accessToken.tokenString
     }
 
-    /// Login dengan Google menggunakan async/await (dengan scope generatif Gemini)
+    /// Login standar Google Sign-In (Lancar & Bebas Error Consent Screen)
     func signIn() async throws -> GIDGoogleUser {
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let rootViewController = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController ?? windowScene.windows.first?.rootViewController else {
             throw GoogleAuthError.noRootViewController
         }
 
-        let additionalScopes = [
-            "https://www.googleapis.com/auth/generative-language"
-        ]
-
         do {
+            // Gunakan standard scopes agar proses sign in tidak diblokir oleh Google OAuth Consent Screen
             let result = try await GIDSignIn.sharedInstance.signIn(
-                withPresenting: rootViewController,
-                hint: nil,
-                additionalScopes: additionalScopes
+                withPresenting: rootViewController
             )
             return result.user
         } catch {
@@ -81,6 +78,27 @@ final class GoogleAuthManager {
                 throw GoogleAuthError.userCanceled
             }
             throw error
+        }
+    }
+
+    /// Meminta izin tambahan Generative Language (Gemini) secara bertahap (Incremental Auth)
+    func requestGenerativeLanguageScope() async -> Bool {
+        guard let user = GIDSignIn.sharedInstance.currentUser,
+              let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootViewController = windowScene.windows.first(where: { $0.isKeyWindow })?.rootViewController ?? windowScene.windows.first?.rootViewController else {
+            return false
+        }
+
+        let generativeScope = "https://www.googleapis.com/auth/generative-language"
+        if user.grantedScopes?.contains(generativeScope) == true {
+            return true
+        }
+
+        do {
+            _ = try await user.addScopes([generativeScope], presenting: rootViewController)
+            return true
+        } catch {
+            return false
         }
     }
 
