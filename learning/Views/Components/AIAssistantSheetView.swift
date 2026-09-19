@@ -72,10 +72,11 @@ struct AIAssistantSheetView: View {
                             .padding(.vertical, HIGSpacing.md)
                         }
                         .onChange(of: assistantService.messages.count) {
-                            if let lastId = assistantService.messages.last?.id {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                                    proxy.scrollTo(lastId, anchor: .bottom)
-                                }
+                            smoothScrollToBottom(proxy: proxy)
+                        }
+                        .onChange(of: assistantService.isProcessing) {
+                            if assistantService.isProcessing {
+                                smoothScrollToIndicator(proxy: proxy)
                             }
                         }
                     }
@@ -167,6 +168,27 @@ struct AIAssistantSheetView: View {
             }
             .sheet(isPresented: $isShowingSettings) {
                 aiSettingsSheet
+            }
+        }
+    }
+
+    // MARK: -  плав Smooth Scrolling Helpers
+    private func smoothScrollToBottom(proxy: ScrollViewProxy) {
+        guard let lastId = assistantService.messages.last?.id else { return }
+        Task { @MainActor in
+            // Delay 80ms untuk memberi jeda kalkulasi layout SwiftUI agar animasi scroll terasa tenang dan mulus
+            try? await Task.sleep(nanoseconds: 80_000_000)
+            withAnimation(.easeInOut(duration: 0.45)) {
+                proxy.scrollTo(lastId, anchor: .bottom)
+            }
+        }
+    }
+
+    private func smoothScrollToIndicator(proxy: ScrollViewProxy) {
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 80_000_000)
+            withAnimation(.easeInOut(duration: 0.45)) {
+                proxy.scrollTo("typingIndicator", anchor: .bottom)
             }
         }
     }
@@ -274,10 +296,10 @@ struct AIAssistantSheetView: View {
             }
 
             HStack(spacing: 6) {
-                ForEach(0..<3) { _ in
+                ForEach(0..<3) { i in
                     Circle()
-                        .fill(Color.black)
-                        .frame(width: 7, height: 7)
+                        .fill(Color.black.opacity(0.75))
+                        .frame(width: 6, height: 6)
                 }
                 Text("Memproses via \(currentProvider.shortName)...")
                     .font(.system(size: 12, weight: .bold, design: .rounded))
