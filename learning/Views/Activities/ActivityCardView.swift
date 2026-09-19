@@ -20,14 +20,18 @@ struct ActivityCardView: View {
 
     dynamic var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // MARK: - Baris Utama: Checkbox + Konten Teks Multiline + Aksi
-            HStack(alignment: .top, spacing: 12) {
+            // MARK: - Baris Utama: Checkbox + Ikon Kategori Bulat + Judul Multiline + Aksi
+            HStack(alignment: .top, spacing: 10) {
                 // 1. 🔘 Checkbox Kartun
                 checkboxButton
                     .padding(.top, 2)
 
-                // 2. 📝 Judul Tugas & Metadata Vertikal (Multiline Rapi)
-                VStack(alignment: .leading, spacing: 6) {
+                // 2. 🏷️ Ikon Kategori dalam Lingkaran di Samping Kiri Judul
+                categoryIconCircle
+                    .padding(.top, 2)
+
+                // 3. 📝 Judul Tugas & Metadata Bawah (Multiline Rapi)
+                VStack(alignment: .leading, spacing: 5) {
                     Text(item.title)
                         .font(.system(size: 15, weight: .heavy, design: .rounded))
                         .foregroundColor(Color.black)
@@ -45,8 +49,8 @@ struct ActivityCardView: View {
                             .fixedSize(horizontal: false, vertical: true)
                     }
 
-                    // Baris Metadata (Waktu, Kategori, Subtask Progress, Lampiran)
-                    metadataChipsRow
+                    // Baris Metadata Bawah (Waktu, Subtask Progress, Recurring, Foto)
+                    bottomMetadataRow
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .contentShape(Rectangle())
@@ -54,7 +58,7 @@ struct ActivityCardView: View {
                     onTap?()
                 }
 
-                // 3. 🛠️ Tombol Aksi (Expand & Delete)
+                // 4. 🛠️ Tombol Aksi (Expand & Delete)
                 HStack(spacing: 6) {
                     if !item.subtasks.isEmpty || item.imageAttachmentData != nil {
                         expandButton
@@ -106,14 +110,30 @@ struct ActivityCardView: View {
                         .foregroundColor(.black)
                 }
             }
-            .frame(width: 32, height: 32)
+            .frame(width: 30, height: 30)
             .contentShape(Rectangle())
         }
         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
     }
 
-    // MARK: - 🏷️ Metadata Chips Row (Waktu, Kategori, Subtask, Lampiran)
-    private var metadataChipsRow: some View {
+    // MARK: - 🏷️ Lingkaran Ikon Kategori (Samping Kiri Judul)
+    private var categoryIconCircle: some View {
+        let (icon, color) = categoryIconAndColor(for: item.category)
+        return ZStack {
+            Circle()
+                .fill(color)
+                .frame(width: 28, height: 28)
+                .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
+                .shadow(color: .black, radius: 0, x: 1.2, y: 1.2)
+
+            Image(systemName: icon)
+                .font(.system(size: 12, weight: .heavy))
+                .foregroundColor(.black)
+        }
+    }
+
+    // MARK: - 🏷️ Metadata Bawah (Waktu, Subtask, Lampiran, Recurring)
+    private var bottomMetadataRow: some View {
         HStack(spacing: 6) {
             // Waktu / Jam
             HStack(spacing: 3) {
@@ -126,25 +146,9 @@ struct ActivityCardView: View {
             }
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
-            .background(Color.white.opacity(0.6))
+            .background(Color.white.opacity(0.65))
             .cornerRadius(6)
             .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black.opacity(0.15), lineWidth: 0.8))
-
-            // Kategori Chip
-            if !item.category.isEmpty {
-                HStack(spacing: 3) {
-                    Image(systemName: "tag.fill")
-                        .font(.system(size: 9, weight: .bold))
-                    Text(item.category)
-                        .font(.system(size: 10.5, weight: .heavy, design: .rounded))
-                }
-                .foregroundColor(.black.opacity(0.8))
-                .padding(.horizontal, 6)
-                .padding(.vertical, 3)
-                .background(Color.white.opacity(0.75))
-                .cornerRadius(6)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black.opacity(0.15), lineWidth: 0.8))
-            }
 
             // Subtask Progress Badge
             if !item.subtasks.isEmpty {
@@ -227,7 +231,7 @@ struct ActivityCardView: View {
                     .font(.system(size: 11, weight: .black))
                     .foregroundColor(.black)
             }
-            .frame(width: 32, height: 32)
+            .frame(width: 30, height: 30)
             .contentShape(Rectangle())
         }
         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
@@ -351,10 +355,29 @@ struct ActivityCardView: View {
     // MARK: - Warna Background Kartu Mewakili Prioritas
     private func cardBgColor(for priority: String) -> Color {
         switch priority {
-        case "Tinggi": return Color(red: 1.0, green: 0.88, blue: 0.88)      // Pastel Coral / Red
-        case "Normal", "Sedang": return Color(red: 1.0, green: 0.95, blue: 0.82) // Pastel Yellow / Orange
-        case "Rendah": return Color(red: 0.88, green: 0.95, blue: 1.0)     // Pastel Sky Blue
+        case "Tinggi": return Color(red: 1.0, green: 0.88, blue: 0.88)
+        case "Normal", "Sedang": return Color(red: 1.0, green: 0.95, blue: 0.82)
+        case "Rendah": return Color(red: 0.88, green: 0.95, blue: 1.0)
         default: return .white
+        }
+    }
+
+    // MARK: - Helper Ikon dan Warna Kategori
+    private func categoryIconAndColor(for category: String) -> (icon: String, color: Color) {
+        switch category {
+        case "Belajar": return ("book.fill", .cartoonYellow)
+        case "Kesehatan": return ("heart.fill", .cartoonPink)
+        case "Pekerjaan": return ("briefcase.fill", .cartoonLavender)
+        case "Pribadi": return ("person.fill", .cartoonMint)
+        case "Keuangan": return ("creditcard.fill", .cartoonBlue)
+        case "Ibadah": return ("sparkles", .cartoonOrange)
+        case "Rumah": return ("house.fill", .cartoonYellow)
+        case "Sosial": return ("person.2.fill", .cartoonPink)
+        case "Belanja": return ("cart.fill", .cartoonMint)
+        case "Design": return ("paintbrush.pointed.fill", .cartoonLavender)
+        case "Coding": return ("curlybraces", .cartoonBlue)
+        case "Meeting": return ("bubble.left.and.bubble.right.fill", .cartoonOrange)
+        default: return ("folder.fill", .cartoonMint)
         }
     }
 }

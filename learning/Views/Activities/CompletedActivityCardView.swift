@@ -18,14 +18,18 @@ struct CompletedActivityCardView: View {
 
     dynamic var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // MARK: - Baris Utama: Checkbox + Konten Selesai + Tombol Hapus
-            HStack(alignment: .top, spacing: 12) {
+            // MARK: - Baris Utama: Checkbox Selesai + Ikon Kategori + Judul + Hapus
+            HStack(alignment: .top, spacing: 10) {
                 // 1. 🔘 Checkbox Selesai (Mint Checkmark)
                 checkboxButton
                     .padding(.top, 2)
 
-                // 2. 📝 Judul Tugas & Metadata Selesai
-                VStack(alignment: .leading, spacing: 5) {
+                // 2. 🏷️ Ikon Kategori dalam Lingkaran di Samping Kiri Judul
+                categoryIconCircle
+                    .padding(.top, 2)
+
+                // 3. 📝 Judul Tugas & Waktu Selesai
+                VStack(alignment: .leading, spacing: 4) {
                     Text(item.title)
                         .font(.system(size: 14.5, weight: .heavy, design: .rounded))
                         .foregroundColor(Color.black.opacity(0.7))
@@ -33,33 +37,16 @@ struct CompletedActivityCardView: View {
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    // Metadata Chips (Kategori & Waktu Selesai)
-                    HStack(spacing: 6) {
-                        if !item.category.isEmpty {
-                            HStack(spacing: 3) {
-                                Image(systemName: "tag.fill")
-                                    .font(.system(size: 9, weight: .bold))
-                                Text(item.category)
-                                    .font(.system(size: 10, weight: .heavy, design: .rounded))
-                            }
-                            .foregroundColor(.black.opacity(0.6))
-                            .padding(.horizontal, 6)
-                            .padding(.vertical, 2.5)
-                            .background(Color.white.opacity(0.6))
-                            .cornerRadius(5)
+                    // Metadata Selesai
+                    if let completedAt = item.completedAt {
+                        HStack(spacing: 3) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 9, weight: .bold))
+                            Text(completedAt, format: Date.FormatStyle(date: .omitted, time: .shortened))
+                                .font(.system(size: 10, weight: .bold, design: .rounded))
                         }
-
-                        if let completedAt = item.completedAt {
-                            HStack(spacing: 3) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.system(size: 9, weight: .bold))
-                                Text(completedAt, format: Date.FormatStyle(date: .omitted, time: .shortened))
-                                    .font(.system(size: 10, weight: .bold, design: .rounded))
-                            }
-                            .foregroundColor(Color.black.opacity(0.6))
-                        }
-
-                        Spacer(minLength: 0)
+                        .foregroundColor(Color.black.opacity(0.6))
+                        .padding(.top, 1)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -68,7 +55,7 @@ struct CompletedActivityCardView: View {
                     onTap?()
                 }
 
-                // 3. 🛠️ Tombol Aksi (Expand & Delete)
+                // 4. 🛠️ Tombol Aksi (Expand & Delete)
                 HStack(spacing: 6) {
                     if !item.subtasks.isEmpty || !item.notes.isEmpty {
                         expandButton
@@ -115,10 +102,25 @@ struct CompletedActivityCardView: View {
                     .font(.system(size: 13, weight: .black))
                     .foregroundColor(.black)
             }
-            .frame(width: 32, height: 32)
+            .frame(width: 30, height: 30)
             .contentShape(Rectangle())
         }
         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+    }
+
+    // MARK: - 🏷️ Lingkaran Ikon Kategori
+    private var categoryIconCircle: some View {
+        let icon = categoryIcon(for: item.category)
+        return ZStack {
+            Circle()
+                .fill(Color.white.opacity(0.8))
+                .frame(width: 28, height: 28)
+                .overlay(Circle().stroke(Color.black.opacity(0.3), lineWidth: 1.2))
+
+            Image(systemName: icon)
+                .font(.system(size: 11, weight: .bold))
+                .foregroundColor(.black.opacity(0.7))
+        }
     }
 
     // MARK: - 🔼 Expand Button
@@ -155,7 +157,7 @@ struct CompletedActivityCardView: View {
                     .font(.system(size: 11, weight: .black))
                     .foregroundColor(.black)
             }
-            .frame(width: 32, height: 32)
+            .frame(width: 30, height: 30)
             .contentShape(Rectangle())
         }
         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
@@ -193,5 +195,23 @@ struct CompletedActivityCardView: View {
             }
         }
         .transition(.opacity.combined(with: .scale(scale: 0.98)))
+    }
+
+    private func categoryIcon(for category: String) -> String {
+        switch category {
+        case "Belajar": return "book.fill"
+        case "Kesehatan": return "heart.fill"
+        case "Pekerjaan": return "briefcase.fill"
+        case "Pribadi": return "person.fill"
+        case "Keuangan": return "creditcard.fill"
+        case "Ibadah": return "sparkles"
+        case "Rumah": return "house.fill"
+        case "Sosial": return "person.2.fill"
+        case "Belanja": return "cart.fill"
+        case "Design": return "paintbrush.pointed.fill"
+        case "Coding": return "curlybraces"
+        case "Meeting": return "bubble.left.and.bubble.right.fill"
+        default: return "folder.fill"
+        }
     }
 }
