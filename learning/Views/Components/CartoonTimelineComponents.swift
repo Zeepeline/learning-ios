@@ -30,12 +30,12 @@ struct CartoonWeeklyStrip: View {
                 } label: {
                     VStack(spacing: 4) {
                         // Nama Hari (SEN, SEL, RAB / MON, TUE, WED...)
-                        Text(date.formatted(.dateTime.weekday(.abbreviated)).uppercased())
+                        Text(CalendarDateCache.shared.formatWeekday(date))
                             .font(.system(size: 10, weight: .heavy, design: .rounded))
                             .foregroundColor(isSelected ? .white : .secondary)
 
                         // Angka Tanggal (14, 15, 17...)
-                        Text(date.formatted(.dateTime.day()))
+                        Text(CalendarDateCache.shared.formatDay(date))
                             .font(.system(size: 15, weight: .heavy, design: .rounded))
                             .foregroundColor(isSelected ? .white : .black)
 

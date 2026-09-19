@@ -29,22 +29,21 @@ struct CartoonPrimaryButton: View {
                 Text(title)
                     .font(.system(size: 15, weight: .heavy, design: .rounded))
             }
-            .foregroundColor(fgColor)
+            .foregroundColor(isEnabled ? fgColor : Color.black.opacity(0.4))
             .frame(maxWidth: .infinity)
             .frame(height: height)
             .background(
                 RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                    .fill(bgColor)
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                    .fill(isEnabled ? bgColor : Color(red: 0.92, green: 0.92, blue: 0.94))
+                    .shadow(color: .black, radius: 0, x: isEnabled ? 2 : 1.5, y: isEnabled ? 2 : 1.5)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                     .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
             )
         }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: isEnabled ? 1.0 : 0))
         .disabled(!isEnabled)
-        .opacity(isEnabled ? 1.0 : 0.6)
     }
 }
 

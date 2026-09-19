@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Sentry
 
 // MARK: - 🎨 Reusable Cartoon Top Header Bar
 struct CartoonHeaderView: View {
@@ -21,6 +22,7 @@ struct CartoonHeaderView: View {
 
     dynamic var body: some View {
         HStack(spacing: HIGSpacing.md) {
+
             // Tombol Kiri (Quick Action / Profil Avatar)
             if let leadingAction = leadingAction {
                 Button {
