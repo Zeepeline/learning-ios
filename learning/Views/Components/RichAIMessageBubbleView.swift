@@ -27,7 +27,7 @@ enum AIContentBlock: Identifiable {
     }
 }
 
-// MARK: - 🎨 Rich AI Message Bubble with List Formatting & Action Cards
+// MARK: - 🎨 Rich AI Message Bubble with List Formatting & MCP Badge
 struct RichAIMessageBubbleView: View {
     let message: MCPAIChatMessage
     @Environment(\.modelContext) private var modelContext
@@ -52,7 +52,7 @@ struct RichAIMessageBubbleView: View {
                 Spacer(minLength: 40)
             }
 
-            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 10) {
+            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 8) {
                 // 1. Tool Call Badge (Jika AI Mengeksekusi Alat MCP)
                 if let tool = message.toolCall {
                     HStack(spacing: 6) {
@@ -94,97 +94,6 @@ struct RichAIMessageBubbleView: View {
                         .shadow(color: .black, radius: 0, x: 2, y: 2)
                 } else {
                     renderAssistantRichBlocks()
-                }
-
-                // 3. Interactive Confirmation Card (Jika Ada Proposal Subtasks)
-                if let proposal = message.proposal {
-                    VStack(alignment: .leading, spacing: 10) {
-                        HStack {
-                            Image(systemName: "sparkles.rectangle.stack.fill")
-                                .font(.system(size: 13, weight: .bold))
-                                .foregroundColor(.black)
-                            Text("Daftar Subtasks Siap Dijadwalkan:")
-                                .font(.system(size: 12, weight: .heavy, design: .rounded))
-                                .foregroundColor(.black)
-                        }
-
-                        // List Subtasks Cards
-                        VStack(spacing: 6) {
-                            ForEach(Array(proposal.subtasks.enumerated()), id: \.offset) { index, task in
-                                HStack(spacing: 8) {
-                                    Text("\(index + 1)")
-                                        .font(.system(size: 11, weight: .black, design: .rounded))
-                                        .foregroundColor(.black)
-                                        .frame(width: 22, height: 22)
-                                        .background(Color.cartoonYellow)
-                                        .cornerRadius(6)
-                                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
-
-                                    Text(task)
-                                        .font(.system(size: 12.5, weight: .bold, design: .rounded))
-                                        .foregroundColor(.black)
-
-                                    Spacer()
-                                }
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 7)
-                                .background(Color.white)
-                                .cornerRadius(8)
-                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.0))
-                            }
-                        }
-
-                        // Action Buttons: 1-Tap Schedule & Pomodoro
-                        HStack(spacing: 8) {
-                            Button {
-                                HapticManager.shared.impact(style: .medium)
-                                Task {
-                                    await assistantService.confirmProposalDirectly(modelContext: modelContext)
-                                }
-                            } label: {
-                                HStack(spacing: 6) {
-                                    Image(systemName: "checkmark.circle.fill")
-                                        .font(.system(size: 12, weight: .bold))
-                                    Text("⚡ Jadwalkan Semua")
-                                        .font(.system(size: 12, weight: .heavy, design: .rounded))
-                                }
-                                .foregroundColor(.black)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 9)
-                                .background(Color.cartoonMint)
-                                .cornerRadius(8)
-                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-                                .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-                            }
-                            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-
-                            Button {
-                                HapticManager.shared.impact(style: .light)
-                                PomodoroManager.shared.selectPreset(.quickFocus)
-                                PomodoroManager.shared.startTimer()
-                            } label: {
-                                HStack(spacing: 4) {
-                                    Image(systemName: "timer")
-                                        .font(.system(size: 11, weight: .bold))
-                                    Text("Fokus 25m")
-                                        .font(.system(size: 11.5, weight: .heavy, design: .rounded))
-                                }
-                                .foregroundColor(.black)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 9)
-                                .background(Color.cartoonCoral)
-                                .cornerRadius(8)
-                                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-                                .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-                            }
-                            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-                        }
-                    }
-                    .padding(12)
-                    .background(Color.cartoonBg)
-                    .cornerRadius(12)
-                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.4))
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
                 }
             }
 
@@ -302,7 +211,6 @@ struct RichAIMessageBubbleView: View {
 
     // MARK: - 🧩 Smart Block Parsing Algorithm
     private func parseContentToBlocks(_ rawContent: String) -> [AIContentBlock] {
-        // 1. Normalisasi teks jika ada baris nomor yang tersambung (cth: "1. Teks 2. Teks")
         var normalized = rawContent
         normalized = normalized.replacingOccurrences(of: "([a-zA-Z0-9.,!?])\\s+([0-9]+\\.\\s+)", with: "$1\n$2", options: .regularExpression)
         normalized = normalized.replacingOccurrences(of: "([a-zA-Z0-9.,!?])\\s+([•*\\-🔹📌]\\s+)", with: "$1\n$2", options: .regularExpression)
