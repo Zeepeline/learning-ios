@@ -8,10 +8,10 @@
 import SwiftUI
 import SwiftData
 
-// MARK: - 💬 Cartoon Chat Bubble Shape (Sudut Lancip di Bagian Bawah)
+// MARK: - 💬 Cartoon Chat Bubble Shape
 struct CartoonChatBubbleShape: Shape {
     let isUser: Bool
-    var cornerRadius: CGFloat = 16
+    var cornerRadius: CGFloat = 14
     var pointedRadius: CGFloat = 3
 
     func path(in rect: CGRect) -> Path {
@@ -68,26 +68,7 @@ struct CartoonChatBubbleShape: Shape {
     }
 }
 
-// MARK: - 🎨 Parsed Content Block Type
-enum AIContentBlock: Identifiable {
-    case paragraph(String)
-    case header(String)
-    case numberedItem(number: Int, text: String)
-    case bulletItem(text: String)
-    case infoBox(title: String, details: [String])
-
-    var id: String {
-        switch self {
-        case .paragraph(let text): return "p_\(text.hashValue)"
-        case .header(let text): return "h_\(text.hashValue)"
-        case .numberedItem(let num, let text): return "num_\(num)_\(text.hashValue)"
-        case .bulletItem(let text): return "bullet_\(text.hashValue)"
-        case .infoBox(let title, let details): return "info_\(title)_\(details.count)"
-        }
-    }
-}
-
-// MARK: - 💬 Rich AI Message Bubble (Dengan Sudut Lancip & Quick Action Buttons)
+// MARK: - 💬 Rich AI Message Bubble (Teks Tajam, Kontras Tinggi & Anti-Blur)
 struct RichAIMessageBubbleView: View {
     let message: AIMessage
     @Environment(\.modelContext) private var modelContext
@@ -102,28 +83,29 @@ struct RichAIMessageBubbleView: View {
     var body: some View {
         Group {
             if message.isUser {
-                // MARK: - 👤 Bubble Pengguna (Kanan, Lancip di Sudut Kanan Bawah)
+                // MARK: - 👤 Bubble Pengguna (Kanan, Biru Cartoon Tajam)
                 HStack {
-                    Spacer(minLength: 28)
+                    Spacer(minLength: 32)
 
                     Text(message.content)
-                        .font(.system(size: 14.5, weight: .heavy, design: .rounded))
+                        .font(.system(size: 15, weight: .bold, design: .rounded))
                         .foregroundColor(.black)
                         .lineSpacing(3)
+                        .textSelection(.enabled)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 12)
                         .background(
-                            CartoonChatBubbleShape(isUser: true)
+                            RoundedRectangle(cornerRadius: 14)
                                 .fill(Color.cartoonBlue)
                         )
                         .overlay(
-                            CartoonChatBubbleShape(isUser: true)
+                            RoundedRectangle(cornerRadius: 14)
                                 .stroke(Color.black, lineWidth: 1.8)
                         )
                         .shadow(color: .black, radius: 0, x: 2, y: 2)
                 }
             } else {
-                // MARK: - 🤖 Bubble AI Asisten (Kiri, Lancip di Sudut Kiri Bawah, Lebar Penuh)
+                // MARK: - 🤖 Bubble AI Asisten (Kiri, Putih Solid, Teks Super Jelas)
                 VStack(alignment: .leading, spacing: 10) {
                     // 1. Tool Call Badge (Jika AI Mengeksekusi Alat MCP)
                     if let tool = message.toolCall {
@@ -133,8 +115,8 @@ struct RichAIMessageBubbleView: View {
                                 .foregroundColor(.black)
 
                             Text("MCP Tool:")
-                                .font(.system(size: 10, weight: .black, design: .monospaced))
-                                .foregroundColor(Color.black.opacity(0.85))
+                                .font(.system(size: 10.5, weight: .black, design: .monospaced))
+                                .foregroundColor(.black)
 
                             Text(tool.name)
                                 .font(.system(size: 11, weight: .heavy, design: .monospaced))
@@ -148,13 +130,25 @@ struct RichAIMessageBubbleView: View {
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color(hex: tool.badgeColorHex).opacity(0.4))
+                        .background(Color(hex: tool.badgeColorHex).opacity(0.45))
                         .cornerRadius(8)
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
                     }
 
-                    // 2. Body Konten Assistant (Lebar Penuh & Teks Tajam)
-                    renderAssistantRichBlocks()
+                    // 2. Body Teks AI Asisten (Native Markdown Renderer dengan Font Jernih)
+                    aiMessageBodyContent
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(Color.white)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(Color.black, lineWidth: 1.8)
+                        )
+                        .shadow(color: .black, radius: 0, x: 2, y: 2)
 
                     // 3. Kartu Interactive Proposal (Jika AI Menawarkan Rancangan Rencana)
                     if let proposal = message.proposal {
@@ -167,6 +161,24 @@ struct RichAIMessageBubbleView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
+    }
+
+    // MARK: - 📝 AI Message Body Content (Native Sharp Markdown)
+    private var aiMessageBodyContent: some View {
+        Text(LocalizedStringKey(formattedCleanMarkdown(message.content)))
+            .font(.system(size: 14.5, weight: .semibold, design: .default))
+            .foregroundColor(.black)
+            .lineSpacing(4.5)
+            .textSelection(.enabled)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    // Membersihkan format markdown agar tidak ada karakter rusak atau baris renggang berlebihan
+    private func formattedCleanMarkdown(_ text: String) -> String {
+        var clean = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        clean = clean.replacingOccurrences(of: "\r\n", with: "\n")
+        clean = clean.replacingOccurrences(of: "\r", with: "\n")
+        return clean
     }
 
     // MARK: - ⚡ In-Chat Quick Action Buttons
@@ -378,143 +390,5 @@ struct RichAIMessageBubbleView: View {
                 }
             }
         }
-    }
-
-    // MARK: - 📝 Structured Assistant Content Parser & Renderer (Teks Tajam & Bold)
-    @ViewBuilder
-    private func renderAssistantRichBlocks() -> some View {
-        let blocks = parseContentToBlocks(message.content)
-
-        VStack(alignment: .leading, spacing: 10) {
-            ForEach(blocks) { block in
-                switch block {
-                case .header(let text):
-                    Text(LocalizedStringKey(text))
-                        .font(.system(size: 15.5, weight: .heavy, design: .rounded))
-                        .foregroundColor(.black)
-                        .padding(.top, 3)
-
-                case .numberedItem(let num, let text):
-                    HStack(alignment: .top, spacing: 10) {
-                        Text("\(num)")
-                            .font(.system(size: 11, weight: .black, design: .rounded))
-                            .foregroundColor(.black)
-                            .frame(width: 22, height: 22)
-                            .background(Color.cartoonYellow)
-                            .cornerRadius(6)
-                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.2))
-                            .padding(.top, 1)
-
-                        Text(LocalizedStringKey(text))
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(.black)
-                            .lineSpacing(3)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
-                    .background(Color.white)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-                    .shadow(color: .black, radius: 0, x: 1, y: 1)
-
-                case .bulletItem(let text):
-                    HStack(alignment: .top, spacing: 10) {
-                        Circle()
-                            .fill(Color.cartoonMint)
-                            .frame(width: 9, height: 9)
-                            .overlay(Circle().stroke(Color.black, lineWidth: 1.2))
-                            .padding(.top, 6)
-
-                        Text(LocalizedStringKey(text))
-                            .font(.system(size: 14, weight: .bold, design: .rounded))
-                            .foregroundColor(.black)
-                            .lineSpacing(3)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Spacer(minLength: 0)
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(Color.white)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-                    .shadow(color: .black, radius: 0, x: 1, y: 1)
-
-                case .paragraph(let text):
-                    Text(LocalizedStringKey(text))
-                        .font(.system(size: 14.5, weight: .bold, design: .rounded))
-                        .foregroundColor(.black)
-                        .lineSpacing(4)
-                        .fixedSize(horizontal: false, vertical: true)
-
-                case .infoBox(let title, let details):
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text(title)
-                            .font(.system(size: 13, weight: .heavy, design: .rounded))
-                            .foregroundColor(.black)
-                        ForEach(details, id: \.self) { d in
-                            Text("• \(d)")
-                                .font(.system(size: 12.5, weight: .heavy, design: .rounded))
-                                .foregroundColor(.black)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(10)
-                    .background(Color.white)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-                    .shadow(color: .black, radius: 0, x: 1, y: 1)
-                }
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            CartoonChatBubbleShape(isUser: false)
-                .fill(Color.white)
-        )
-        .overlay(
-            CartoonChatBubbleShape(isUser: false)
-                .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-        )
-        .shadow(color: .black, radius: 0, x: 2, y: 2)
-    }
-
-    // MARK: - 🧩 Smart Block Parsing Algorithm
-    private func parseContentToBlocks(_ rawContent: String) -> [AIContentBlock] {
-        var normalized = rawContent
-        normalized = normalized.replacingOccurrences(of: "([a-zA-Z0-9.,!?])\\s+([0-9]+\\.\\s+)", with: "$1\n$2", options: .regularExpression)
-        normalized = normalized.replacingOccurrences(of: "([a-zA-Z0-9.,!?])\\s+([•*\\-🔹📌]\\s+)", with: "$1\n$2", options: .regularExpression)
-
-        let rawLines = normalized.components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { !$0.isEmpty }
-
-        var blocks: [AIContentBlock] = []
-
-        for line in rawLines {
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            if trimmed.hasPrefix("### ") || trimmed.hasPrefix("## ") || trimmed.hasPrefix("# ") {
-                let text = trimmed.replacingOccurrences(of: "^#{1,3}\\s*", with: "", options: .regularExpression)
-                blocks.append(.header(text))
-            } else if let match = trimmed.range(of: "^([0-9]+)[.)]\\s+", options: .regularExpression) {
-                let numStr = String(trimmed[match]).trimmingCharacters(in: CharacterSet(charactersIn: "0123456789").inverted)
-                let num = Int(numStr) ?? 1
-                let text = String(trimmed[match.upperBound...])
-                blocks.append(.numberedItem(number: num, text: text))
-            } else if trimmed.hasPrefix("• ") || trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") || trimmed.hasPrefix("🔹 ") || trimmed.hasPrefix("📌 ") {
-                let text = trimmed.replacingOccurrences(of: "^[•\\-*🔹📌]\\s*", with: "", options: .regularExpression)
-                blocks.append(.bulletItem(text: text))
-            } else {
-                blocks.append(.paragraph(trimmed))
-            }
-        }
-
-        return blocks
     }
 }

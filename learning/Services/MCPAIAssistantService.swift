@@ -498,25 +498,27 @@ final class MCPAIAssistantService: ObservableObject {
         }
     }
 
-    // MARK: - 🌊 Stream Assistant Message Word by Word
+    // MARK: - 🌊 Stream Assistant Message Word by Word (Smooth & Sharp)
     private func streamAssistantMessage(fullContent: String) async {
-        let msgId = UUID()
         var placeholder = AIMessage(isUser: false, content: "")
         placeholder.isStreaming = true
         messages.append(placeholder)
 
         let words = fullContent.components(separatedBy: " ")
         var accumulated = ""
+        let chunkSize = 3
 
-        for (index, word) in words.enumerated() {
-            accumulated += (index == 0 ? "" : " ") + word
+        for i in stride(from: 0, to: words.count, by: chunkSize) {
+            let chunk = words[i..<min(i + chunkSize, words.count)].joined(separator: " ")
+            accumulated += (accumulated.isEmpty ? "" : " ") + chunk
             if let idx = messages.firstIndex(where: { $0.id == placeholder.id }) {
                 messages[idx].content = accumulated
             }
-            try? await Task.sleep(nanoseconds: 12_000_000)
+            try? await Task.sleep(nanoseconds: 25_000_000)
         }
 
         if let idx = messages.firstIndex(where: { $0.id == placeholder.id }) {
+            messages[idx].content = fullContent
             messages[idx].isStreaming = false
         }
     }
