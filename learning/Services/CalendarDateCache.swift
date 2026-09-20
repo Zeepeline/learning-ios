@@ -8,25 +8,33 @@
 import Foundation
 
 // MARK: - ⚡ High-Performance Zero-Allocation Calendar & Date Formatter Cache
-final class CalendarDateCache: @unchecked Sendable {
+@MainActor
+final class CalendarDateCache {
     static let shared = CalendarDateCache()
 
-    private let calendar = Calendar.current
+    private let calendar: Calendar
     private let timeFormatter: DateFormatter
     private let dayFormatter: DateFormatter
     private let weekdayFormatter: DateFormatter
 
     private init() {
+        var cal = Calendar.current
+        cal.locale = Locale.current
+        self.calendar = cal
+
         let tf = DateFormatter()
         tf.dateFormat = "HH:mm"
+        tf.locale = Locale.current
         self.timeFormatter = tf
 
         let df = DateFormatter()
         df.dateFormat = "d"
+        df.locale = Locale.current
         self.dayFormatter = df
 
         let wf = DateFormatter()
         wf.dateFormat = "EEE"
+        wf.locale = Locale(identifier: "id_ID")
         self.weekdayFormatter = wf
     }
 
@@ -40,7 +48,7 @@ final class CalendarDateCache: @unchecked Sendable {
         dayFormatter.string(from: date)
     }
 
-    /// Format hari cepat (misal: "JUM" / "FRI")
+    /// Format hari cepat (misal: "JUM" / "SAB")
     func formatWeekday(_ date: Date) -> String {
         weekdayFormatter.string(from: date).uppercased()
     }

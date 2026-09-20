@@ -11,12 +11,15 @@ import SwiftUI
 // MARK: - 📅 Calendar Sync Errors
 enum CalendarSyncError: LocalizedError {
     case permissionDenied
+    case noWritableCalendar
     case saveFailed(String)
 
     var errorDescription: String? {
         switch self {
         case .permissionDenied:
             return "Izin akses Apple Calendar tidak diberikan."
+        case .noWritableCalendar:
+            return "Tidak ditemukan kalender yang dapat ditulisi di perangkat."
         case .saveFailed(let message):
             return message
         }
@@ -52,12 +55,18 @@ final class CalendarSyncManager {
             throw CalendarSyncError.permissionDenied
         }
 
+        let targetCalendar = eventStore.defaultCalendarForNewEvents ?? eventStore.calendars(for: .event).first(where: { $0.allowsContentModifications })
+        guard let calendar = targetCalendar else {
+            HapticManager.shared.error()
+            throw CalendarSyncError.noWritableCalendar
+        }
+
         let event = EKEvent(eventStore: eventStore)
         event.title = title
         event.startDate = startDate
         event.endDate = startDate.addingTimeInterval(3600) // Default durasi 1 jam
         event.notes = notes
-        event.calendar = eventStore.defaultCalendarForNewEvents
+        event.calendar = calendar
 
         do {
             try eventStore.save(event, span: .thisEvent)
