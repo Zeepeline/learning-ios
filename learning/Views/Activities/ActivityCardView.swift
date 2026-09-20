@@ -39,8 +39,8 @@ struct ActivityCardView: View {
                     // Catatan Singkat (Jika Ada)
                     if !item.notes.isEmpty {
                         Text(item.notes)
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                            .foregroundColor(Color.black.opacity(0.65))
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundColor(Color.black.opacity(0.85))
                             .lineLimit(2)
                             .fixedSize(horizontal: false, vertical: true)
                     }
@@ -74,7 +74,7 @@ struct ActivityCardView: View {
         .background(
             RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                 .fill(item.isCompleted ? Color(red: 0.94, green: 0.94, blue: 0.94) : cardBgColor(for: item.priority))
-                .shadow(color: .black, radius: 0, x: item.isCompleted ? 1.5 : 2.5, y: item.isCompleted ? 1.5 : 2.5)
+                .shadow(color: .black, radius: 0, x: item.isCompleted ? 1 : 2, y: item.isCompleted ? 1 : 2)
         )
         .overlay(
             RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
@@ -98,7 +98,7 @@ struct ActivityCardView: View {
                     .fill(item.isCompleted ? Color.cartoonMint : color)
                     .frame(width: 32, height: 32)
                     .overlay(Circle().stroke(Color.black, lineWidth: 1.6))
-                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
 
                 if item.isCompleted {
                     Image(systemName: "checkmark")
@@ -121,30 +121,30 @@ struct ActivityCardView: View {
             HStack(spacing: 3) {
                 Image(systemName: "clock.fill")
                     .font(.system(size: 9.5, weight: .bold))
-                    .foregroundColor(Color.black.opacity(0.6))
+                    .foregroundColor(Color.black)
                 Text(item.timestamp, format: Date.FormatStyle(date: .omitted, time: .shortened))
-                    .font(.system(size: 11, weight: .bold, design: .rounded))
-                    .foregroundColor(Color.black.opacity(0.75))
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .foregroundColor(Color.black)
             }
-            .padding(.horizontal, 6)
-            .padding(.vertical, 3)
-            .background(Color.white.opacity(0.65))
+            .padding(.horizontal, 7)
+            .padding(.vertical, 3.5)
+            .background(Color.white)
             .cornerRadius(6)
-            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black.opacity(0.15), lineWidth: 0.8))
+            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
 
             // Subtask Progress Badge
             if !item.subtasks.isEmpty {
                 let completedCount = item.subtasks.filter { $0.isCompleted }.count
                 HStack(spacing: 3) {
                     Image(systemName: completedCount == item.subtasks.count ? "checkmark.circle.fill" : "list.bullet")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: 9, weight: .black))
                     Text("\(completedCount)/\(item.subtasks.count)")
                         .font(.system(size: 10.5, weight: .heavy, design: .rounded))
                 }
                 .foregroundColor(.black)
                 .padding(.horizontal, 6)
                 .padding(.vertical, 3)
-                .background(completedCount == item.subtasks.count ? Color.cartoonMint : Color.cartoonYellow.opacity(0.7))
+                .background(completedCount == item.subtasks.count ? Color.cartoonMint : Color.cartoonYellow)
                 .cornerRadius(6)
                 .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
             }
@@ -153,7 +153,7 @@ struct ActivityCardView: View {
             if item.isRecurring {
                 HStack(spacing: 3) {
                     Image(systemName: item.recurrence.icon)
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: 9, weight: .black))
                 }
                 .foregroundColor(.black)
                 .padding(.horizontal, 5)
@@ -170,7 +170,7 @@ struct ActivityCardView: View {
                     .foregroundColor(.black)
                     .padding(.horizontal, 5)
                     .padding(.vertical, 3)
-                    .background(Color.cartoonPink.opacity(0.7))
+                    .background(Color.cartoonPink)
                     .cornerRadius(6)
                     .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
             }
@@ -189,7 +189,7 @@ struct ActivityCardView: View {
         } label: {
             Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
                 .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.black.opacity(0.75))
+                .foregroundColor(.black)
         }
         .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.5))
     }
@@ -202,7 +202,7 @@ struct ActivityCardView: View {
         } label: {
             Image(systemName: "trash.circle.fill")
                 .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.red.opacity(0.75))
+                .foregroundColor(.red)
         }
         .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.5))
     }
@@ -211,7 +211,7 @@ struct ActivityCardView: View {
     private var expandedDetailsView: some View {
         VStack(alignment: .leading, spacing: 8) {
             Divider()
-                .overlay(Color.black.opacity(0.2))
+                .overlay(Color.black.opacity(0.3))
 
             // Subtask items
             if !item.subtasks.isEmpty {
@@ -223,13 +223,13 @@ struct ActivityCardView: View {
                         } label: {
                             HStack(spacing: 8) {
                                 Image(systemName: subtask.isCompleted ? "checkmark.square.fill" : "square")
-                                    .font(.system(size: 13, weight: .bold))
-                                    .foregroundColor(subtask.isCompleted ? .cartoonMint : .black)
+                                    .font(.system(size: 14, weight: .black))
+                                    .foregroundColor(subtask.isCompleted ? .black : .black)
 
                                 Text(subtask.title)
-                                    .font(.system(size: 12.5, weight: .medium, design: .rounded))
-                                    .foregroundColor(.black)
-                                    .strikethrough(subtask.isCompleted, color: .black)
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundColor(Color.black)
+                                    .strikethrough(subtask.isCompleted, color: Color.black.opacity(0.7))
 
                                 Spacer()
                             }
@@ -240,7 +240,7 @@ struct ActivityCardView: View {
                 .padding(8)
                 .background(Color.white)
                 .cornerRadius(8)
-                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black.opacity(0.15), lineWidth: 1))
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.0))
             }
 
             // Image Thumbnail
@@ -258,32 +258,24 @@ struct ActivityCardView: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Lampiran Gambar")
-                                .font(.system(size: 11.5, weight: .heavy, design: .rounded))
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
                                 .foregroundColor(.black)
                             Text("Ketuk untuk melihat ukuran penuh")
                                 .font(.system(size: 10, weight: .medium, design: .rounded))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Color.black.opacity(0.8))
                         }
-                        Spacer()
                     }
                     .padding(6)
                     .background(Color.white)
                     .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black.opacity(0.15), lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.0))
                 }
                 .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.5))
             }
         }
-        .padding(.top, 4)
     }
 
-    private func toggleSubtask(at index: Int) {
-        HapticManager.shared.selection()
-        item.subtasks[index].isCompleted.toggle()
-        try? modelContext.save()
-    }
-
-    // MARK: - 🔍 Fullscreen Image Viewer
+    // MARK: - 🖼️ Fullscreen Image Sheet
     private var fullscreenImageSheet: some View {
         NavigationStack {
             ZStack {
@@ -295,40 +287,50 @@ struct ActivityCardView: View {
                         .padding()
                 }
             }
-            .navigationTitle("Lampiran Tugas")
-            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Tutup") {
                         isShowingFullImage = false
                     }
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(.white)
-                    .fontWeight(.bold)
                 }
             }
         }
     }
 
-    // MARK: - 🎨 Helpers Warna & Ikon Kategori
+    // MARK: - ⚙️ Helper Methods
+    private func toggleSubtask(at index: Int) {
+        HapticManager.shared.selection()
+        item.subtasks[index].isCompleted.toggle()
+        try? modelContext.save()
+    }
+
     private func cardBgColor(for priority: String) -> Color {
         switch priority {
-        case "Tinggi": return Color.cartoonPink.opacity(0.55)
-        case "Normal": return Color.cartoonYellow.opacity(0.45)
-        case "Rendah": return Color.cartoonMint.opacity(0.45)
+        case "Tinggi": return Color.cartoonPink
+        case "Sedang": return Color.cartoonYellow
+        case "Rendah": return Color.cartoonMint
         default: return Color.white
         }
     }
 
     private func categoryIconAndColor(for category: String) -> (String, Color) {
-        switch category.lowercased() {
-        case "coding": return ("chevron.left.forwardslash.chevron.right", Color.cartoonBlue)
-        case "belajar": return ("book.fill", Color.cartoonYellow)
-        case "kesehatan": return ("heart.fill", Color.cartoonPink)
-        case "belanja": return ("cart.fill", Color.cartoonOrange)
-        case "meeting": return ("person.2.fill", Color.cartoonLavender)
-        case "ibadah": return ("hands.and.sparkles.fill", Color.cartoonMint)
-        case "keuangan": return ("banknote.fill", Color.cartoonMint)
-        default: return ("briefcase.fill", Color.cartoonYellow)
+        let lower = category.lowercased()
+        if lower.contains("belajar") || lower.contains("study") || lower.contains("learning") {
+            return ("book.closed.fill", .cartoonYellow)
+        } else if lower.contains("kerja") || lower.contains("work") || lower.contains("kantor") {
+            return ("briefcase.fill", .cartoonBlue)
+        } else if lower.contains("coding") || lower.contains("dev") || lower.contains("program") {
+            return ("chevron.left.forwardslash.chevron.right", .cartoonMint)
+        } else if lower.contains("olahraga") || lower.contains("gym") || lower.contains("sehat") {
+            return ("figure.run", .cartoonMint)
+        } else if lower.contains("pribadi") || lower.contains("personal") {
+            return ("person.fill", .cartoonPink)
+        } else if lower.contains("keuangan") || lower.contains("finance") {
+            return ("banknote.fill", .cartoonYellow)
+        } else {
+            return ("star.fill", .cartoonYellow)
         }
     }
 }

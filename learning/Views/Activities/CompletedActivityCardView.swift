@@ -32,8 +32,8 @@ struct CompletedActivityCardView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(item.title)
                         .font(.system(size: 14.5, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color.black.opacity(0.7))
-                        .strikethrough(true, color: Color.black.opacity(0.6))
+                        .foregroundColor(Color.black)
+                        .strikethrough(true, color: Color.black.opacity(0.7))
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
 
@@ -43,9 +43,9 @@ struct CompletedActivityCardView: View {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.system(size: 9, weight: .bold))
                             Text(completedAt, format: Date.FormatStyle(date: .omitted, time: .shortened))
-                                .font(.system(size: 10, weight: .bold, design: .rounded))
+                                .font(.system(size: 10, weight: .heavy, design: .rounded))
                         }
-                        .foregroundColor(Color.black.opacity(0.6))
+                        .foregroundColor(Color.black.opacity(0.85))
                         .padding(.top, 1)
                     }
                 }
@@ -75,7 +75,7 @@ struct CompletedActivityCardView: View {
         .background(
             RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                 .fill(Color(red: 0.94, green: 0.96, blue: 0.95))
-                .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                .shadow(color: .black, radius: 0, x: 1, y: 1)
         )
         .overlay(
             RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
@@ -96,7 +96,7 @@ struct CompletedActivityCardView: View {
                     .fill(Color.cartoonMint)
                     .frame(width: 28, height: 28)
                     .overlay(Circle().stroke(Color.black, lineWidth: 2.0))
-                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
 
                 Image(systemName: "checkmark")
                     .font(.system(size: 13, weight: .black))
@@ -113,17 +113,17 @@ struct CompletedActivityCardView: View {
         let icon = categoryIcon(for: item.category)
         return ZStack {
             Circle()
-                .fill(Color.white.opacity(0.8))
+                .fill(Color.white)
                 .frame(width: 28, height: 28)
-                .overlay(Circle().stroke(Color.black.opacity(0.3), lineWidth: 1.2))
+                .overlay(Circle().stroke(Color.black, lineWidth: 1.2))
 
             Image(systemName: icon)
-                .font(.system(size: 11, weight: .bold))
-                .foregroundColor(.black.opacity(0.7))
+                .font(.system(size: 12, weight: .bold))
+                .foregroundColor(.black)
         }
     }
 
-    // MARK: - 🔼 Expand Button
+    // MARK: - 🔽 Expand Button
     private var expandButton: some View {
         Button {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
@@ -132,86 +132,79 @@ struct CompletedActivityCardView: View {
             }
         } label: {
             Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
-                .font(.system(size: 18, weight: .bold))
-                .foregroundColor(.black.opacity(0.6))
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.black)
         }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.5))
     }
 
     // MARK: - 🗑️ Delete Button
     private var deleteButton: some View {
         Button {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                SoundManager.shared.playDeleteSound()
-                onDelete()
-            }
+            HapticManager.shared.warning()
+            onDelete()
         } label: {
-            ZStack {
-                Circle()
-                    .fill(Color.cartoonPink.opacity(0.85))
-                    .frame(width: 28, height: 28)
-                    .overlay(Circle().stroke(Color.black, lineWidth: 1.8))
-                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-
-                Image(systemName: "trash.fill")
-                    .font(.system(size: 11, weight: .black))
-                    .foregroundColor(.black)
-            }
-            .frame(width: 30, height: 30)
-            .contentShape(Rectangle())
+            Image(systemName: "trash.circle.fill")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.red)
         }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.5))
     }
 
-    // MARK: - 📋 Expanded Details View
+    // MARK: - 📋 Subtasks & Catatan Tambahan (Expanded State)
     private var expandedDetailsView: some View {
-        VStack(alignment: .leading, spacing: 5) {
+        VStack(alignment: .leading, spacing: 6) {
             Divider()
-                .background(Color.black.opacity(0.12))
-                .padding(.vertical, 2)
+                .overlay(Color.black.opacity(0.3))
 
+            // Catatan
             if !item.notes.isEmpty {
                 Text(item.notes)
-                    .font(.system(size: 11.5, weight: .medium, design: .rounded))
-                    .foregroundColor(.black.opacity(0.6))
-                    .padding(.bottom, 2)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundColor(Color.black.opacity(0.85))
+                    .padding(.vertical, 2)
             }
 
+            // Subtask items
             if !item.subtasks.isEmpty {
-                ForEach(item.subtasks) { subtask in
-                    HStack(spacing: 6) {
-                        Image(systemName: subtask.isCompleted ? "checkmark.circle.fill" : "circle")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(subtask.isCompleted ? Color.cartoonMint : Color.secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(item.subtasks) { subtask in
+                        HStack(spacing: 6) {
+                            Image(systemName: subtask.isCompleted ? "checkmark.square.fill" : "square")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundColor(.black)
 
-                        Text(subtask.title)
-                            .font(.system(size: 11.5, weight: .bold, design: .rounded))
-                            .foregroundColor(.black.opacity(0.6))
-                            .strikethrough(subtask.isCompleted)
-
-                        Spacer()
+                            Text(subtask.title)
+                                .font(.system(size: 12, weight: .bold, design: .rounded))
+                                .foregroundColor(Color.black)
+                                .strikethrough(subtask.isCompleted, color: Color.black.opacity(0.7))
+                        }
                     }
                 }
+                .padding(6)
+                .background(Color.white)
+                .cornerRadius(6)
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
             }
         }
-        .transition(.opacity.combined(with: .scale(scale: 0.98)))
     }
 
     private func categoryIcon(for category: String) -> String {
-        switch category {
-        case "Belajar": return "book.fill"
-        case "Kesehatan": return "heart.fill"
-        case "Pekerjaan": return "briefcase.fill"
-        case "Pribadi": return "person.fill"
-        case "Keuangan": return "creditcard.fill"
-        case "Ibadah": return "sparkles"
-        case "Rumah": return "house.fill"
-        case "Sosial": return "person.2.fill"
-        case "Belanja": return "cart.fill"
-        case "Design": return "paintbrush.pointed.fill"
-        case "Coding": return "curlybraces"
-        case "Meeting": return "bubble.left.and.bubble.right.fill"
-        default: return "folder.fill"
+        let lower = category.lowercased()
+        if lower.contains("belajar") || lower.contains("study") || lower.contains("learning") {
+            return "book.closed.fill"
+        } else if lower.contains("kerja") || lower.contains("work") || lower.contains("kantor") {
+            return "briefcase.fill"
+        } else if lower.contains("coding") || lower.contains("dev") || lower.contains("program") {
+            return "chevron.left.forwardslash.chevron.right"
+        } else if lower.contains("olahraga") || lower.contains("gym") || lower.contains("sehat") {
+            return "figure.run"
+        } else if lower.contains("pribadi") || lower.contains("personal") {
+            return "person.fill"
+        } else if lower.contains("keuangan") || lower.contains("finance") {
+            return "banknote.fill"
+        } else {
+            return "star.fill"
         }
     }
 }
