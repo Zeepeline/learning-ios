@@ -76,7 +76,9 @@ final class MCPAIAssistantService: ObservableObject {
         Saya dapat membantu kamu:
         • 🌅 Menyusun rencana harian (*"Susun rencana hari ini"*)
         • 🌙 Evaluasi malam & kesehatan (*"Evaluasi hari ini"*)
-        • 🪄 Pecah tugas jadi subtask (*"Pecah tugas presentasi"* )
+        • 🪄 Pecah tugas jadi subtask (*"Pecah tugas presentasi"*)
+        • 💡 Rekomendasi kebiasaan baru (*"Rekomendasikan habit"*)
+        • 🛡️ Cek radar risiko streak habit (*"Cek risiko streak"*)
         • ⚡ Tambah tugas cerdas (*"Coding besok jam 8 malam"*)
         • 🤖 Menata ulang jadwal terlewat (*"Tata ulang jadwalku"*)
         • ⏱️ Mulai timer Pomodoro (*"Mulai fokus 25 menit"*)
@@ -132,6 +134,18 @@ final class MCPAIAssistantService: ObservableObject {
             return
         }
 
+        // AI Habit Recommendation
+        if lower.contains("rekomendasi habit") || lower.contains("rekomendasikan habit") || lower.contains("kebiasaan baru") || lower.contains("saran habit") {
+            await executeHabitRecommenderTool(modelContext: modelContext)
+            return
+        }
+
+        // AI Streak Risk Radar
+        if lower.contains("risiko streak") || lower.contains("streak terancam") || lower.contains("radar streak") || lower.contains("cek streak") {
+            await executeStreakRiskTool(modelContext: modelContext)
+            return
+        }
+
         // AI Schedule Rebalancer
         if lower.contains("tata ulang") || lower.contains("rebalance") || lower.contains("rapikan jadwal") || lower.contains("atur ulang jadwal") || lower.contains("jadwal berantakan") {
             await executeRebalanceScheduleTool(modelContext: modelContext)
@@ -177,6 +191,80 @@ final class MCPAIAssistantService: ObservableObject {
             ninerouterModel: ninerouterModel,
             modelContext: modelContext
         )
+    }
+
+    // MARK: - 💡 AI Habit Routine Recommender Tool
+    private func executeHabitRecommenderTool(modelContext: ModelContext) async {
+        let habitDesc = FetchDescriptor<Habit>()
+        let habits = (try? modelContext.fetch(habitDesc)) ?? []
+
+        let taskDesc = FetchDescriptor<Item>()
+        let tasks = (try? modelContext.fetch(taskDesc)) ?? []
+
+        let recommendations = AIHabitRecommenderService.shared.generateRecommendations(existingHabits: habits, existingTasks: tasks)
+
+        let toolCall = MCPToolInvocation(
+            name: "recommend_habits",
+            argumentsSummary: "recommendations: \(recommendations.count)",
+            icon: "wand.and.stars",
+            badgeColorHex: "#C4B5FD"
+        )
+
+        var recListText = ""
+        for (i, r) in recommendations.enumerated() {
+            recListText += "\n\(i + 1). 🌟 **\(r.title)** [\(r.category.rawValue)]\n   ⏱️ *Waktu terbaik: \(r.timeOfDay)* — \(r.benefit)"
+        }
+
+        let reply = """
+        💡 **Rekomendasi Kebiasaan Positif Terbaik Untukmu!**
+
+        Berdasarkan analisis aktivitas dan kategori kebiasaanmu saat ini, berikut rutinitas yang sangat disarankan:
+        \(recListText)
+
+        Kamu dapat membuka tab **Kebiasaan > AI 🪄** untuk mengadopsinya dalam 1-ketukan! 🚀
+        """
+
+        await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "\(recommendations.count) habits suggested")
+    }
+
+    // MARK: - 🛡️ AI Streak Risk Radar Tool
+    private func executeStreakRiskTool(modelContext: ModelContext) async {
+        let habitDesc = FetchDescriptor<Habit>()
+        let habits = (try? modelContext.fetch(habitDesc)) ?? []
+
+        let risks = AIHabitRecommenderService.shared.assessStreakRisks(for: habits)
+
+        let toolCall = MCPToolInvocation(
+            name: "assess_streak_risks",
+            argumentsSummary: "risks: \(risks.count)",
+            icon: "flame.fill",
+            badgeColorHex: "#FCA5A5"
+        )
+
+        if risks.isEmpty {
+            let reply = """
+            🛡️ **Semua Streak Kebiasaanmu Dalam Kondisi Sangat Aman!**
+
+            Seluruh target kebiasaanmu hari ini telah diceklis atau berada dalam ritme yang stabil. Kerja keras yang hebat! 🔥🏆
+            """
+            await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "0 risks")
+            return
+        }
+
+        var riskListText = ""
+        for (i, r) in risks.enumerated() {
+            let badge = r.riskLevel == .critical ? "🚨 DARURAT" : (r.riskLevel == .high ? "⚠️ TINGGI" : "⚡ PERHATIAN")
+            riskListText += "\n\(i + 1). \(badge) **\(r.title)** (Streak \(r.currentStreak) Hari)\n   ▫️ \(r.reason)"
+        }
+
+        let reply = """
+        🔥 **Radar Risiko Streak Habit Ditemukan (\(risks.count) Kebiasaan):**
+        \(riskListText)
+
+        💡 Segera lakukan check-in hari ini agar momentum api produktivitasmu tidak terputus! 🚀
+        """
+
+        await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "\(risks.count) risks detected")
     }
 
     // MARK: - 🪄 AI Task Breakdown & Subtask Generator Tool
