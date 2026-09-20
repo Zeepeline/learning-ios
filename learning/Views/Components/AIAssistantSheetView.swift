@@ -34,16 +34,16 @@ struct AIAssistantSheetView: View {
         AIProviderType(rawValue: selectedProviderRaw) ?? .googleAccount
     }
 
-    // Saran Prompt Cepat MCP Multi-Feature
+    // Saran Prompt Cepat MCP Multi-Feature (Termasuk Daily Coach & Natural Time Parsing)
     private let quickPrompts: [(title: String, icon: String, color: Color)] = [
-        ("⚡ Buat tugas Coding prioritas tinggi", "bolt.fill", Color.cartoonYellow),
+        ("🌅 Susun rencana hari ini (Morning Briefing)", "sun.max.fill", Color.cartoonYellow),
+        ("🌙 Evaluasi hari ini (Evening Review)", "moon.stars.fill", Color.cartoonLavender),
+        ("⚡ Tambah tugas Coding besok jam 8 malam", "bolt.fill", Color.cartoonMint),
         ("⏱️ Mulai fokus 25 menit", "timer", Color.cartoonCoral),
         ("🏃‍♂️ Cek data kesehatan & langkah", "heart.fill", Color.cartoonPink),
-        ("📊 Rangkum aktivitas hari ini", "chart.bar.fill", Color.cartoonMint),
+        ("📊 Rangkum status aktivitas hari ini", "chart.bar.fill", Color.cartoonMint),
         ("🔥 Ceklis habit hari ini", "flame.fill", Color.cartoonOrange),
-        ("🚀 Buat rencana proyek Website", "folder.badge.plus", Color.cartoonBlue),
-        ("🛡️ Kunci aplikasi pengganggu", "shield.lefthalf.filled", Color.cartoonLavender),
-        ("📋 Lihat daftar tugas penting", "list.bullet.rectangle.portrait", Color.cartoonMint),
+        ("🛡️ Kunci aplikasi pengganggu", "shield.lefthalf.filled", Color.cartoonBlue),
         ("🧹 Bersihkan tugas selesai", "trash.slash.fill", Color.cartoonYellow)
     ]
 
@@ -328,18 +328,20 @@ struct AIAssistantSheetView: View {
                 ForEach(quickPrompts, id: \.title) { item in
                     Button {
                         HapticManager.shared.impact(style: .light)
-                        sendQuickPrompt(item.title)
+                        sendPrompt(item.title)
                     } label: {
-                        HStack(spacing: 5) {
+                        HStack(spacing: 6) {
                             Image(systemName: item.icon)
-                                .font(.system(size: 10.5, weight: .heavy))
+                                .font(.system(size: 11, weight: .black))
+                                .foregroundColor(.black)
+
                             Text(item.title)
-                                .font(.system(size: 11.5, weight: .heavy, design: .rounded))
+                                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                                .foregroundColor(.black)
                         }
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(item.color.opacity(0.9))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 7)
+                        .background(item.color)
                         .cornerRadius(10)
                         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.4))
                         .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
@@ -348,117 +350,143 @@ struct AIAssistantSheetView: View {
                 }
             }
             .padding(.horizontal, HIGSpacing.md)
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
         }
     }
 
-    // MARK: - ✍️ Bottom Native Input Bar (With Mic Voice-to-Task Button)
+    // MARK: - ⌨️ Bottom Message Input Bar (Native In-App with Mic)
     private var bottomInputBar: some View {
-        HStack(spacing: 8) {
-            // Text Input Container
-            HStack {
-                TextField("Tanya jadwal, habit, atau ketik / bicara...", text: $inputText, axis: .vertical)
-                    .font(.system(size: 14, weight: .medium, design: .rounded))
-                    .lineLimit(1...4)
-                    .focused($isInputFocused)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 10)
-            }
-            .background(Color.white)
-            .cornerRadius(14)
-            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.black, lineWidth: 1.6))
-            .shadow(color: .black, radius: 0, x: 2, y: 2)
+        VStack(spacing: 0) {
+            Divider()
+                .overlay(Color.black.opacity(0.2))
 
-            // 🎙️ Tombol Suara / Dikte (Voice-to-Task Dictation)
-            Button {
-                Task {
-                    await voiceManager.toggleRecording { transcribed in
-                        self.inputText = transcribed
+            HStack(spacing: 10) {
+                // 🎙️ Kartun Microphone Button
+                Button {
+                    handleVoiceButtonTap()
+                } label: {
+                    ZStack {
+                        Circle()
+                            .fill(voiceManager.isRecording ? Color.cartoonCoral : Color.cartoonYellow)
+                            .frame(width: 42, height: 42)
+                            .overlay(Circle().stroke(Color.black, lineWidth: 1.8))
+                            .shadow(color: .black, radius: 0, x: 2, y: 2)
+
+                        Image(systemName: voiceManager.isRecording ? "stop.fill" : "mic.fill")
+                            .font(.system(size: 16, weight: .black))
+                            .foregroundColor(.black)
+                            .scaleEffect(voiceManager.isRecording ? (1.0 + voiceManager.audioLevel * 0.3) : 1.0)
                     }
                 }
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(voiceManager.isRecording ? Color.cartoonCoral : Color.cartoonYellow)
-                        .frame(width: 44, height: 44)
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.5))
+
+                // Input Text Field
+                TextField("Ketik tugas, 'besok jam 8', atau tanya...", text: $inputText)
+                    .font(.system(size: 14.5, weight: .bold, design: .rounded))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 10)
+                    .background(Color.white)
+                    .cornerRadius(12)
+                    .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.8))
+                    .shadow(color: .black, radius: 0, x: 2, y: 2)
+                    .focused($isInputFocused)
+                    .submitLabel(.send)
+                    .onSubmit {
+                        sendCurrentText()
+                    }
+
+                // Tombol Kirim Teks
+                Button {
+                    sendCurrentText()
+                } label: {
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 34, weight: .black))
+                        .foregroundColor(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.secondary.opacity(0.4) : Color.cartoonBlue)
+                        .background(Circle().fill(Color.white))
+                        .clipShape(Circle())
                         .overlay(Circle().stroke(Color.black, lineWidth: 1.8))
                         .shadow(color: .black, radius: 0, x: 2, y: 2)
-                        .scaleEffect(voiceManager.isRecording ? 1.0 + (voiceManager.audioLevel * 0.15) : 1.0)
-
-                    Image(systemName: voiceManager.isRecording ? "mic.fill" : "mic")
-                        .font(.system(size: 17, weight: .black))
-                        .foregroundColor(.black)
                 }
+                .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || assistantService.isProcessing)
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.5))
             }
-            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
-
-            // 🚀 Tombol Kirim Pesan
-            Button {
-                if voiceManager.isRecording {
-                    voiceManager.stopRecording()
-                }
-                sendMessage()
-            } label: {
-                ZStack {
-                    Circle()
-                        .fill(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.gray.opacity(0.3) : Color.cartoonMint)
-                        .frame(width: 44, height: 44)
-                        .overlay(Circle().stroke(Color.black, lineWidth: 1.8))
-                        .shadow(color: .black, radius: 0, x: 2, y: 2)
-
-                    Image(systemName: "arrow.up")
-                        .font(.system(size: 16, weight: .black))
-                        .foregroundColor(.black)
-                }
-            }
-            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
-            .disabled(inputText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || assistantService.isProcessing)
+            .padding(.horizontal, HIGSpacing.md)
+            .padding(.vertical, 10)
+            .background(Color.cartoonBg)
         }
-        .padding(.horizontal, HIGSpacing.md)
-        .padding(.vertical, 8)
-        .background(Color.cartoonBg)
     }
 
-    // MARK: - ⚙️ Modal Pengaturan AI Provider & API Keys
+    private func handleVoiceButtonTap() {
+        Task {
+            await voiceManager.toggleRecording { transcribed in
+                self.inputText = transcribed
+            }
+        }
+    }
+
+    private func sendCurrentText() {
+        let textToSend = inputText
+        inputText = ""
+        if voiceManager.isRecording {
+            voiceManager.stopRecording()
+        }
+        sendPrompt(textToSend)
+    }
+
+    private func sendPrompt(_ text: String) {
+        guard !text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
+        Task {
+            await assistantService.sendMessage(
+                text,
+                modelContext: modelContext,
+                provider: currentProvider,
+                apiKey: currentProvider == .gemini ? geminiApiKey : ninerouterApiKey,
+                ninerouterBaseUrl: ninerouterBaseUrl,
+                ninerouterModel: ninerouterModel
+            )
+        }
+    }
+
+    // MARK: - ⚙️ AI Settings Sheet
     private var aiSettingsSheet: some View {
         NavigationStack {
             Form {
-                Section(header: Text("PILIH SUMBER AI").font(.system(size: 11, weight: .heavy, design: .rounded))) {
-                    Picker("Provider", selection: $tempProvider) {
+                Section(header: Text("Pilih Engine AI").font(.system(size: 12, weight: .heavy, design: .rounded))) {
+                    Picker("AI Engine", selection: $tempProvider) {
                         ForEach(AIProviderType.allCases) { provider in
-                            Text(provider.shortName).tag(provider)
+                            Text(provider.rawValue).tag(provider)
                         }
                     }
-                    .pickerStyle(.segmented)
-                    .padding(.vertical, 4)
-
-                    Text(tempProvider.rawValue)
-                        .font(.system(size: 12, weight: .medium, design: .rounded))
-                        .foregroundColor(.secondary)
+                    .pickerStyle(.inline)
                 }
 
                 if tempProvider == .gemini {
-                    Section(header: Text("GEMINI API KEY").font(.system(size: 11, weight: .heavy, design: .rounded))) {
-                        SecureField("Tempel Google AI Studio API Key", text: $tempGeminiApiKey)
-                            .font(.system(size: 13, design: .monospaced))
+                    Section(
+                        header: Text("Google AI Studio API Key").font(.system(size: 12, weight: .heavy, design: .rounded)),
+                        footer: Text("Dapatkan API Key gratis di ai.google.dev").font(.caption)
+                    ) {
+                        SecureField("Masukkan Gemini API Key", text: $tempGeminiApiKey)
                     }
-                }
-
-                if tempProvider == .ninerouter {
-                    Section(header: Text("NINEROUTER CONFIGURATION").font(.system(size: 11, weight: .heavy, design: .rounded))) {
-                        SecureField("API Key", text: $tempNinerouterApiKey)
-                            .font(.system(size: 13, design: .monospaced))
+                } else if tempProvider == .ninerouter {
+                    Section(
+                        header: Text("Ninerouter API Gateway").font(.system(size: 12, weight: .heavy, design: .rounded)),
+                        footer: Text("Gunakan gateway Ninerouter untuk DeepSeek, Claude, Llama dll.").font(.caption)
+                    ) {
                         TextField("Base URL", text: $tempNinerouterBaseUrl)
-                            .font(.system(size: 13, design: .monospaced))
                         TextField("Model Name", text: $tempNinerouterModel)
-                            .font(.system(size: 13, design: .monospaced))
+                        SecureField("API Key", text: $tempNinerouterApiKey)
                     }
-                }
-
-                Section(header: Text("INFO FITUR MCP").font(.system(size: 11, weight: .heavy, design: .rounded))) {
-                    Text("Asisten terhubung langsung dengan sistem aplikasi (SwiftData, Pomodoro Timer, Apple Health, Habit Tracker, dan Screen Time) secara lokal via Model Context Protocol.")
-                        .font(.system(size: 12, weight: .regular, design: .rounded))
-                        .foregroundColor(.secondary)
+                } else if tempProvider == .googleAccount {
+                    Section(header: Text("Cloud AI Bridge").font(.system(size: 12, weight: .heavy, design: .rounded))) {
+                        HStack {
+                            Circle()
+                                .fill(geminiBridge.isBridgeReady ? Color.cartoonMint : Color.cartoonYellow)
+                                .frame(width: 8, height: 8)
+                            Text(geminiBridge.isBridgeReady ? "Terhubung ke Akun Cloud" : "Memuat Sesi Browser...")
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
+                        }
+                    }
                 }
             }
             .navigationTitle("Pengaturan AI")
@@ -481,43 +509,6 @@ struct AIAssistantSheetView: View {
                     .fontWeight(.bold)
                 }
             }
-        }
-    }
-
-    // MARK: - 🚀 Actions
-    private func sendMessage() {
-        let textToSend = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !textToSend.isEmpty else { return }
-
-        inputText = ""
-        isInputFocused = false
-
-        Task {
-            await assistantService.sendMessage(
-                textToSend,
-                modelContext: modelContext,
-                provider: currentProvider,
-                apiKey: currentProvider == .gemini ? geminiApiKey : ninerouterApiKey,
-                ninerouterBaseUrl: ninerouterBaseUrl,
-                ninerouterModel: ninerouterModel
-            )
-        }
-    }
-
-    private func sendQuickPrompt(_ prompt: String) {
-        if voiceManager.isRecording {
-            voiceManager.stopRecording()
-        }
-        isInputFocused = false
-        Task {
-            await assistantService.sendMessage(
-                prompt,
-                modelContext: modelContext,
-                provider: currentProvider,
-                apiKey: currentProvider == .gemini ? geminiApiKey : ninerouterApiKey,
-                ninerouterBaseUrl: ninerouterBaseUrl,
-                ninerouterModel: ninerouterModel
-            )
         }
     }
 }
