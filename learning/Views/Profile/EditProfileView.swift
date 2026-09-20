@@ -10,8 +10,8 @@ import SwiftUI
 struct EditProfileView: View {
     @Environment(\.dismiss) private var dismiss
 
-    @AppStorage("userName") private var storedName: String = "Bruce Wayne"
-    @AppStorage("userEmail") private var storedEmail: String = "brucewayne27@suarasa.com"
+    @AppStorage("userName") private var storedName: String = ""
+    @AppStorage("userEmail") private var storedEmail: String = ""
     @AppStorage("userBio") private var storedBio: String = "Productivity Master"
     @AppStorage("userAvatarIcon") private var storedAvatarIcon: String = "person.crop.circle.fill"
     @AppStorage("userAvatarColor") private var storedAvatarColor: String = "#FFD166"
@@ -127,8 +127,26 @@ struct EditProfileView: View {
                 }
             }
             .onAppear {
-                nameText = storedName
-                emailText = storedEmail
+                if storedName.isEmpty || storedName == "Bruce Wayne" {
+                    if !storedEmail.isEmpty && storedEmail != "brucewayne27@suarasa.com",
+                       let namePart = storedEmail.split(separator: "@").first {
+                        nameText = namePart
+                            .replacingOccurrences(of: ".", with: " ")
+                            .replacingOccurrences(of: "_", with: " ")
+                            .capitalized
+                    } else {
+                        nameText = ""
+                    }
+                } else {
+                    nameText = storedName
+                }
+
+                if storedEmail == "brucewayne27@suarasa.com" {
+                    emailText = ""
+                } else {
+                    emailText = storedEmail
+                }
+
                 bioText = storedBio
                 selectedAvatarIcon = storedAvatarIcon
                 selectedColorHex = storedAvatarColor

@@ -11,8 +11,8 @@ import GoogleSignIn
 struct RegisterView: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("isLoggedIn") private var isLoggedIn: Bool = false
-    @AppStorage("userName") private var userName: String = "Bruce Wayne"
-    @AppStorage("userEmail") private var userEmail: String = "brucewayne27@suarasa.com"
+    @AppStorage("userName") private var userName: String = ""
+    @AppStorage("userEmail") private var userEmail: String = ""
     @AppStorage("userAvatarUrl") private var userAvatarUrl: String = ""
     
     // Form States
@@ -84,14 +84,14 @@ struct RegisterView: View {
                         VStack(spacing: HIGSpacing.md) {
                             // Field Nama Lengkap
                             CartoonInputField(
-                                placeholder: "Bruce Wayne",
+                                placeholder: "Nama Lengkap",
                                 text: $fullName,
                                 icon: "person.fill"
                             )
 
                             // Field Email
                             CartoonInputField(
-                                placeholder: "brucewayne27@suarasa.com",
+                                placeholder: "nama@email.com",
                                 text: $email,
                                 icon: "envelope.fill",
                                 keyboardType: .emailAddress
@@ -140,6 +140,21 @@ struct RegisterView: View {
 
                         // 5. Tombol Continue (Warna Coral-Red Tebal) - 52pt Height
                         Button {
+                            let trimmedName = fullName.trimmingCharacters(in: .whitespacesAndNewlines)
+                            let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+                            if !trimmedEmail.isEmpty {
+                                userEmail = trimmedEmail
+                            }
+                            if !trimmedName.isEmpty {
+                                userName = trimmedName
+                            } else if let namePart = trimmedEmail.split(separator: "@").first {
+                                userName = namePart
+                                    .replacingOccurrences(of: ".", with: " ")
+                                    .replacingOccurrences(of: "_", with: " ")
+                                    .capitalized
+                            } else {
+                                userName = "Pengguna"
+                            }
                             withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                                 isLoggedIn = true
                             }

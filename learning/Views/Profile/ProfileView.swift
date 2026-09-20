@@ -12,8 +12,8 @@ struct ProfileView: View {
     @Query private var allItems: [Item]
     @Query private var allHabits: [Habit]
     @AppStorage("isLoggedIn") private var isLoggedIn: Bool = true
-    @AppStorage("userName") private var userName: String = "Bruce Wayne"
-    @AppStorage("userEmail") private var userEmail: String = "brucewayne27@suarasa.com"
+    @AppStorage("userName") private var userName: String = ""
+    @AppStorage("userEmail") private var userEmail: String = ""
     @AppStorage("userBio") private var userBio: String = "Productivity Master"
     @AppStorage("userAvatarIcon") private var userAvatarIcon: String = "person.crop.circle.fill"
     @AppStorage("userAvatarColor") private var userAvatarColor: String = "#FFD166"
@@ -26,6 +26,35 @@ struct ProfileView: View {
 
     @State private var isShowingLogoutDialog: Bool = false
     @State private var isShowingEditProfileSheet: Bool = false
+
+    // Format Display Nama Sesuai Email / Placeholder Dinamis
+    private var displayUserName: String {
+        let trimmed = userName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty && trimmed != "Bruce Wayne" {
+            return trimmed
+        }
+        let trimmedEmail = userEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedEmail.isEmpty && trimmedEmail != "brucewayne27@suarasa.com" {
+            if let namePart = trimmedEmail.split(separator: "@").first {
+                let formatted = namePart
+                    .replacingOccurrences(of: ".", with: " ")
+                    .replacingOccurrences(of: "_", with: " ")
+                    .capitalized
+                if !formatted.isEmpty {
+                    return formatted
+                }
+            }
+        }
+        return "Pengguna"
+    }
+
+    private var displayUserEmail: String {
+        let trimmedEmail = userEmail.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedEmail.isEmpty && trimmedEmail != "brucewayne27@suarasa.com" {
+            return trimmedEmail
+        }
+        return "Belum ada email terhubung"
+    }
 
     // Perhitungan Statistik Real-Time dari SwiftData
     private var completedTasksCount: Int {
@@ -87,8 +116,8 @@ struct ProfileView: View {
                 VStack(spacing: HIGSpacing.xl) {
                     // 1. Header Profil & Avatar Kartun
                     ProfileHeaderView(
-                        userName: userName,
-                        userEmail: userEmail,
+                        userName: displayUserName,
+                        userEmail: displayUserEmail,
                         userBio: userBio,
                         avatarIcon: userAvatarIcon,
                         avatarColorHex: userAvatarColor,
@@ -176,6 +205,8 @@ struct ProfileView: View {
                     onConfirm: {
                         // 1. Sign out dari Google Auth Session
                         GoogleAuthManager.shared.signOut()
+                        userName = ""
+                        userEmail = ""
                         userAvatarUrl = ""
 
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
