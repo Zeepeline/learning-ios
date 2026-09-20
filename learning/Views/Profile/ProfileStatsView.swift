@@ -22,13 +22,41 @@ struct ProfileStatsView: View {
     let importantCompletedCount: Int
     var maxHabitStreak: Int = 0
     var weeklyStats: [DailyCompletionStat] = []
+    var onWeeklyReportTap: (() -> Void)? = nil
 
     dynamic var body: some View {
         VStack(alignment: .leading, spacing: HIGSpacing.sm) {
-            Text("Statistik Produktivitas")
-                .font(.system(size: 16, weight: .heavy, design: .rounded))
-                .foregroundColor(.black)
-                .padding(.horizontal, HIGSpacing.md)
+            HStack {
+                Text("Statistik Produktivitas")
+                    .font(.system(size: 16, weight: .heavy, design: .rounded))
+                    .foregroundColor(.black)
+
+                Spacer()
+
+                if let onWeeklyReportTap = onWeeklyReportTap {
+                    Button {
+                        HapticManager.shared.impact(style: .medium)
+                        SoundManager.shared.playPop()
+                        onWeeklyReportTap()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 11, weight: .bold))
+                            Text("Laporan AI")
+                                .font(.system(size: 11.5, weight: .heavy, design: .rounded))
+                        }
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.cartoonYellow)
+                        .cornerRadius(8)
+                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
+                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                    }
+                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
+                }
+            }
+            .padding(.horizontal, HIGSpacing.md)
 
             // 1. Grid 2x2 Mini Stat Cards
             HStack(spacing: HIGSpacing.sm) {
@@ -144,6 +172,33 @@ struct ProfileStatsView: View {
                     .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundColor(.secondary)
             }
+
+            // Tombol Detail Laporan Mingguan
+            if let onWeeklyReportTap = onWeeklyReportTap {
+                Button {
+                    HapticManager.shared.impact(style: .medium)
+                    onWeeklyReportTap()
+                } label: {
+                    HStack {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 12, weight: .bold))
+                        Text("Lihat Infografik Laporan Mingguan AI")
+                            .font(.system(size: 12, weight: .heavy, design: .rounded))
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 11, weight: .bold))
+                    }
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(Color.cartoonLavender)
+                    .cornerRadius(8)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
+                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                }
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
+                .padding(.top, 4)
+            }
         }
         .padding(HIGSpacing.md)
         .background(Color.white)
@@ -168,16 +223,15 @@ struct ProfileStatCard: View {
         HStack(spacing: HIGSpacing.xs) {
             ZStack {
                 Circle()
-                    .fill(Color.white)
-                    .frame(width: 32, height: 32)
-                    .overlay(Circle().stroke(Color.black, lineWidth: 1.5))
-                
+                    .fill(bgColor)
+                    .frame(width: 36, height: 36)
+                    .overlay(Circle().stroke(Color.black, lineWidth: 1.2))
                 Image(systemName: icon)
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.system(size: 16, weight: .black))
                     .foregroundColor(iconColor)
             }
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(value)
                     .font(.system(size: 16, weight: .heavy, design: .rounded))
                     .foregroundColor(.black)
@@ -185,12 +239,10 @@ struct ProfileStatCard: View {
                     .font(.system(size: 11, weight: .bold, design: .rounded))
                     .foregroundColor(.secondary)
             }
-
             Spacer()
         }
-        .padding(.horizontal, HIGSpacing.md)
-        .padding(.vertical, 10)
-        .background(bgColor)
+        .padding(HIGSpacing.sm)
+        .background(Color.white)
         .cornerRadius(CartoonMetrics.cardCornerRadius)
         .overlay(
             RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)

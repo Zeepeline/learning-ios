@@ -26,6 +26,8 @@ struct ProfileView: View {
 
     @State private var isShowingLogoutDialog: Bool = false
     @State private var isShowingEditProfileSheet: Bool = false
+    @State private var isShowingWeeklyReportSheet: Bool = false
+    @State private var currentWeeklyReport: WeeklyReport? = nil
 
     // Format Display Nama Sesuai Email / Placeholder Dinamis
     private var displayUserName: String {
@@ -130,13 +132,16 @@ struct ProfileView: View {
                         }
                     )
 
-                    // 2. Statistik Aktivitas Kartun (Grid 2 Kolom Real-Time + Weekly Chart)
+                    // 2. Statistik Aktivitas Kartun (Grid 2 Kolom Real-Time + Weekly Chart + Tombol Laporan AI)
                     ProfileStatsView(
                         completedTasksCount: completedTasksCount,
                         allItemsCount: allItems.count,
                         importantCompletedCount: importantCompletedCount,
                         maxHabitStreak: maxHabitStreak,
-                        weeklyStats: last7DaysCompletionStats
+                        weeklyStats: last7DaysCompletionStats,
+                        onWeeklyReportTap: {
+                            generateAndShowWeeklyReport()
+                        }
                     )
 
                     // 3. Pengaturan & Preferensi
@@ -221,12 +226,28 @@ struct ProfileView: View {
             EditProfileView()
                 .presentationDetents([.fraction(0.88), .large])
                 .presentationDragIndicator(.visible)
-                .presentationCornerRadius(24)
+                .presentationCornerRadius(22)
+        }
+        .sheet(isPresented: $isShowingWeeklyReportSheet) {
+            if let report = currentWeeklyReport {
+                CartoonAIWeeklyReviewSheetView(report: report)
+                    .presentationDetents([.fraction(0.92), .large])
+                    .presentationDragIndicator(.visible)
+                    .presentationCornerRadius(22)
+            }
         }
     }
-}
 
-#Preview {
-    ProfileView()
-        .modelContainer(for: Item.self, inMemory: true)
+    private func generateAndShowWeeklyReport() {
+        let pomodoroCount = PomodoroManager.shared.completedSessionsCount
+        let steps = HealthKitManager.shared.todaySummary.steps
+        let report = AIWeeklyReviewService.shared.generateWeeklyReport(
+            items: allItems,
+            habits: allHabits,
+            pomodoroSessions: pomodoroCount,
+            healthSteps: steps
+        )
+        self.currentWeeklyReport = report
+        self.isShowingWeeklyReportSheet = true
+    }
 }
