@@ -32,7 +32,7 @@ struct CartoonWeeklyStrip: View {
                         // Nama Hari (SEN, SEL, RAB / MON, TUE, WED...)
                         Text(CalendarDateCache.shared.formatWeekday(date))
                             .font(.system(size: 10, weight: .heavy, design: .rounded))
-                            .foregroundColor(isSelected ? .white : .secondary)
+                            .foregroundColor(isSelected ? .white : Color.black.opacity(0.85))
 
                         // Angka Tanggal (14, 15, 17...)
                         Text(CalendarDateCache.shared.formatDay(date))
@@ -51,7 +51,7 @@ struct CartoonWeeklyStrip: View {
                                     .frame(width: 5, height: 5)
                                     .overlay(
                                         Circle()
-                                            .stroke(Color.black, lineWidth: isSelected ? 0.8 : 0.8)
+                                            .stroke(Color.black, lineWidth: 0.8)
                                     )
                             } else {
                                 // Spacer dot transparan untuk menjaga tinggi konsisten
@@ -68,10 +68,10 @@ struct CartoonWeeklyStrip: View {
                             .fill(
                                 isSelected
                                     ? Color.cartoonCoral
-                                    : (isToday ? Color.cartoonYellow.opacity(0.35) : Color.white)
+                                    : (isToday ? Color.cartoonYellow.opacity(0.4) : Color.white)
                             )
                             .shadow(
-                                color: isSelected ? .black : (isToday ? Color.black.opacity(0.15) : Color.black.opacity(0.08)),
+                                color: isSelected ? .black : (isToday ? Color.black.opacity(0.15) : Color.black.opacity(0.1)),
                                 radius: 0,
                                 x: isSelected ? 2 : 1,
                                 y: isSelected ? 2 : 1
@@ -148,8 +148,7 @@ struct CartoonTimelineCard: View {
                         Text(title)
                             .font(.system(size: 14.5, weight: .heavy, design: .rounded))
                             .foregroundColor(.black)
-                            .strikethrough(isCompleted, color: .black.opacity(0.6))
-                            .opacity(isCompleted ? 0.6 : 1.0)
+                            .strikethrough(isCompleted, color: .black.opacity(0.7))
                             .multilineTextAlignment(.leading)
                     }
                     .buttonStyle(.plain)
@@ -175,7 +174,7 @@ struct CartoonTimelineCard: View {
                     } label: {
                         Image(systemName: "ellipsis")
                             .font(.system(size: 14, weight: .black))
-                            .foregroundColor(.black.opacity(0.7))
+                            .foregroundColor(.black)
                             .frame(width: 28, height: 28)
                             .contentShape(Rectangle())
                     }
@@ -184,8 +183,8 @@ struct CartoonTimelineCard: View {
                 // Waktu & Recurring Tag
                 HStack(spacing: 6) {
                     Text(timeText)
-                        .font(.system(size: 11.5, weight: .bold, design: .monospaced))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 11.5, weight: .heavy, design: .rounded))
+                        .foregroundColor(Color.black.opacity(0.85))
 
                     if isRecurring && !recurrenceTitle.isEmpty {
                         HStack(spacing: 3) {
@@ -217,8 +216,8 @@ struct CartoonTimelineCard: View {
                 // Catatan Tugas / Notes (Jika Ada)
                 if !notes.isEmpty {
                     Text(notes)
-                        .font(.system(size: 11.5, weight: .medium, design: .rounded))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(Color.black.opacity(0.85))
                         .lineLimit(2)
                         .padding(.top, 1)
                 }
@@ -228,7 +227,7 @@ struct CartoonTimelineCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 14)
-                .fill(isCompleted ? Color.black.opacity(0.04) : Color.white)
+                .fill(isCompleted ? Color(red: 0.95, green: 0.95, blue: 0.95) : Color.white)
                 .shadow(color: .black, radius: 0, x: isCompleted ? 1 : 2, y: isCompleted ? 1 : 2)
         )
         .overlay(
@@ -243,7 +242,7 @@ struct CartoonTimelineCard: View {
         if lower.contains("kerja") || lower.contains("work") || lower.contains("coding") { return .cartoonBlue }
         if lower.contains("sehat") || lower.contains("health") || lower.contains("olahraga") { return .cartoonMint }
         if lower.contains("desain") || lower.contains("design") { return .cartoonLavender }
-        if lower.contains("keuangan") || lower.contains("finance") { return .cartoonMint.opacity(0.7) }
+        if lower.contains("keuangan") || lower.contains("finance") { return .cartoonMint }
         return Color(red: 0.92, green: 0.92, blue: 0.94)
     }
 }
@@ -257,14 +256,14 @@ struct CartoonQuickAddBar: View {
     dynamic var body: some View {
         HStack(alignment: .center, spacing: HIGSpacing.sm) {
             Text(timeLabel)
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .foregroundColor(.secondary)
+                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                .foregroundColor(Color.black.opacity(0.85))
                 .frame(width: 58, alignment: .leading)
 
             HStack(spacing: HIGSpacing.xs) {
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 14, weight: .black))
-                    .foregroundColor(.secondary)
+                    .foregroundColor(Color.black.opacity(0.75))
 
                 TextField("Tambah aktivitas cepat...", text: $text)
                     .font(.system(size: 13, weight: .bold, design: .rounded))
@@ -297,7 +296,7 @@ struct CartoonQuickAddBar: View {
                 RoundedRectangle(cornerRadius: 12)
                     .stroke(Color.black, lineWidth: 1.2)
             )
-            .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+            .shadow(color: .black, radius: 0, x: 1, y: 1)
         }
     }
 }
