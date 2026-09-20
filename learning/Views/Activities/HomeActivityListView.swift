@@ -25,6 +25,7 @@ struct HomeActivityListView: View {
     // Dialog & Sheet State
     @State private var isShowingHistorySheet: Bool = false
     @State private var isShowingClearCompletedDialog: Bool = false
+    @State private var isShowingRebalancerSheet: Bool = false
 
     // Filter chips definitions
     private let statusFilters: [(id: String, label: String, icon: String, color: Color)] = [
@@ -118,7 +119,13 @@ struct HomeActivityListView: View {
                     )
                     .padding(.horizontal, HIGSpacing.md)
 
-                    // 3. 📊 3 Kartu Mini Ringkasan Statistik
+                    // 3. 🤖 Banner AI Rebalancer Cerdas (Muncul jika ada tugas terlewat / bentrok)
+                    CartoonAIRebalanceBanner(items: items) {
+                        isShowingRebalancerSheet = true
+                    }
+                    .padding(.horizontal, HIGSpacing.md)
+
+                    // 4. 📊 3 Kartu Mini Ringkasan Statistik
                     HStack(spacing: HIGSpacing.xs) {
                         CartoonStatCard(
                             title: "Perlu Dikerjakan",
@@ -150,7 +157,7 @@ struct HomeActivityListView: View {
                     }
                     .padding(.horizontal, HIGSpacing.md)
 
-                    // 4. 🔍 Search & Filter Header
+                    // 5. 🔍 Search & Filter Header
                     searchAndFilterHeader
                         .padding(.horizontal, HIGSpacing.md)
                         .padding(.top, 4)
@@ -162,7 +169,7 @@ struct HomeActivityListView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                     }
 
-                    // 5. 📋 Daftar Aktivitas
+                    // 6. 📋 Daftar Aktivitas
                     activityListSection
                         .padding(.horizontal, HIGSpacing.md)
 
@@ -198,128 +205,124 @@ struct HomeActivityListView: View {
         .fullScreenCover(isPresented: $isShowingHistorySheet) {
             CompletedTasksHistoryView()
         }
+        .sheet(isPresented: $isShowingRebalancerSheet) {
+            AISmartRebalancerSheetView(items: items)
+        }
+        .onAppear {
+            debouncedSearchText = rawSearchText
+        }
     }
 
-    // MARK: - 🔍 Search & Filter Header Terpadu
+    // MARK: - Greeting Name Helper
+    private var displayGreetingName: String {
+        let stored = UserDefaults.standard.string(forKey: "userName") ?? ""
+        return stored.isEmpty ? "Sahabat" : stored
+    }
+
+    // MARK: - Search & Filter Header
     private var searchAndFilterHeader: some View {
         HStack(spacing: HIGSpacing.xs) {
-            CartoonSearchBar(searchText: $rawSearchText)
-                .onChange(of: rawSearchText) { _, newValue in
-                    Task {
-                        try? await Task.sleep(nanoseconds: 180_000_000) // 180ms debounce
-                        guard !Task.isCancelled else { return }
-                        debouncedSearchText = newValue
+            // Search Input Field
+            HStack(spacing: 8) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundColor(.secondary)
+
+                TextField("Cari tugas, catatan, kategori...", text: $rawSearchText)
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .onChange(of: rawSearchText) { _, newVal in
+                        debouncedSearchText = newVal
+                    }
+
+                if !rawSearchText.isEmpty {
+                    Button {
+                        rawSearchText = ""
+                        debouncedSearchText = ""
+                        HapticManager.shared.selection()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundColor(.secondary)
                     }
                 }
+            }
+            .padding(.horizontal, 10)
+            .frame(height: 38)
+            .background(Color.white)
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(Color.black, lineWidth: 1.4)
+            )
+            .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
 
-            // Tombol Filter Icon Neo-Brutalist
+            // Filter Toggle Button
             Button {
                 HapticManager.shared.impact(style: .light)
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                     isFilterPanelExpanded.toggle()
                 }
             } label: {
-                ZStack(alignment: .topTrailing) {
-                    HStack(spacing: 4) {
-                        Image(systemName: isFilterPanelExpanded ? "line.3.horizontal.decrease.circle.fill" : "slider.horizontal.3")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.black)
-                    }
-                    .frame(width: 44, height: 44)
-                    .background(
-                        RoundedRectangle(cornerRadius: 12)
-                            .fill(hasActiveFilter ? Color.cartoonYellow : (isFilterPanelExpanded ? Color.cartoonLavender : Color.white))
-                            .shadow(color: .black, radius: 0, x: 2, y: 2)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .stroke(Color.black, lineWidth: 1.6)
-                    )
-
-                    // Dot penanda filter sedang aktif
+                HStack(spacing: 4) {
+                    Image(systemName: hasActiveFilter ? "line.3.horizontal.decrease.circle.fill" : "line.3.horizontal.decrease.circle")
+                        .font(.system(size: 13, weight: .bold))
                     if hasActiveFilter {
                         Circle()
                             .fill(Color.cartoonCoral)
-                            .frame(width: 9, height: 9)
-                            .overlay(Circle().stroke(Color.black, lineWidth: 1.2))
-                            .offset(x: 2, y: -2)
+                            .frame(width: 6, height: 6)
                     }
                 }
+                .foregroundColor(.black)
+                .frame(width: 38, height: 38)
+                .background(hasActiveFilter ? Color.cartoonYellow : Color.white)
+                .cornerRadius(8)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(Color.black, lineWidth: 1.4)
+                )
+                .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
             }
             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
         }
     }
 
-    // MARK: - 🗂️ Collapsible Filter Drawer Section
+    // MARK: - Filter Drawer Section
     private var filterDrawerSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Header drawer dengan tombol Reset
-            HStack {
-                Text("FILTER AKTIVITAS")
-                    .font(.system(size: 9.5, weight: .heavy, design: .rounded))
-                    .foregroundColor(.secondary)
-
-                Spacer()
-
-                if hasActiveFilter {
-                    Button {
-                        HapticManager.shared.impact(style: .light)
-                        withAnimation(.spring(response: 0.28, dampingFraction: 0.75)) {
-                            selectedStatusFilter = "all"
-                            selectedCategoryFilter = "all"
-                        }
-                    } label: {
-                        HStack(spacing: 3) {
-                            Image(systemName: "arrow.counterclockwise")
-                                .font(.system(size: 9, weight: .bold))
-                            Text("Reset")
-                                .font(.system(size: 10, weight: .heavy, design: .rounded))
-                        }
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
-                        .background(Color.cartoonCoral.opacity(0.8))
-                        .cornerRadius(6)
-                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
-                    }
-                }
-            }
-
-            // Chips Status (Semua, Belum, Tinggi, Rutin, Selesai)
+            // Status Filters
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 6) {
                     ForEach(statusFilters, id: \.id) { filter in
                         let isSelected = selectedStatusFilter == filter.id
                         Button {
                             HapticManager.shared.selection()
-                            withAnimation(.spring(response: 0.28, dampingFraction: 0.75)) {
+                            withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                                 selectedStatusFilter = filter.id
                             }
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: filter.icon)
-                                    .font(.system(size: 9, weight: .bold))
+                                    .font(.system(size: 11, weight: .bold))
                                 Text(filter.label)
-                                    .font(.system(size: 10.5, weight: .heavy, design: .rounded))
+                                    .font(.system(size: 11.5, weight: .heavy, design: .rounded))
                             }
                             .foregroundColor(.black)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 5)
                             .background(isSelected ? filter.color : Color.white)
-                            .cornerRadius(8)
+                            .cornerRadius(6)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 8)
+                                RoundedRectangle(cornerRadius: 6)
                                     .stroke(Color.black, lineWidth: isSelected ? 1.6 : 1.0)
                             )
-                            .shadow(color: .black, radius: 0, x: isSelected ? 1.5 : 0.8, y: isSelected ? 1.5 : 0.8)
+                            .shadow(color: .black, radius: 0, x: isSelected ? 1.2 : 0.6, y: isSelected ? 1.2 : 0.6)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
                     }
                 }
-                .padding(.vertical, 2)
             }
 
-            // Chips Kategori Dinamis
+            // Category Filter Pills
             if availableCategories.count > 1 {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 6) {
@@ -327,114 +330,57 @@ struct HomeActivityListView: View {
                             let isSelected = selectedCategoryFilter.lowercased() == cat.lowercased()
                             Button {
                                 HapticManager.shared.selection()
-                                withAnimation(.spring(response: 0.28, dampingFraction: 0.75)) {
+                                withAnimation(.spring(response: 0.25, dampingFraction: 0.8)) {
                                     selectedCategoryFilter = cat
                                 }
                             } label: {
-                                HStack(spacing: 4) {
-                                    if cat != "all" {
-                                        Image(systemName: "tag.fill")
-                                            .font(.system(size: 8, weight: .bold))
-                                    }
-                                    Text(cat == "all" ? "Semua Kategori" : cat)
-                                        .font(.system(size: 10.5, weight: .heavy, design: .rounded))
-                                }
-                                .foregroundColor(.black)
-                                .padding(.horizontal, 8)
-                                .padding(.vertical, 4)
-                                .background(isSelected ? Color.cartoonYellow : Color.white)
-                                .cornerRadius(8)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.black, lineWidth: isSelected ? 1.6 : 1.0)
-                                )
-                                .shadow(color: .black, radius: 0, x: isSelected ? 1.5 : 0.8, y: isSelected ? 1.5 : 0.8)
+                                Text(cat == "all" ? "Semua Kategori" : cat)
+                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                    .foregroundColor(.black)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(isSelected ? Color.cartoonLavender : Color.white.opacity(0.8))
+                                    .cornerRadius(6)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 6)
+                                            .stroke(Color.black, lineWidth: isSelected ? 1.4 : 0.8)
+                                    )
                             }
-                            .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
+                            .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.6))
                         }
                     }
-                    .padding(.vertical, 2)
                 }
             }
         }
-        .padding(10)
-        .background(Color.cartoonBg)
-        .cornerRadius(12)
-        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.4))
+        .padding(8)
+        .background(Color.white)
+        .cornerRadius(CartoonMetrics.cardCornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+        )
         .shadow(color: .black, radius: 0, x: 2, y: 2)
     }
 
-    // MARK: - 📋 Activity List Section
+    // MARK: - Activity List Section
     private var activityListSection: some View {
-        VStack(alignment: .leading, spacing: HIGSpacing.xs) {
-            // Header List & Tombol Aksi Cepat
-            HStack {
-                Text(listHeaderTitle)
-                    .font(.system(size: 14, weight: .heavy, design: .rounded))
-                    .foregroundColor(.black)
-
-                Spacer()
-
-                // 🌟 Tombol Cepat: Lihat Riwayat Selesai (Selalu Ada & Mudah Diakses)
-                if totalCompletedAllTimeCount > 0 {
-                    Button {
-                        HapticManager.shared.impact(style: .light)
-                        isShowingHistorySheet = true
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "clock.arrow.circlepath")
-                                .font(.system(size: 10, weight: .black))
-                            Text("Riwayat (\(totalCompletedAllTimeCount))")
-                                .font(.system(size: 10.5, weight: .heavy, design: .rounded))
-                        }
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.cartoonLavender)
-                        .cornerRadius(8)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-                        .shadow(color: .black, radius: 0, x: 1, y: 1)
-                    }
-                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
-                }
-
-                if todayCompletedCount > 0 && selectedStatusFilter == "completed" {
-                    Button {
-                        HapticManager.shared.impact(style: .light)
-                        withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
-                            isShowingClearCompletedDialog = true
-                        }
-                    } label: {
-                        HStack(spacing: 3) {
-                            Image(systemName: "trash")
-                                .font(.system(size: 9, weight: .bold))
-                            Text("Bersihkan")
-                                .font(.system(size: 10.5, weight: .heavy, design: .rounded))
-                        }
-                        .foregroundColor(.black)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.cartoonPink.opacity(0.8))
-                        .cornerRadius(6)
-                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
-                    }
-                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
-                }
-            }
-            .padding(.top, 4)
-
-            // Items List / Empty State
+        VStack(alignment: .leading, spacing: HIGSpacing.sm) {
             if filteredItems.isEmpty {
-                emptyStateView
-                    .padding(.top, 16)
+                emptyFilteredView
             } else {
-                LazyVStack(spacing: 8) {
+                LazyVStack(spacing: HIGSpacing.sm) {
                     ForEach(filteredItems) { item in
                         ActivityCardView(
                             item: item,
-                            onToggle: { onToggleItem(item) },
-                            onDelete: { onDeleteItem(item) },
-                            onTap: { onEditItem(item) }
+                            onToggle: {
+                                onToggleItem(item)
+                            },
+                            onDelete: {
+                                onDeleteItem(item)
+                            },
+                            onTap: {
+                                onEditItem(item)
+                            }
                         )
                     }
                 }
@@ -442,43 +388,45 @@ struct HomeActivityListView: View {
         }
     }
 
-    private var emptyStateView: some View {
-        VStack(spacing: 10) {
+    // MARK: - Empty Filtered View
+    private var emptyFilteredView: some View {
+        VStack(spacing: 8) {
             Image(systemName: "sparkles")
-                .font(.system(size: 36, weight: .bold))
-                .foregroundColor(Color.black.opacity(0.3))
+                .font(.system(size: 32, weight: .bold))
+                .foregroundColor(Color.cartoonYellow)
+                .padding(.top, 16)
 
-            Text(hasActiveFilter ? "Tidak ada tugas yang cocok dengan filter" : "Belum ada tugas hari ini")
-                .font(.system(size: 14, weight: .heavy, design: .rounded))
-                .foregroundColor(Color.black.opacity(0.6))
+            Text("Tidak Ada Tugas")
+                .font(.system(size: 15, weight: .heavy, design: .rounded))
+                .foregroundColor(.black)
+
+            Text("Tidak ada aktivitas yang sesuai dengan filter atau kata kunci saat ini.")
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
+        .background(Color.white)
+        .cornerRadius(CartoonMetrics.cardCornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+        )
+        .shadow(color: .black, radius: 0, x: 2, y: 2)
     }
 
-    private var listHeaderTitle: String {
-        if hasActiveFilter {
-            return "Hasil Filter (\(filteredItems.count))"
-        }
-        return "Daftar Tugas (\(filteredItems.count))"
-    }
-
-    private var displayGreetingName: String {
-        let auth = GoogleAuthManager.shared
-        if auth.isUserLoggedIn, let name = auth.currentUserName, !name.isEmpty {
-            return name.components(separatedBy: " ").first ?? "Teman"
-        }
-        return "Juara"
-    }
-
+    // MARK: - Clear All Completed Tasks
     private func clearAllCompletedTasks() {
+        let completedToday = items.filter { $0.isCompleted && isCompletedToday($0) }
+        for item in completedToday {
+            modelContext.delete(item)
+        }
+        try? modelContext.save()
         HapticManager.shared.success()
         SoundManager.shared.playDeleteSound()
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-            for item in items where item.isCompleted {
-                modelContext.delete(item)
-            }
-            try? modelContext.save()
+        withAnimation {
             isShowingClearCompletedDialog = false
         }
     }

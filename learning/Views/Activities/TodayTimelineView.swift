@@ -18,6 +18,7 @@ struct TodayTimelineView: View {
     @State private var isMonthViewExpanded: Bool = false
     @State private var newSubtaskTitle: String = ""
     @State private var isShowingAddActivity: Bool = false
+    @State private var isShowingRebalancerSheet: Bool = false
     @FocusState private var isQuickAddFocused: Bool
 
     // Callback untuk delete, toggle, & edit dari ContentView
@@ -143,11 +144,19 @@ struct TodayTimelineView: View {
                         ))
                     }
 
-                    // 3. 🎯 Kartu Ringkasan Progress Harian
+                    // 3. 🤖 Banner AI Rebalancer (Jika sedang di tab Hari Ini & ada tugas terlewat/bentrok)
+                    if isSelectedDateToday {
+                        CartoonAIRebalanceBanner(items: allItems) {
+                            isShowingRebalancerSheet = true
+                        }
+                        .padding(.horizontal, HIGSpacing.md)
+                    }
+
+                    // 4. 🎯 Kartu Ringkasan Progress Harian
                     dailyProgressCard
                         .padding(.horizontal, HIGSpacing.md)
 
-                    // 4. 🗂️ Garis Timeline Vertikal & Kartu Aktivitas (Menggunakan LazyVStack untuk 120fps)
+                    // 5. 🗂️ Garis Timeline Vertikal & Kartu Aktivitas (Menggunakan LazyVStack untuk 120fps)
                     VStack(spacing: HIGSpacing.md) {
                         if filteredItems.isEmpty {
                             emptyTimelineState
@@ -201,6 +210,9 @@ struct TodayTimelineView: View {
             .sheet(isPresented: $isShowingAddActivity) {
                 AddActivity()
             }
+            .sheet(isPresented: $isShowingRebalancerSheet) {
+                AISmartRebalancerSheetView(items: allItems)
+            }
         }
     }
 
@@ -220,519 +232,220 @@ struct TodayTimelineView: View {
 
             Spacer()
 
-            HStack(spacing: 8) {
-                // Tombol "Hari Ini"
-                if !isSelectedDateToday {
-                    Button {
-                        HapticManager.shared.impact(style: .medium)
-                        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                            selectedDate = Date()
-                            baseWeekDate = Date()
-                        }
-                    } label: {
-                        Text("Hari Ini")
-                            .font(.system(size: 11, weight: .heavy, design: .rounded))
-                            .foregroundColor(.black)
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 6)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .fill(Color.cartoonYellow)
-                                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-                            )
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 10)
-                                    .stroke(Color.black, lineWidth: 1.5)
-                            )
-                    }
-                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-                }
-
-                // Navigasi Minggu Sebelumnya (<)
+            // Tombol "Hari Ini" Cepat
+            if !isSelectedDateToday {
                 Button {
-                    changeWeek(by: -1)
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 12, weight: .black))
-                        .foregroundColor(.black)
-                        .frame(width: 32, height: 32)
-                        .background(Color.white)
-                        .cornerRadius(8)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
-                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-                }
-                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-
-                // Navigasi Minggu Berikutnya (>)
-                Button {
-                    changeWeek(by: 1)
-                } label: {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .black))
-                        .foregroundColor(.black)
-                        .frame(width: 32, height: 32)
-                        .background(Color.white)
-                        .cornerRadius(8)
-                        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
-                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-                }
-                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-
-                // Toggle Tampilan Bulan/Mingguan
-                Button {
-                    HapticManager.shared.selection()
+                    HapticManager.shared.impact(style: .light)
                     withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                        isMonthViewExpanded.toggle()
+                        selectedDate = Date()
+                        baseWeekDate = Date()
                     }
                 } label: {
-                    Image(systemName: isMonthViewExpanded ? "calendar.day.timeline.left" : "calendar")
-                        .font(.system(size: 13, weight: .black))
+                    Text("Hari Ini")
+                        .font(.system(size: 12, weight: .heavy, design: .rounded))
                         .foregroundColor(.black)
-                        .frame(width: 32, height: 32)
-                        .background(isMonthViewExpanded ? Color.cartoonLavender : Color.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.cartoonYellow)
                         .cornerRadius(8)
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
                         .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
                 }
                 .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
             }
+
+            // Tombol Navigasi Minggu Sebelumnya & Berikutnya
+            HStack(spacing: 4) {
+                CartoonIconButton(icon: "chevron.left", size: 32) {
+                    shiftWeek(by: -7)
+                }
+                CartoonIconButton(icon: "chevron.right", size: 32) {
+                    shiftWeek(by: 7)
+                }
+            }
+
+            // Tombol Toggle Mode Tampilan (Mingguan / Bulanan)
+            Button {
+                HapticManager.shared.selection()
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                    isMonthViewExpanded.toggle()
+                }
+            } label: {
+                Image(systemName: isMonthViewExpanded ? "calendar.badge.minus" : "calendar.badge.plus")
+                    .font(.system(size: 14, weight: .bold))
+                    .foregroundColor(.black)
+                    .frame(width: 34, height: 34)
+                    .background(Color.white)
+                    .cornerRadius(8)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
+                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+            }
+            .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
         }
     }
 
     // MARK: - 🎯 Kartu Ringkasan Progress Harian
     private var dailyProgressCard: some View {
-        HStack(spacing: HIGSpacing.md) {
-            // Icon Progress Kartun
+        HStack(spacing: 12) {
+            // Icon Checklist Kartun
             ZStack {
                 Circle()
-                    .fill(progressRatio >= 1.0 && totalTasksCount > 0 ? Color.cartoonMint : Color.cartoonYellow)
-                    .frame(width: 46, height: 46)
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
-                    .overlay(Circle().stroke(Color.black, lineWidth: 2))
+                    .fill(progressRatio == 1.0 && totalTasksCount > 0 ? Color.cartoonMint : Color.cartoonYellow)
+                    .frame(width: 44, height: 44)
+                    .overlay(Circle().stroke(Color.black, lineWidth: 1.8))
+                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
 
-                if progressRatio >= 1.0 && totalTasksCount > 0 {
-                    Image(systemName: "checkmark.seal.fill")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(.black)
-                } else {
-                    Text("\(Int(progressRatio * 100))%")
-                        .font(.system(size: 13, weight: .heavy, design: .rounded))
-                        .foregroundColor(.black)
-                }
+                Image(systemName: progressRatio == 1.0 && totalTasksCount > 0 ? "checkmark.seal.fill" : "flag.checkered")
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(.black)
             }
 
-            // Info Teks Progress
-            VStack(alignment: .leading, spacing: 3) {
-                Text(progressTitle)
-                    .font(.system(size: 14, weight: .heavy, design: .rounded))
-                    .foregroundColor(.black)
+            // Teks Keterangan & Progress Bar
+            VStack(alignment: .leading, spacing: 4) {
+                HStack {
+                    Text(progressStatusTitle)
+                        .font(.system(size: 14, weight: .heavy, design: .rounded))
+                        .foregroundColor(.black)
 
-                Text(progressSubtitle)
-                    .font(.system(size: 11, weight: .medium, design: .rounded))
-                    .foregroundColor(.secondary)
+                    Spacer()
 
-                // Bar Progress Mini Kartun
+                    Text("\(completedTasksCount)/\(totalTasksCount) Selesai")
+                        .font(.system(size: 11.5, weight: .black, design: .monospaced))
+                        .foregroundColor(.secondary)
+                }
+
+                // Custom Cartoon Progress Bar
                 GeometryReader { geo in
                     ZStack(alignment: .leading) {
                         Capsule()
-                            .fill(Color(red: 0.90, green: 0.90, blue: 0.92))
-                            .frame(height: 8)
+                            .fill(Color(red: 0.92, green: 0.92, blue: 0.92))
+                            .frame(height: 10)
                             .overlay(Capsule().stroke(Color.black, lineWidth: 1.2))
 
                         Capsule()
-                            .fill(progressRatio >= 1.0 ? Color.cartoonMint : Color.cartoonCoral)
-                            .frame(width: max(0, geo.size.width * CGFloat(progressRatio)), height: 8)
+                            .fill(Color.cartoonMint)
+                            .frame(width: max(0, geo.size.width * CGFloat(progressRatio)), height: 10)
                             .overlay(Capsule().stroke(Color.black, lineWidth: progressRatio > 0 ? 1.2 : 0))
                     }
                 }
-                .frame(height: 8)
-                .padding(.top, 2)
+                .frame(height: 10)
             }
-
-            Spacer()
         }
-        .padding(HIGSpacing.md)
-        .background(
-            RoundedRectangle(cornerRadius: 16)
-                .fill(Color.white)
-                .shadow(color: .black, radius: 0, x: 2, y: 2)
-        )
+        .padding(12)
+        .background(Color.white)
+        .cornerRadius(CartoonMetrics.cardCornerRadius)
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
                 .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
         )
+        .shadow(color: .black, radius: 0, x: 2, y: 2)
     }
 
-    private var progressTitle: String {
+    private var progressStatusTitle: String {
         if totalTasksCount == 0 {
-            return "Tidak Ada Tugas"
+            return "Hari Bebas Tugas 🎉"
         } else if completedTasksCount == totalTasksCount {
-            return "Semua Tugas Tuntas! 🎉"
+            return "Semua Tugas Tuntas! 🏆"
+        } else if completedTasksCount > 0 {
+            return "Sedang Berprogres 💪"
         } else {
-            return "\(completedTasksCount) dari \(totalTasksCount) Selesai"
+            return "Target Hari Ini 🎯"
         }
     }
 
-    private var progressSubtitle: String {
-        if totalTasksCount == 0 {
-            return "Jadwal kosong, istirahat atau buat tugas baru!"
-        } else if completedTasksCount == totalTasksCount {
-            return "Pencapaian luar biasa untuk hari ini!"
-        } else {
-            return "\(totalTasksCount - completedTasksCount) tugas lagi yang menunggu kamu."
-        }
-    }
-
-    // MARK: - 📬 Tampilan Kosong untuk Tanggal Terpilih
+    // MARK: - 📭 Empty Timeline State
     private var emptyTimelineState: some View {
-        VStack(spacing: HIGSpacing.md) {
-            ZStack {
-                Circle()
-                    .fill(Color.cartoonYellow)
-                    .frame(width: 64, height: 64)
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
-                    .overlay(Circle().stroke(Color.black, lineWidth: 2))
+        VStack(spacing: HIGSpacing.sm) {
+            Image(systemName: "calendar.badge.clock")
+                .font(.system(size: 40, weight: .bold))
+                .foregroundColor(.secondary.opacity(0.6))
+                .padding(.top, HIGSpacing.lg)
 
-                Image(systemName: "calendar.badge.clock")
-                    .font(.system(size: 28, weight: .bold))
-                    .foregroundColor(.black)
-            }
-            .padding(.top, HIGSpacing.md)
+            Text("Tidak Ada Aktivitas")
+                .font(.system(size: 16, weight: .heavy, design: .rounded))
+                .foregroundColor(.black)
 
-            VStack(spacing: HIGSpacing.xxs) {
-                Text("Tidak Ada Jadwal")
-                    .font(.system(size: 17, weight: .heavy, design: .rounded))
-                    .foregroundColor(.black)
+            Text("Belum ada jadwal tugas yang direncanakan untuk tanggal ini.")
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundColor(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, HIGSpacing.xl)
 
-                Text("Belum ada tugas terjadwal pada tanggal ini.")
-                    .font(.system(size: 13, weight: .medium, design: .rounded))
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-            }
-
-            // Tombol Tambah Tugas untuk Tanggal Ini
             Button {
+                HapticManager.shared.impact(style: .medium)
                 isShowingAddActivity = true
             } label: {
-                HStack(spacing: HIGSpacing.xs) {
+                HStack(spacing: 6) {
                     Image(systemName: "plus.circle.fill")
                         .font(.system(size: 14, weight: .bold))
-                    Text("Buat Jadwal Baru")
+                    Text("Buat Aktivitas Baru")
                         .font(.system(size: 13, weight: .heavy, design: .rounded))
                 }
                 .foregroundColor(.black)
-                .padding(.horizontal, HIGSpacing.lg)
-                .frame(height: 44)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(Color.cartoonMint)
-                        .shadow(color: .black, radius: 0, x: 2, y: 2)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(Color.cartoonYellow)
+                .cornerRadius(CartoonMetrics.cardCornerRadius)
+                .overlay(
+                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                        .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                 )
-                .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.8))
+                .shadow(color: .black, radius: 0, x: 2, y: 2)
             }
             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-            .padding(.top, HIGSpacing.xxs)
-
-            // ➕ Reusable Input Tambah Cepat
-            CartoonQuickAddBar(timeLabel: "Add", text: $newSubtaskTitle) {
-                createQuickSubtask()
-            }
-            .padding(.top, HIGSpacing.sm)
+            .padding(.top, HIGSpacing.xs)
+            .padding(.bottom, HIGSpacing.lg)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, HIGSpacing.md)
+        .background(Color.white)
+        .cornerRadius(CartoonMetrics.cardCornerRadius)
+        .overlay(
+            RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+        )
+        .shadow(color: .black, radius: 0, x: 2, y: 2)
     }
 
-    // MARK: - Helper Logika Navigasi & Aksi
-    private func monthYearText(from date: Date) -> String {
-        date.formatted(.dateTime.month(.wide).year().locale(Locale(identifier: "id_ID")))
-    }
-
-    private func changeWeek(by amount: Int) {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-            if let newBase = calendar.date(byAdding: .weekOfYear, value: amount, to: baseWeekDate) {
+    // MARK: - Helper Methods
+    private func shiftWeek(by days: Int) {
+        HapticManager.shared.impact(style: .light)
+        if let newBase = calendar.date(byAdding: .day, value: days, to: baseWeekDate) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                 baseWeekDate = newBase
-                if let newSelected = calendar.date(byAdding: .weekOfYear, value: amount, to: selectedDate) {
-                    selectedDate = newSelected
-                }
+                selectedDate = newBase
             }
         }
-        HapticManager.shared.selection()
+    }
+
+    private func monthYearText(from date: Date) -> String {
+        date.formatted(.dateTime.month(.wide).year().locale(Locale(identifier: "id_ID")))
     }
 
     private func createQuickSubtask() {
         let trimmed = newSubtaskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-            let newItem = Item(
-                title: trimmed,
-                notes: "",
-                timestamp: selectedDate,
-                isCompleted: false,
-                priority: "Normal",
-                category: "Subtask"
-            )
-            modelContext.insert(newItem)
-            try? modelContext.save()
-            WidgetCenter.shared.reloadAllTimelines()
+        let newItem = Item(
+            title: trimmed,
+            notes: "Ditambahkan dari Timeline Harian",
+            timestamp: selectedDate,
+            isCompleted: false,
+            completedAt: nil,
+            priority: "Normal",
+            category: "Umum"
+        )
 
+        modelContext.insert(newItem)
+
+        do {
+            try modelContext.save()
+            WidgetCenter.shared.reloadAllTimelines()
             newSubtaskTitle = ""
             isQuickAddFocused = false
             HapticManager.shared.success()
+            SoundManager.shared.playSuccessChime()
+        } catch {
+            print("Gagal menyimpan subtask cepat: \(error.localizedDescription)")
         }
     }
 }
-
-// PATCH-THUNKS-BEGIN (generated by `patchcli prepare` — DO NOT EDIT)
-// @generated
-// =========================================================================
-// AUTOGENERATED BY `patchcli prepare` — DO NOT EDIT THIS SECTION.
-//
-// Do NOT edit any code in this generated section — neither by hand NOR with
-// an AI coding assistant (Copilot, Cursor, Claude, etc.).
-//
-// Reason: this block is REGENERATED on every `patchcli prepare` run (which
-// also runs automatically inside `patchcli build`/`push`/`release`). Any
-// manual change here is SILENTLY OVERWRITTEN on the next prepare, and an
-// inconsistent thunk can break the OTA fingerprint (causing a MISMATCH that
-// blocks your release).
-//
-// To change a view's behaviour: edit the VIEW SOURCE FILE itself — never
-// this generated thunk. To remove this section entirely, delete the block
-// from BEGIN to END and re-run `patchcli prepare` (it recreates it).
-// =========================================================================
-// Patch kept the patch-thunk code for the view(s) below in YOUR file because each is
-// declared `private`/`fileprivate` (or its body host-resolves a `private` member) —
-// and Swift access control is file-scoped, so a thunk in the separate
-// `Patch/Generated/` folder cannot reach it. Only the minimum that genuinely needs
-// file-scoped access is here.
-// TodayTimelineView: helper methods kept here — its body reads private member(s): calendarControlHeader, createQuickSubtask, dailyProgressCard, emptyTimelineState, filteredItems, getTaskCount, isMonthViewExpanded, isQuickAddFocused, isShowingAddActivity, newSubtaskTitle, selectedDate, weekDays.
-//   To move this into Patch/Generated/, make those member(s) `internal` (drop
-//   `private`/`fileprivate`) and re-run `patchcli prepare`.
-#if canImport(SwiftUI)
-import SwiftUI
-import PatchSDK
-import PatchSwiftUI
-import PatchRender
-#if canImport(AVFoundation)
-import AVFoundation
-#endif
-#if canImport(ActivityKit)
-import ActivityKit
-#endif
-#if canImport(AdSupport)
-import AdSupport
-#endif
-#if canImport(AppIntents)
-import AppIntents
-#endif
-#if canImport(AppTrackingTransparency)
-import AppTrackingTransparency
-#endif
-#if canImport(AudioToolbox)
-import AudioToolbox
-#endif
-#if canImport(Combine)
-import Combine
-#endif
-#if canImport(DeviceActivity)
-import DeviceActivity
-#endif
-#if canImport(EventKit)
-import EventKit
-#endif
-#if canImport(ExtensionKit)
-import ExtensionKit
-#endif
-#if canImport(FamilyControls)
-import FamilyControls
-#endif
-#if canImport(Foundation)
-import Foundation
-#endif
-#if canImport(GoogleSignIn)
-import GoogleSignIn
-#endif
-#if canImport(HealthKit)
-import HealthKit
-#endif
-#if canImport(LocalAuthentication)
-import LocalAuthentication
-#endif
-#if canImport(ManagedSettings)
-import ManagedSettings
-#endif
-#if canImport(Observation)
-import Observation
-#endif
-#if canImport(SafariServices)
-import SafariServices
-#endif
-#if canImport(SwiftData)
-import SwiftData
-#endif
-#if canImport(UIKit)
-import UIKit
-#endif
-#if canImport(UserNotifications)
-import UserNotifications
-#endif
-#if canImport(WidgetKit)
-import WidgetKit
-#endif
-
-extension TodayTimelineView {
-    /// Native renderers for this view's non-lowerable leaves, keyed by the
-    /// shipped tree's opaque-slot id. Each is a FACTORY `([String]) -> AnyView`:
-    /// a PARAMETERIZED leaf (a slotted custom view with lifted string-literal
-    /// args) substitutes the runtime-supplied `a[k]` into its template, so an
-    /// OTA patch that only edited a string ships through here (the id is
-    /// structural/stable, the new value rides WASM in `BodyEmission.slotArgs`).
-    /// A plain leaf ignores its args. Empty for a fully-lowered view.
-    @MainActor func __patchSlots() -> [String: ([String]) -> AnyView] {
-        var __s: [String: ([String]) -> AnyView] = [:]
-        __s["op_921beea8f3de0173"] = { (a: [String]) in a.count >= 1 ? AnyView(ScrollViewReader { proxy in
-            ScrollView(showsIndicators: false) {
-                VStack(alignment: .leading, spacing: HIGSpacing.md) {
-                    
-                    // 1. 📅 Bar Navigasi Kalender (Bulan/Tahun, Hari Ini, < >, Mode Toggle)
-                    calendarControlHeader
-                        .padding(.horizontal, HIGSpacing.md)
-                        .padding(.top, HIGSpacing.xs)
-
-                    // 2. 🗓️ Tampilan Kalender (Mingguan Strip atau Bulanan Penuh)
-                    if isMonthViewExpanded {
-                        CartoonCalendarView(
-                            selectedDate: $selectedDate,
-                            showTimePicker: false,
-                            taskCountForDate: { date in
-                                getTaskCount(for: date)
-                            }
-                        )
-                        .padding(.horizontal, HIGSpacing.md)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96)),
-                            removal: .opacity.combined(with: .scale(scale: 0.96))
-                        ))
-                    } else {
-                        CartoonWeeklyStrip(
-                            selectedDate: $selectedDate,
-                            weekDays: weekDays,
-                            taskCountForDate: { date in
-                                getTaskCount(for: date)
-                            }
-                        )
-                        .padding(.horizontal, HIGSpacing.md)
-                        .transition(.asymmetric(
-                            insertion: .opacity.combined(with: .scale(scale: 0.96)),
-                            removal: .opacity.combined(with: .scale(scale: 0.96))
-                        ))
-                    }
-
-                    // 3. 🎯 Kartu Ringkasan Progress Harian
-                    dailyProgressCard
-                        .padding(.horizontal, HIGSpacing.md)
-
-                    // 4. 🗂️ Garis Timeline Vertikal & Kartu Aktivitas (Menggunakan LazyVStack untuk 120fps)
-                    VStack(spacing: HIGSpacing.md) {
-                        if filteredItems.isEmpty {
-                            emptyTimelineState
-                        } else {
-                            // ⚡ LazyVStack: Instansiasi on-demand kartu tugas untuk performa scroll mulus
-                            LazyVStack(spacing: HIGSpacing.sm) {
-                                ForEach(filteredItems) { item in
-                                    HStack(alignment: .top, spacing: HIGSpacing.sm) {
-                                        // Kolom Waktu di Kiri (Format: 09:00 AM)
-                                        Text(item.timestamp.formatted(.dateTime.hour().minute()))
-                                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                                            .foregroundColor(.secondary)
-                                            .frame(width: 58, alignment: .leading)
-                                            .padding(.top, HIGSpacing.xs)
-
-                                        // Reusable Timeline Card Component dengan Dukungan Edit saat Diketuk
-                                        CartoonTimelineCard(
-                                            title: item.title,
-                                            timeText: item.timestamp.formatted(date: .omitted, time: .shortened),
-                                            category: item.category,
-                                            notes: item.notes,
-                                            isCompleted: item.isCompleted,
-                                            isRecurring: item.isRecurring,
-                                            recurrenceTitle: item.recurrence.shortTitle,
-                                            onToggle: { onToggleItem(item) },
-                                            onDelete: { onDeleteItem(item) },
-                                            onTap: { onEditItem(item) }
-                                        )
-                                    }
-                                }
-                            }
-
-                            // ➕ Reusable Baris Input Cepat "Add new subtask"
-                            CartoonQuickAddBar(timeLabel: a[0], text: $newSubtaskTitle) {
-                                createQuickSubtask()
-                            }
-                            .focused($isQuickAddFocused)
-                            .id("quickAddBar")
-                        }
-                    }
-                    .padding(.horizontal, HIGSpacing.md)
-                    .padding(.top, HIGSpacing.xs)
-                    .padding(.bottom, 100) // Ruang safe area bottom bar
-                }
-            }
-            .scrollDismissesKeyboard(.interactively)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                isQuickAddFocused = false
-            }
-            .sheet(isPresented: $isShowingAddActivity) {
-                AddActivity()
-            }
-        }) : AnyView(EmptyView()) }
-        return __s
-    }
-
-    /// Resolved design-system token values for this view's `.hostToken(id)`/
-    /// `.fontToken(id)`/numeric/string token slots. Empty when the view uses none.
-    @MainActor func __patchTokens() -> [String: PatchHostToken] {
-        [:]
-    }
-
-    /// Per-row indexed native-action slots for this view's `.indexedForEachSlot`
-    /// nodes. Each natively evaluates the body-local collection (over `self`) →
-    /// a row count + a per-row factory `(Int) -> AnyView` (closing over `self`, so
-    /// each row's real per-row native action works). Empty when the view has none.
-    @MainActor func __patchRowSlots() -> [String: PatchRowSlot] {
-        [:]
-    }
-
-    /// Native-action slots for this view's `.actionSlotButton` nodes — an actions-list
-    /// Button (`.swipeActions`/`.toolbar`/`.alert`/`Menu`/`.contextMenu`) whose action is a
-    /// native method call. Each closure (`() -> Void`, over `self`) runs the real action;
-    /// the SDK wires it to the reconstituted Button by id. Empty when the view has none.
-    @MainActor func __patchActionSlots() -> [String: () -> Void] {
-        [:]
-    }
-
-    /// Native effect-modifier slots for this view's `.nativeEffectSlot` modifiers — an
-    /// undispatchable `.task`/`.onAppear`/`.refreshable`/`.onSubmit`/gesture whose closure
-    /// runs a native side-effect. Each closure (`(AnyView) -> AnyView`, over `self`) applies
-    /// the real modifier to its content; the SDK applies it to the rendered subtree by id.
-    /// Empty when the view has none.
-    @MainActor func __patchEffectSlots() -> [String: (AnyView) -> AnyView] {
-        [:]
-    }
-
-    /// Child-view callback slots for this view's `.callbackSlot` nodes — a custom child-view
-    /// call whose `() -> Void` closure arg lowers to a WASM dispatch sequence. Each closure
-    /// returns the full child-view `AnyView` with the callback arg replaced by a stable
-    /// forwarder `{ self.__patchDispatchCallback("<id>") }`. The SDK fills the opaque slot
-    /// position from this table by id. Empty when the view has no callback slots.
-    @MainActor func __patchCallbackSlots() -> [String: () -> AnyView] {
-        [:]
-    }
-}
-
-#endif
-// @generated — END OF AUTOGENERATED SECTION. DO NOT EDIT ABOVE (regenerated by `patchcli prepare`).
-// PATCH-THUNKS-END
