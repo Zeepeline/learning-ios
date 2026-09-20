@@ -45,8 +45,8 @@ struct AIActionProposal: Identifiable, Sendable {
     let subtasks: [String]
 }
 
-// MARK: - 💬 AI Chat Message
-struct AIMessage: Identifiable {
+// MARK: - 💬 AI Chat Message Model
+struct AIMessage: Identifiable, Sendable {
     let id = UUID()
     let isUser: Bool
     var content: String
@@ -75,6 +75,7 @@ final class MCPAIAssistantService: ObservableObject {
 
         Saya dapat membantu kamu:
         • 🌅 Menyusun rencana harian (*"Susun rencana hari ini"*)
+        • 📊 Laporan mingguan & skor produktivitas (*"Laporan mingguan"*)
         • 🌙 Evaluasi malam & kesehatan (*"Evaluasi hari ini"*)
         • 🪄 Pecah tugas jadi subtask (*"Pecah tugas presentasi"*)
         • 💡 Rekomendasi kebiasaan baru (*"Rekomendasikan habit"*)
@@ -115,6 +116,12 @@ final class MCPAIAssistantService: ObservableObject {
         let lower = trimmed.lowercased()
 
         // 1. Cek Apakah Pesan Merupakan Perintah Local MCP Tools
+
+        // Weekly Review & Productivity Score Infographic
+        if lower.contains("laporan mingguan") || lower.contains("weekly review") || lower.contains("skor produktivitas") || lower.contains("performa minggu") || lower.contains("review mingguan") {
+            await executeWeeklyReviewTool(modelContext: modelContext)
+            return
+        }
 
         // Morning Briefing
         if lower.contains("morning") || lower.contains("pagi") || lower.contains("susun rencana") || lower.contains("briefing") {
@@ -182,7 +189,7 @@ final class MCPAIAssistantService: ObservableObject {
             return
         }
 
-        // 2. Jika Bukan Perintah Tool Langsung -> Kirim ke AI Cloud Engine
+        // 2. Jika Bukan Tools Lokal, Teruskan ke LLM (Gemini Headless / OpenRouter API)
         await sendToAIEngine(
             prompt: trimmed,
             provider: provider,
@@ -193,269 +200,289 @@ final class MCPAIAssistantService: ObservableObject {
         )
     }
 
-    // MARK: - 💡 AI Habit Routine Recommender Tool
-    private func executeHabitRecommenderTool(modelContext: ModelContext) async {
-        let habitDesc = FetchDescriptor<Habit>()
-        let habits = (try? modelContext.fetch(habitDesc)) ?? []
+    // MARK: - 📊 Eksekusi MCP Tool: Weekly Review & Productivity Infographic
+    private func executeWeeklyReviewTool(modelContext: ModelContext) async {
+        let itemDescriptor = FetchDescriptor<Item>()
+        let items = (try? modelContext.fetch(itemDescriptor)) ?? []
 
-        let taskDesc = FetchDescriptor<Item>()
-        let tasks = (try? modelContext.fetch(taskDesc)) ?? []
+        let habitDescriptor = FetchDescriptor<Habit>()
+        let habits = (try? modelContext.fetch(habitDescriptor)) ?? []
 
-        let recommendations = AIHabitRecommenderService.shared.generateRecommendations(existingHabits: habits, existingTasks: tasks)
+        let pomodoroCount = PomodoroManager.shared.completedSessionsCount
+        let steps = HealthKitManager.shared.todaySummary.steps
+
+        let report = AIWeeklyReviewService.shared.generateWeeklyReport(
+            items: items,
+            habits: habits,
+            pomodoroSessions: pomodoroCount,
+            healthSteps: steps
+        )
+
+        HapticManager.shared.success()
 
         let toolCall = MCPToolInvocation(
-            name: "recommend_habits",
-            argumentsSummary: "recommendations: \(recommendations.count)",
-            icon: "wand.and.stars",
-            badgeColorHex: "#C4B5FD"
+            name: "generate_weekly_productivity_report",
+            argumentsSummary: "score: \(report.score)/100, persona: \(report.persona.rawValue)",
+            icon: "sparkles",
+            badgeColorHex: "#FDE047"
         )
 
-        var recListText = ""
-        for (i, r) in recommendations.enumerated() {
-            recListText += "\n\(i + 1). 🌟 **\(r.title)** [\(r.category.rawValue)]\n   ⏱️ *Waktu terbaik: \(r.timeOfDay)* — \(r.benefit)"
-        }
+        let highlightsList = report.highlights.map { "• \($0)" }.joined(separator: "\n")
+        let growthTipsList = report.growthTips.map { "• \($0)" }.joined(separator: "\n")
 
         let reply = """
-        💡 **Rekomendasi Kebiasaan Positif Terbaik Untukmu!**
+        📊 **Laporan Mingguan & Skor Produktivitas AI** 🚀
 
-        Berdasarkan analisis aktivitas dan kategori kebiasaanmu saat ini, berikut rutinitas yang sangat disarankan:
-        \(recListText)
+        🏆 **Skor Produktivitas:** **\(report.score)/100 (Grade: \(report.scoreGrade))**
+        🎭 **Persona:** **\(report.persona.rawValue)**
+        *\(report.persona.tagline)*
 
-        Kamu dapat membuka tab **Kebiasaan > AI 🪄** untuk mengadopsinya dalam 1-ketukan! 🚀
+        📈 **Performa 7 Hari:**
+        • ✅ Tugas Tuntas: **\(report.completedTasksCount)/\(report.totalTasksCount) (\(report.taskCompletionPercentage)%)**
+        • 🔥 Max Habit Streak: **\(report.maxHabitStreak) Hari**
+        • ⏱️ Fokus Pomodoro: **\(report.totalFocusMinutes) Menit (\(report.pomodoroSessionsCount) sesi)**
+        • 👣 Rata-rata Langkah: **\(report.averageSteps) langkah/hari**
+
+        ✨ **Highlight Pencapaian:**
+        \(highlightsList)
+
+        💡 **Saran Strategis Pekan Depan:**
+        \(growthTipsList)
+
+        *Kamu juga dapat melihat visual infografik lengkap pada tab Profil > Statistik.*
         """
 
-        await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "\(recommendations.count) habits suggested")
+        await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "Score \(report.score)")
     }
 
-    // MARK: - 🛡️ AI Streak Risk Radar Tool
-    private func executeStreakRiskTool(modelContext: ModelContext) async {
-        let habitDesc = FetchDescriptor<Habit>()
-        let habits = (try? modelContext.fetch(habitDesc)) ?? []
-
-        let risks = AIHabitRecommenderService.shared.assessStreakRisks(for: habits)
-
-        let toolCall = MCPToolInvocation(
-            name: "assess_streak_risks",
-            argumentsSummary: "risks: \(risks.count)",
-            icon: "flame.fill",
-            badgeColorHex: "#FCA5A5"
-        )
-
-        if risks.isEmpty {
-            let reply = """
-            🛡️ **Semua Streak Kebiasaanmu Dalam Kondisi Sangat Aman!**
-
-            Seluruh target kebiasaanmu hari ini telah diceklis atau berada dalam ritme yang stabil. Kerja keras yang hebat! 🔥🏆
-            """
-            await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "0 risks")
-            return
-        }
-
-        var riskListText = ""
-        for (i, r) in risks.enumerated() {
-            let badge = r.riskLevel == .critical ? "🚨 DARURAT" : (r.riskLevel == .high ? "⚠️ TINGGI" : "⚡ PERHATIAN")
-            riskListText += "\n\(i + 1). \(badge) **\(r.title)** (Streak \(r.currentStreak) Hari)\n   ▫️ \(r.reason)"
-        }
-
-        let reply = """
-        🔥 **Radar Risiko Streak Habit Ditemukan (\(risks.count) Kebiasaan):**
-        \(riskListText)
-
-        💡 Segera lakukan check-in hari ini agar momentum api produktivitasmu tidak terputus! 🚀
-        """
-
-        await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "\(risks.count) risks detected")
-    }
-
-    // MARK: - 🪄 AI Task Breakdown & Subtask Generator Tool
-    private func executeTaskBreakdownTool(prompt: String, modelContext: ModelContext) async {
-        var cleanTitle = prompt
-            .replacingOccurrences(of: "pecah tugas", with: "", options: .caseInsensitive)
-            .replacingOccurrences(of: "pecah", with: "", options: .caseInsensitive)
-            .replacingOccurrences(of: "breakdown", with: "", options: .caseInsensitive)
-            .replacingOccurrences(of: "jadi subtask", with: "", options: .caseInsensitive)
-            .replacingOccurrences(of: "tolong", with: "", options: .caseInsensitive)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        if cleanTitle.isEmpty {
-            cleanTitle = "Aktivitas Fokus"
-        }
-
-        let proposals = AITaskBreakdownService.shared.generateSubtasks(for: cleanTitle)
-        let subtaskTitles = proposals.map { $0.title }
-        let tags = AITaskBreakdownService.shared.suggestTags(for: cleanTitle)
-
-        let actionProposal = AIActionProposal(
-            title: cleanTitle,
-            subtitle: "Dianalisis otomatis oleh AI Task Breakdown",
-            category: tags.category.rawValue,
-            priority: tags.priority.rawValue,
-            targetDate: Date(),
-            subtasks: subtaskTitles
-        )
-
-        let toolCall = MCPToolInvocation(
-            name: "generate_task_breakdown",
-            argumentsSummary: "task: \(cleanTitle), subtasks: \(subtaskTitles.count)",
-            icon: "wand.and.stars",
-            badgeColorHex: "#C4B5FD"
-        )
-
-        var listText = ""
-        for (i, t) in subtaskTitles.enumerated() {
-            listText += "\n\(i + 1). ▫️ \(t)"
-        }
-
-        let reply = """
-        🪄 **Tugas Berhasil Dipecah Menjadi Langkah Konkret!**
-
-        Tugas **"\(cleanTitle)"** telah dianalisis dengan estimasi kategori **\(tags.category.rawValue)** dan prioritas **\(tags.priority.rawValue)**:
-        \(listText)
-
-        Kamu dapat langsung menerapkan subtask ini ke dalam daftarmu! 🚀
-        """
-
-        await streamAssistantMessage(
-            fullContent: reply,
-            toolCall: toolCall,
-            toolResult: "\(subtaskTitles.count) subtasks generated",
-            proposal: actionProposal
-        )
-    }
-
-    // MARK: - 🌅 Daily AI Coach: Morning Briefing Tool
+    // MARK: - 🌅 Eksekusi MCP Tool: Morning Briefing
     private func executeMorningBriefingTool(modelContext: ModelContext) async {
-        let descriptor = FetchDescriptor<Item>()
+        let descriptor = FetchDescriptor<Item>(sortBy: [SortDescriptor(\.timestamp, order: .forward)])
         let items = (try? modelContext.fetch(descriptor)) ?? []
-        let pending = items.filter { !$0.isCompleted }
 
-        let habitDesc = FetchDescriptor<Habit>()
-        let habits = (try? modelContext.fetch(habitDesc)) ?? []
-        let uncompletedHabits = habits.filter { !$0.isCompletedToday }
+        let calendar = Calendar.current
+        let todayItems = items.filter { calendar.isDateInToday($0.timestamp) && !$0.isCompleted }
+        let highPriority = todayItems.filter { $0.priority == "Tinggi" }
 
         let health = HealthKitManager.shared.todaySummary
+        HapticManager.shared.impact(style: .medium)
 
         let toolCall = MCPToolInvocation(
-            name: "morning_briefing",
-            argumentsSummary: "tasks: \(pending.count), habits: \(uncompletedHabits.count)",
+            name: "generate_morning_briefing",
+            argumentsSummary: "tasks: \(todayItems.count), urgent: \(highPriority.count)",
             icon: "sun.max.fill",
             badgeColorHex: "#FDE047"
         )
 
-        var taskSection = "Semua tugas telah selesai! Kamu bisa menambahkan target baru 🌟"
-        if !pending.isEmpty {
-            taskSection = ""
-            for (i, t) in pending.prefix(4).enumerated() {
-                let pIcon = t.priority == "Tinggi" ? "🔥" : "⚡"
-                taskSection += "\n\(i + 1). \(pIcon) **\(t.title)** [\(t.category)]"
+        var reply = """
+        🌅 **Selamat Pagi! Berikut Rencana Fokus Hari Ini:**
+
+        📋 **Agenda Tugas:**
+        Kamu memiliki **\(todayItems.count) tugas aktif** untuk diselesaikan hari ini.
+        """
+
+        if !highPriority.isEmpty {
+            reply += "\n\n🔥 **Prioritas Utama (Must-Do):**\n"
+            for item in highPriority {
+                reply += "• **\(item.title)** (\(item.category)) - \(CalendarDateCache.shared.formatTime(item.timestamp))\n"
             }
         }
 
-        var habitSection = "Semua kebiasaan telah diceklis! 🏆"
-        if !uncompletedHabits.isEmpty {
-            habitSection = uncompletedHabits.prefix(3).map { "• 🔥 **\($0.title)**" }.joined(separator: "\n")
+        if health.sleepDurationHours > 0 {
+            reply += "\n\n😴 **Kebugaran & Pemulihan:**\nTidur semalam: **\(health.sleepFormatted)** (\(String(format: "%.1f", health.sleepDurationHours)) jam). Kondisimu siap untuk produktif!"
         }
 
-        let reply = """
-        🌅 **Morning Briefing Harianmu Siap!**
+        reply += "\n\n💡 *Saran AI:* Mulai kerjakan tugas prioritas tertinggi di sesi pagi dengan Pomodoro 25 menit!"
 
-        Selamat pagi! Berikut ringkasan fokus utama hari ini:
-
-        🎯 **Prioritas Tugas (\(pending.count) Tugas Menanti):**
-        \(taskSection)
-
-        🔥 **Target Habit Hari Ini:**
-        \(habitSection)
-
-        🌙 **Kebugaran Pagi:**
-        • 🛌 Tidur semalam: **\(health.sleepFormatted)**
-        • 👣 Langkah awal: **\(health.steps)** langkah
-
-        Mari mulai hari dengan fokus penuh! Mau saya jadwalkan sesi Pomodoro pertama? 🚀
-        """
-
-        await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "Summary generated")
+        await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "\(todayItems.count) tasks briefed")
     }
 
-    // MARK: - 🌙 Daily AI Coach: Evening Review Tool
+    // MARK: - 🌙 Eksekusi MCP Tool: Evening Review
     private func executeEveningReviewTool(modelContext: ModelContext) async {
         let descriptor = FetchDescriptor<Item>()
         let items = (try? modelContext.fetch(descriptor)) ?? []
-        let completedToday = items.filter { $0.isCompleted && Calendar.current.isDateInToday($0.completedAt ?? $0.timestamp) }
-        let remaining = items.filter { !$0.isCompleted }
 
-        let habitDesc = FetchDescriptor<Habit>()
-        let habits = (try? modelContext.fetch(habitDesc)) ?? []
-        let completedHabits = habits.filter { $0.isCompletedToday }
+        let calendar = Calendar.current
+        let todayCompleted = items.filter { calendar.isDateInToday($0.timestamp) && $0.isCompleted }.count
+        let todayPending = items.filter { calendar.isDateInToday($0.timestamp) && !$0.isCompleted }.count
 
         let health = HealthKitManager.shared.todaySummary
+        HapticManager.shared.impact(style: .light)
 
         let toolCall = MCPToolInvocation(
-            name: "evening_review",
-            argumentsSummary: "completed: \(completedToday.count), habits: \(completedHabits.count)",
+            name: "generate_evening_review",
+            argumentsSummary: "completed: \(todayCompleted), steps: \(health.steps)",
             icon: "moon.stars.fill",
-            badgeColorHex: "#C4B5FD"
+            badgeColorHex: "#C084FC"
         )
 
         let reply = """
-        🌙 **Evening Review & Evaluasi Harian!**
+        🌙 **Evaluasi & Rekapitulasi Hari Ini:**
 
-        Kerja keras yang luar biasa hari ini! Berikut rekap pencapaianmu:
+        🎯 **Pencapaian Tugas:**
+        • Selesai: **\(todayCompleted) tugas** 🎉
+        • Tertunda: **\(todayPending) tugas**
 
-        ✅ **Aktivitas Terselesaikan:**
-        • Berhasil menuntaskan **\(completedToday.count) tugas** hari ini.
-        • Sisa tugas pending: **\(remaining.count) tugas**.
+        🏃 **Aktivitas Fisik:**
+        • Langkah: **\(health.steps)** langkah
+        • Kalori Terbakar: **\(Int(health.activeCalories))** kkal
 
-        🔥 **Konsistensi Habit:**
-        • **\(completedHabits.count)/\(habits.count) kebiasaan** berhasil dijaga streak-nya.
-
-        🏃‍♂️ **Performa Fisik:**
-        • 👣 **\(health.steps)** Langkah kaki (\(String(format: "%.1f", health.distanceKm)) km)
-        • 🔥 **\(Int(health.activeCalories))** kkal energi terbakar
-
-        Waktunya beristirahat dan memulihkan energi untuk esok hari yang lebih produktif! 🛌✨
+        ✨ **Refleksi Malam:**
+        Kerja keras yang luar biasa hari ini! Jangan lupa istirahat cukup untuk memulihkan energi esok hari.
         """
 
         await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "Review generated")
     }
 
-    // MARK: - 🤖 Eksekusi MCP Tool: AI Schedule Rebalancer
-    private func executeRebalanceScheduleTool(modelContext: ModelContext) async {
-        let descriptor = FetchDescriptor<Item>()
-        let items = (try? modelContext.fetch(descriptor)) ?? []
+    // MARK: - 🪄 Eksekusi MCP Tool: AI Task Breakdown
+    private func executeTaskBreakdownTool(prompt: String, modelContext: ModelContext) async {
+        var cleanPrompt = prompt
+            .replacingOccurrences(of: "pecah tugas", with: "", options: .caseInsensitive)
+            .replacingOccurrences(of: "breakdown", with: "", options: .caseInsensitive)
+            .replacingOccurrences(of: "subtask", with: "", options: .caseInsensitive)
+            .replacingOccurrences(of: "bagi tugas", with: "", options: .caseInsensitive)
+            .replacingOccurrences(of: "tolong", with: "", options: .caseInsensitive)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let proposals = AIScheduleRebalancerService.shared.analyzeAndGenerateProposals(for: items)
+        if cleanPrompt.isEmpty {
+            cleanPrompt = "Persiapan Proyek & Tugas Penting"
+        }
+
+        let subtasks = AITaskBreakdownService.shared.generateSubtasks(for: cleanPrompt, notes: "")
+        let tagSuggestion = AITaskBreakdownService.shared.suggestTags(for: cleanPrompt)
+
+        HapticManager.shared.success()
 
         let toolCall = MCPToolInvocation(
-            name: "ai_schedule_rebalancer",
+            name: "generate_task_subtasks",
+            argumentsSummary: "subtasks: \(subtasks.count), priority: \(tagSuggestion.priority.rawValue)",
+            icon: "wand.and.stars",
+            badgeColorHex: "#A7F3D0"
+        )
+
+        let subtaskListText = subtasks.map { "• \($0.title)" }.joined(separator: "\n")
+
+        let reply = """
+        🪄 **AI Task Breakdown Selesai!**
+
+        Target Utama: **\(cleanPrompt)**
+        Rekomendasi Prioritas: **\(tagSuggestion.priority.rawValue)** (\(tagSuggestion.reasoning))
+        Estimasi Durasi: **\(tagSuggestion.estimatedDurationMinutes) Menit**
+
+        📋 **Rekomendasi Langkah Subtask:**
+        \(subtaskListText)
+
+        💡 *Tips:* Kamu juga bisa langsung membuat tugas baru dan menekan tombol *"Pecah Tugas Otomatis 🪄"* di form Add Activity.
+        """
+
+        await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "\(subtasks.count) subtasks generated")
+    }
+
+    // MARK: - 💡 Eksekusi MCP Tool: Habit Recommendation
+    private func executeHabitRecommenderTool(modelContext: ModelContext) async {
+        let descriptor = FetchDescriptor<Habit>()
+        let existingHabits = (try? modelContext.fetch(descriptor)) ?? []
+
+        let itemDescriptor = FetchDescriptor<Item>()
+        let existingTasks = (try? modelContext.fetch(itemDescriptor)) ?? []
+
+        let proposals = AIHabitRecommenderService.shared.generateRecommendations(
+            existingHabits: existingHabits,
+            existingTasks: existingTasks
+        )
+
+        HapticManager.shared.success()
+
+        let toolCall = MCPToolInvocation(
+            name: "recommend_positive_habits",
             argumentsSummary: "proposals: \(proposals.count)",
             icon: "wand.and.stars",
             badgeColorHex: "#FDE047"
         )
 
-        if proposals.isEmpty {
-            let reply = """
-            🎉 **Jadwalmu Sudah Sangat Rapi & Bebas Bentrok!**
-
-            AI telah memeriksa seluruh daftar tugasmu hari ini. Tidak ditemukan tugas terlewat ataupun jam yang bertabrakan. Semua tugas terjadwal dengan baik! 🌟
-            """
-            await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "0 conflicts")
-            return
-        }
-
-        // Terapkan penataan ulang secara otomatis
-        await AIScheduleRebalancerService.shared.applyRebalance(proposals: proposals, in: modelContext)
-
-        var proposalListText = ""
-        for (idx, p) in proposals.enumerated() {
-            let oldTime = p.originalDate.formatted(date: .omitted, time: .shortened)
-            let newTime = p.proposedDate.formatted(date: .omitted, time: .shortened)
-            let icon = p.reasonType == .overdue ? "⚠️" : "🔄"
-            proposalListText += "\n\(idx + 1). \(icon) **\(p.item.title)**: ~~\(oldTime)~~ ➔ **\(newTime)** (\(p.reasonType.badgeTitle))"
+        var proposalText = ""
+        for (idx, p) in proposals.prefix(3).enumerated() {
+            proposalText += "\n\(idx + 1). **\(p.title)** (\(p.category.rawValue))\n   • Target: \(p.frequency.rawValue) (\(p.timeOfDay))\n   • Manfaat: *\(p.benefit)*\n"
         }
 
         let reply = """
-        🪄 **Jadwal Berhasil Ditata Ulang Otomatis!**
+        💡 **Rekomendasi Kebiasaan Positif AI:**
+        \(proposalText)
+        Kamu bisa langsung mengadopsi kebiasaan ini dalam 1 ketukan pada tab **Kebiasaan > AI Rutinitas 🪄**!
+        """
+
+        await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "\(proposals.count) habit proposals")
+    }
+
+    // MARK: - 🛡️ Eksekusi MCP Tool: Streak Risk Radar
+    private func executeStreakRiskTool(modelContext: ModelContext) async {
+        let descriptor = FetchDescriptor<Habit>()
+        let habits = (try? modelContext.fetch(descriptor)) ?? []
+
+        let risks = AIHabitRecommenderService.shared.assessStreakRisks(for: habits)
+        let endangered = risks.filter { item in
+            item.riskLevel == .critical || item.riskLevel == .high || item.riskLevel == .moderate
+        }
+
+        HapticManager.shared.impact(style: .medium)
+
+        let toolCall = MCPToolInvocation(
+            name: "assess_streak_risks",
+            argumentsSummary: "endangered: \(endangered.count)",
+            icon: "flame.fill",
+            badgeColorHex: "#FCA5A5"
+        )
+
+        let reply: String
+        if endangered.isEmpty {
+            reply = """
+            🛡️ **Radar Streak Aman!**
+
+            Seluruh kebiasaan aktifmu sudah diceklis hari ini atau berada dalam kondisi aman. Pertahankan konsistensi luar biasamu! 🔥✨
+            """
+        } else {
+            var riskList = ""
+            for r in endangered {
+                riskList += "\n• **\(r.title)** (Streak: \(r.currentStreak) hari) → Risiko: **\(r.riskLevel.rawValue)** (\(r.reason))"
+            }
+            reply = """
+            ⚠️ **Perhatian! Ditemukan Streak yang Terancam Putus:**
+            \(riskList)
+
+            ⚡ *Saran AI:* Segera luangkan waktu 5 menit untuk menyelesaikan kebiasaan ini sebelum hari berganti!
+            """
+        }
+
+        await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "\(endangered.count) endangered streaks")
+    }
+
+    // MARK: - 🤖 Eksekusi MCP Tool: Schedule Rebalancer
+    private func executeRebalanceScheduleTool(modelContext: ModelContext) async {
+        let descriptor = FetchDescriptor<Item>(sortBy: [SortDescriptor(\.timestamp, order: .forward)])
+        let items = (try? modelContext.fetch(descriptor)) ?? []
+
+        let proposals = AIScheduleRebalancerService.shared.analyzeAndGenerateProposals(for: items)
+
+        if proposals.isEmpty {
+            await streamAssistantMessage(fullContent: "Jadwal harianmu sudah sangat rapi dan tidak ada tugas yang bertabrakan atau terlewat!")
+            return
+        }
+
+        // Terapkan perubahan jadwal
+        await AIScheduleRebalancerService.shared.applyRebalance(proposals: proposals, in: modelContext)
+        HapticManager.shared.success()
+
+        let toolCall = MCPToolInvocation(
+            name: "rebalance_overdue_and_conflicts",
+            argumentsSummary: "rescheduled: \(proposals.count) tasks",
+            icon: "arrow.triangle.2.circlepath",
+            badgeColorHex: "#A7F3D0"
+        )
+
+        let proposalListText = proposals.map { "• **\($0.item.title)** dipindahkan ke: \(CalendarDateCache.shared.formatTime($0.proposedDate))" }.joined(separator: "\n")
+
+        let reply = """
+        🤖 **Jadwal Berhasil Ditata Ulang!**
 
         Ditemukan **\(proposals.count) tugas** yang terlewat atau bertabrakan. AI telah mengatur ulang jadwalnya ke slot kosong terbaik:
         \(proposalListText)
@@ -554,7 +581,7 @@ final class MCPAIAssistantService: ObservableObject {
         • ⏳ Perlu Dikerjakan: **\(pending) tugas**
         • ✅ Telah Selesai: **\(completed) tugas**
 
-        🏃‍♂️ **HealthKit Kebugaran:**
+        🏃 **HealthKit Kebugaran:**
         • 👣 Langkah: **\(health.steps)** / 10.000 langkah
         • 🔥 Kalori Aktif: **\(Int(health.activeCalories))** kkal
         • 📏 Jarak Tempuh: **\(String(format: "%.2f", health.distanceKm))** km
@@ -657,11 +684,11 @@ final class MCPAIAssistantService: ObservableObject {
             let replyText: String
             switch provider {
             case .googleAccount:
-                replyText = try await GeminiHeadlessEngine.shared.queryGemini(
-                    prompt: "\(systemInstruction)\n\nPertanyaan: \(prompt)"
-                )
+                replyText = try await GeminiHeadlessEngine.shared.queryGemini(prompt: "\(systemInstruction)\n\nPertanyaan: \(prompt)")
+
             case .geminiApiKey:
                 replyText = try await sendGeminiAPIRequest(prompt: prompt, systemInstruction: systemInstruction, apiKey: apiKey)
+
             case .ninerouter:
                 replyText = try await sendNinerouterRequest(
                     prompt: prompt,
@@ -680,7 +707,11 @@ final class MCPAIAssistantService: ObservableObject {
     }
 
     // MARK: - ⚡ Direct Task Creation Tool
-    private func executeDirectCreateTaskTool(parsed: ParsedNaturalSchedule, modelContext: ModelContext, existingItems: [Item]) async {
+    private func executeDirectCreateTaskTool(
+        parsed: ParsedNaturalSchedule,
+        modelContext: ModelContext,
+        existingItems: [Item]
+    ) async {
         let taskTitle = parsed.cleanText.isEmpty ? "Tugas Baru" : parsed.cleanText
         let taskDate = parsed.targetDate
 
