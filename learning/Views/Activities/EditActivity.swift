@@ -12,6 +12,7 @@ import WidgetKit
 struct EditActivity: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Query private var existingItems: [Item]
 
     // Binding item yang sedang diedit
     @Bindable var item: Item
@@ -36,6 +37,11 @@ struct EditActivity: View {
     @State private var imageAttachmentData: Data? = nil
 
     private let priorities = ["Tinggi", "Normal", "Rendah"]
+
+    // Deteksi Konflik Jadwal (Kecualikan Item Ini Sendiri)
+    private var detectedConflicts: [ScheduleConflict] {
+        ScheduleConflictDetector.shared.detectConflicts(for: dueDate, in: existingItems, excludingItemId: item.id)
+    }
 
     dynamic var body: some View {
         NavigationStack {
@@ -225,6 +231,17 @@ struct EditActivity: View {
                             if isShowingDatePicker {
                                 CartoonCalendarView(selectedDate: $dueDate)
                                     .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                            }
+
+                            // ⚠️ Peringatan Tabrakan Jadwal Otomatis
+                            if let conflict = detectedConflicts.first {
+                                CartoonConflictWarningBanner(conflict: conflict) { suggestedDate in
+                                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                        dueDate = suggestedDate
+                                    }
+                                }
+                                .padding(.top, 4)
+                                .transition(.scale(scale: 0.95).combined(with: .opacity))
                             }
 
                             // Field 3: Task Details
