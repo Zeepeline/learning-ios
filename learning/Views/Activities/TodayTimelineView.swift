@@ -18,7 +18,6 @@ struct TodayTimelineView: View {
     @State private var isMonthViewExpanded: Bool = false
     @State private var newSubtaskTitle: String = ""
     @State private var isShowingAddActivity: Bool = false
-    @State private var isShowingRebalancerSheet: Bool = false
     @FocusState private var isQuickAddFocused: Bool
 
     // Callback untuk delete, toggle, & edit dari ContentView
@@ -144,19 +143,11 @@ struct TodayTimelineView: View {
                         ))
                     }
 
-                    // 3. 🤖 Banner AI Rebalancer (Jika sedang di tab Hari Ini & ada tugas terlewat/bentrok)
-                    if isSelectedDateToday {
-                        CartoonAIRebalanceBanner(items: allItems) {
-                            isShowingRebalancerSheet = true
-                        }
-                        .padding(.horizontal, HIGSpacing.md)
-                    }
-
-                    // 4. 🎯 Kartu Ringkasan Progress Harian
+                    // 3. 🎯 Kartu Ringkasan Progress Harian
                     dailyProgressCard
                         .padding(.horizontal, HIGSpacing.md)
 
-                    // 5. 🗂️ Garis Timeline Vertikal & Kartu Aktivitas (Menggunakan LazyVStack untuk 120fps)
+                    // 4. 🗂️ Garis Timeline Vertikal & Kartu Aktivitas (Menggunakan LazyVStack untuk 120fps)
                     VStack(spacing: HIGSpacing.md) {
                         if filteredItems.isEmpty {
                             emptyTimelineState
@@ -167,8 +158,8 @@ struct TodayTimelineView: View {
                                     HStack(alignment: .top, spacing: HIGSpacing.sm) {
                                         // Kolom Waktu di Kiri (Format: 09:00 AM)
                                         Text(CalendarDateCache.shared.formatTime(item.timestamp))
-                                            .font(.system(size: 12, weight: .bold, design: .rounded))
-                                            .foregroundColor(.secondary)
+                                            .font(.system(size: 12.5, weight: .heavy, design: .rounded))
+                                            .foregroundColor(.black)
                                             .frame(width: 58, alignment: .leading)
                                             .padding(.top, HIGSpacing.xs)
 
@@ -210,9 +201,6 @@ struct TodayTimelineView: View {
             .sheet(isPresented: $isShowingAddActivity) {
                 AddActivity()
             }
-            .sheet(isPresented: $isShowingRebalancerSheet) {
-                AISmartRebalancerSheetView(items: allItems)
-            }
         }
     }
 
@@ -226,8 +214,8 @@ struct TodayTimelineView: View {
                     .foregroundColor(.black)
 
                 Text(isSelectedDateToday ? "Hari Ini" : selectedDate.formatted(.dateTime.weekday(.wide).day().month(.wide).locale(Locale(identifier: "id_ID"))))
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundColor(isSelectedDateToday ? Color.cartoonCoral : .secondary)
+                    .font(.system(size: 12.5, weight: .heavy, design: .rounded))
+                    .foregroundColor(isSelectedDateToday ? Color.cartoonCoral : Color.black.opacity(0.85))
             }
 
             Spacer()
@@ -249,7 +237,7 @@ struct TodayTimelineView: View {
                         .background(Color.cartoonYellow)
                         .cornerRadius(8)
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
-                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                        .shadow(color: .black, radius: 0, x: 1, y: 1)
                 }
                 .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
             }
@@ -272,13 +260,13 @@ struct TodayTimelineView: View {
                 }
             } label: {
                 Image(systemName: isMonthViewExpanded ? "calendar.badge.minus" : "calendar.badge.plus")
-                    .font(.system(size: 14, weight: .bold))
+                    .font(.system(size: 14, weight: .black))
                     .foregroundColor(.black)
                     .frame(width: 34, height: 34)
                     .background(Color.white)
                     .cornerRadius(8)
                     .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
-                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
             }
             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
         }
@@ -293,10 +281,10 @@ struct TodayTimelineView: View {
                     .fill(progressRatio == 1.0 && totalTasksCount > 0 ? Color.cartoonMint : Color.cartoonYellow)
                     .frame(width: 44, height: 44)
                     .overlay(Circle().stroke(Color.black, lineWidth: 1.8))
-                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
 
                 Image(systemName: progressRatio == 1.0 && totalTasksCount > 0 ? "checkmark.seal.fill" : "flag.checkered")
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 18, weight: .black))
                     .foregroundColor(.black)
             }
 
@@ -310,8 +298,8 @@ struct TodayTimelineView: View {
                     Spacer()
 
                     Text("\(completedTasksCount)/\(totalTasksCount) Selesai")
-                        .font(.system(size: 11.5, weight: .black, design: .monospaced))
-                        .foregroundColor(.secondary)
+                        .font(.system(size: 12, weight: .black, design: .monospaced))
+                        .foregroundColor(Color.black.opacity(0.85))
                 }
 
                 // Custom Cartoon Progress Bar
@@ -353,12 +341,12 @@ struct TodayTimelineView: View {
         }
     }
 
-    // MARK: - 📭 Empty Timeline State
+    // MARK: - 📬 Empty Timeline State
     private var emptyTimelineState: some View {
         VStack(spacing: HIGSpacing.sm) {
             Image(systemName: "calendar.badge.clock")
-                .font(.system(size: 40, weight: .bold))
-                .foregroundColor(.secondary.opacity(0.6))
+                .font(.system(size: 40, weight: .black))
+                .foregroundColor(Color.black.opacity(0.8))
                 .padding(.top, HIGSpacing.lg)
 
             Text("Tidak Ada Aktivitas")
@@ -366,8 +354,8 @@ struct TodayTimelineView: View {
                 .foregroundColor(.black)
 
             Text("Belum ada jadwal tugas yang direncanakan untuk tanggal ini.")
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundColor(.secondary)
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundColor(Color.black.opacity(0.8))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, HIGSpacing.xl)
 

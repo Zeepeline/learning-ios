@@ -25,7 +25,6 @@ struct HomeActivityListView: View {
     // Dialog & Sheet State
     @State private var isShowingHistorySheet: Bool = false
     @State private var isShowingClearCompletedDialog: Bool = false
-    @State private var isShowingRebalancerSheet: Bool = false
 
     // Filter chips definitions
     private let statusFilters: [(id: String, label: String, icon: String, color: Color)] = [
@@ -106,7 +105,7 @@ struct HomeActivityListView: View {
         ZStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: HIGSpacing.sm) {
-                    // 1. ✨ Kartu Kata Motivasi Harian (Posisi Teratas Sesuai Preferensi)
+                    // 1. ✨ Kartu Kata Motivasi Harian
                     CartoonMotivationalQuoteCard()
                         .padding(.horizontal, HIGSpacing.md)
                         .padding(.top, HIGSpacing.xs)
@@ -119,13 +118,7 @@ struct HomeActivityListView: View {
                     )
                     .padding(.horizontal, HIGSpacing.md)
 
-                    // 3. 🤖 Banner AI Rebalancer Cerdas (Muncul jika ada tugas terlewat / bentrok)
-                    CartoonAIRebalanceBanner(items: items) {
-                        isShowingRebalancerSheet = true
-                    }
-                    .padding(.horizontal, HIGSpacing.md)
-
-                    // 4. 📊 3 Kartu Mini Ringkasan Statistik
+                    // 3. 📊 3 Kartu Mini Ringkasan Statistik
                     HStack(spacing: HIGSpacing.xs) {
                         CartoonStatCard(
                             title: "Perlu Dikerjakan",
@@ -157,7 +150,7 @@ struct HomeActivityListView: View {
                     }
                     .padding(.horizontal, HIGSpacing.md)
 
-                    // 5. 🔍 Search & Filter Header
+                    // 4. 🔍 Search & Filter Header
                     searchAndFilterHeader
                         .padding(.horizontal, HIGSpacing.md)
                         .padding(.top, 4)
@@ -169,7 +162,7 @@ struct HomeActivityListView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                     }
 
-                    // 6. 📋 Daftar Aktivitas
+                    // 5. 📋 Daftar Aktivitas
                     activityListSection
                         .padding(.horizontal, HIGSpacing.md)
 
@@ -205,9 +198,6 @@ struct HomeActivityListView: View {
         .fullScreenCover(isPresented: $isShowingHistorySheet) {
             CompletedTasksHistoryView()
         }
-        .sheet(isPresented: $isShowingRebalancerSheet) {
-            AISmartRebalancerSheetView(items: items)
-        }
         .onAppear {
             debouncedSearchText = rawSearchText
         }
@@ -225,11 +215,12 @@ struct HomeActivityListView: View {
             // Search Input Field
             HStack(spacing: 8) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 13, weight: .bold))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 13, weight: .black))
+                    .foregroundColor(.black)
 
                 TextField("Cari tugas, catatan, kategori...", text: $rawSearchText)
                     .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(.black)
                     .onChange(of: rawSearchText) { _, newVal in
                         debouncedSearchText = newVal
                     }
@@ -242,7 +233,7 @@ struct HomeActivityListView: View {
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 13, weight: .bold))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.black)
                     }
                 }
             }
@@ -254,7 +245,7 @@ struct HomeActivityListView: View {
                 RoundedRectangle(cornerRadius: 8)
                     .stroke(Color.black, lineWidth: 1.4)
             )
-            .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+            .shadow(color: .black, radius: 0, x: 1, y: 1)
 
             // Filter Toggle Button
             Button {
@@ -280,7 +271,7 @@ struct HomeActivityListView: View {
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color.black, lineWidth: 1.4)
                 )
-                .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                .shadow(color: .black, radius: 0, x: 1, y: 1)
             }
             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
         }
@@ -315,7 +306,7 @@ struct HomeActivityListView: View {
                                 RoundedRectangle(cornerRadius: 6)
                                     .stroke(Color.black, lineWidth: isSelected ? 1.6 : 1.0)
                             )
-                            .shadow(color: .black, radius: 0, x: isSelected ? 1.2 : 0.6, y: isSelected ? 1.2 : 0.6)
+                            .shadow(color: .black, radius: 0, x: isSelected ? 1 : 0, y: isSelected ? 1 : 0)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
                     }
@@ -335,11 +326,11 @@ struct HomeActivityListView: View {
                                 }
                             } label: {
                                 Text(cat == "all" ? "Semua Kategori" : cat)
-                                    .font(.system(size: 11, weight: .bold, design: .rounded))
+                                    .font(.system(size: 11.5, weight: .bold, design: .rounded))
                                     .foregroundColor(.black)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
-                                    .background(isSelected ? Color.cartoonLavender : Color.white.opacity(0.8))
+                                    .background(isSelected ? Color.cartoonLavender : Color.white)
                                     .cornerRadius(6)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 6)
@@ -392,8 +383,8 @@ struct HomeActivityListView: View {
     private var emptyFilteredView: some View {
         VStack(spacing: 8) {
             Image(systemName: "sparkles")
-                .font(.system(size: 32, weight: .bold))
-                .foregroundColor(Color.cartoonYellow)
+                .font(.system(size: 32, weight: .black))
+                .foregroundColor(Color.black)
                 .padding(.top, 16)
 
             Text("Tidak Ada Tugas")
@@ -401,8 +392,8 @@ struct HomeActivityListView: View {
                 .foregroundColor(.black)
 
             Text("Tidak ada aktivitas yang sesuai dengan filter atau kata kunci saat ini.")
-                .font(.system(size: 12, weight: .medium, design: .rounded))
-                .foregroundColor(.secondary)
+                .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                .foregroundColor(Color.black.opacity(0.8))
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 16)
                 .padding(.bottom, 16)
@@ -419,9 +410,11 @@ struct HomeActivityListView: View {
 
     // MARK: - Clear All Completed Tasks
     private func clearAllCompletedTasks() {
-        let completedToday = items.filter { $0.isCompleted && isCompletedToday($0) }
-        for item in completedToday {
-            modelContext.delete(item)
+        let completedToday = items.filter { $0.isCompleted && isCompletedToday($0) }.map { $0.persistentModelID }
+        for id in completedToday {
+            if let model = modelContext.model(for: id) as? Item {
+                modelContext.delete(model)
+            }
         }
         try? modelContext.save()
         HapticManager.shared.success()
