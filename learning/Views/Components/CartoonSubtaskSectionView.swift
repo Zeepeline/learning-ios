@@ -206,13 +206,13 @@ struct CartoonSubtaskSectionView: View {
 
     private func generateSmartSubtasks() {
         HapticManager.shared.impact(style: .medium)
-        let suggestions = SmartTaskBreakdownService.shared.generateSuggestions(for: taskTitle, category: taskCategory)
+        let proposals = AITaskBreakdownService.shared.generateSubtasks(for: taskTitle)
 
         withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-            for item in suggestions {
+            for item in proposals {
                 // Hindari duplikasi jika sudah ada judul yang sama persis
-                if !subtasks.contains(where: { $0.title.lowercased() == item.lowercased() }) {
-                    subtasks.append(SubtaskItem(title: item))
+                if !subtasks.contains(where: { $0.title.lowercased() == item.title.lowercased() }) {
+                    subtasks.append(SubtaskItem(title: item.title))
                 }
             }
         }
