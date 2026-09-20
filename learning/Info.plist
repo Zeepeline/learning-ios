@@ -27,11 +27,15 @@
 	<string>Aplikasi membutuhkan izin untuk menulis jadwal tugas baru ke Apple Calendar Anda.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>Aplikasi menggunakan Face ID / Touch ID untuk melindungi privasi dan mengunci catatan serta tugas Anda.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Aplikasi membutuhkan izin pengenalan suara untuk mendikte tugas dan perintah ke AI Assistant.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Aplikasi membutuhkan akses mikrofon untuk mendengarkan perintah suara Anda.</string>
 	<key>UIApplicationShortcutItems</key>
 	<array>
 		<dict>
 			<key>UIApplicationShortcutItemIconType</key>
-			<string>UIApplicationShortcutIconTypeAdd</string>
+			<string>UIApplicationShortcutItemIconTypeAdd</string>
 			<key>UIApplicationShortcutItemTitle</key>
 			<string>Tambah Tugas Baru</string>
 			<key>UIApplicationShortcutItemType</key>
@@ -39,7 +43,7 @@
 		</dict>
 		<dict>
 			<key>UIApplicationShortcutItemIconType</key>
-			<string>UIApplicationShortcutIconTypePlay</string>
+			<string>UIApplicationShortcutItemIconTypePlay</string>
 			<key>UIApplicationShortcutItemTitle</key>
 			<string>Fokus Pomodoro (25 Min)</string>
 			<key>UIApplicationShortcutItemType</key>
