@@ -389,8 +389,8 @@ struct RichAIMessageBubbleView: View {
             ForEach(blocks) { block in
                 switch block {
                 case .header(let text):
-                    Text(.init(text))
-                        .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    Text(LocalizedStringKey(text))
+                        .font(.system(size: 15.5, weight: .heavy, design: .rounded))
                         .foregroundColor(.black)
                         .padding(.top, 3)
 
@@ -405,7 +405,7 @@ struct RichAIMessageBubbleView: View {
                             .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.2))
                             .padding(.top, 1)
 
-                        Text(.init(text))
+                        Text(LocalizedStringKey(text))
                             .font(.system(size: 14, weight: .bold, design: .rounded))
                             .foregroundColor(.black)
                             .lineSpacing(3)
@@ -415,19 +415,20 @@ struct RichAIMessageBubbleView: View {
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
-                    .background(Color(red: 0.95, green: 0.95, blue: 0.97))
+                    .background(Color.white)
                     .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.0))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
 
                 case .bulletItem(let text):
                     HStack(alignment: .top, spacing: 10) {
                         Circle()
                             .fill(Color.cartoonMint)
                             .frame(width: 9, height: 9)
-                            .overlay(Circle().stroke(Color.black, lineWidth: 1.0))
+                            .overlay(Circle().stroke(Color.black, lineWidth: 1.2))
                             .padding(.top, 6)
 
-                        Text(.init(text))
+                        Text(LocalizedStringKey(text))
                             .font(.system(size: 14, weight: .bold, design: .rounded))
                             .foregroundColor(.black)
                             .lineSpacing(3)
@@ -437,12 +438,13 @@ struct RichAIMessageBubbleView: View {
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
-                    .background(Color(red: 0.96, green: 0.96, blue: 0.98))
+                    .background(Color.white)
                     .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.0))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
 
                 case .paragraph(let text):
-                    Text(.init(text))
+                    Text(LocalizedStringKey(text))
                         .font(.system(size: 14.5, weight: .bold, design: .rounded))
                         .foregroundColor(.black)
                         .lineSpacing(4)
@@ -455,15 +457,16 @@ struct RichAIMessageBubbleView: View {
                             .foregroundColor(.black)
                         ForEach(details, id: \.self) { d in
                             Text("• \(d)")
-                                .font(.system(size: 12.5, weight: .semibold, design: .rounded))
-                                .foregroundColor(Color.black.opacity(0.85))
+                                .font(.system(size: 12.5, weight: .heavy, design: .rounded))
+                                .foregroundColor(.black)
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(10)
-                    .background(Color(red: 0.94, green: 0.94, blue: 0.96))
+                    .background(Color.white)
                     .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.0))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
                 }
             }
         }
