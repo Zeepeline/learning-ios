@@ -107,7 +107,7 @@ struct RichAIMessageBubbleView: View {
                     Spacer(minLength: 28)
 
                     Text(message.content)
-                        .font(.system(size: 14.5, weight: .bold, design: .rounded))
+                        .font(.system(size: 14.5, weight: .heavy, design: .rounded))
                         .foregroundColor(.black)
                         .lineSpacing(3)
                         .padding(.horizontal, 16)
@@ -129,12 +129,12 @@ struct RichAIMessageBubbleView: View {
                     if let tool = message.toolCall {
                         HStack(spacing: 6) {
                             Image(systemName: tool.icon)
-                                .font(.system(size: 11, weight: .bold))
+                                .font(.system(size: 11, weight: .black))
                                 .foregroundColor(.black)
 
                             Text("MCP Tool:")
                                 .font(.system(size: 10, weight: .black, design: .monospaced))
-                                .foregroundColor(.secondary)
+                                .foregroundColor(Color.black.opacity(0.85))
 
                             Text(tool.name)
                                 .font(.system(size: 11, weight: .heavy, design: .monospaced))
@@ -143,17 +143,17 @@ struct RichAIMessageBubbleView: View {
                             Spacer()
 
                             Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 12, weight: .bold))
-                                .foregroundColor(.cartoonMint)
+                                .font(.system(size: 12, weight: .black))
+                                .foregroundColor(Color.cartoonMint)
                         }
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color(hex: tool.badgeColorHex).opacity(0.35))
+                        .background(Color(hex: tool.badgeColorHex).opacity(0.4))
                         .cornerRadius(8)
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
                     }
 
-                    // 2. Body Konten Assistant (Lebar Penuh)
+                    // 2. Body Konten Assistant (Lebar Penuh & Teks Tajam)
                     renderAssistantRichBlocks()
 
                     // 3. Kartu Interactive Proposal (Jika AI Menawarkan Rancangan Rencana)
@@ -178,11 +178,11 @@ struct RichAIMessageBubbleView: View {
         if isTaskCreatedMessage || isFocusMessage {
             VStack(alignment: .leading, spacing: 8) {
                 Divider()
-                    .overlay(Color.black.opacity(0.15))
+                    .overlay(Color.black.opacity(0.3))
 
                 Text("AKSI CEPAT:")
-                    .font(.system(size: 9.5, weight: .black, design: .monospaced))
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 10, weight: .heavy, design: .monospaced))
+                    .foregroundColor(Color.black.opacity(0.85))
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
@@ -205,7 +205,7 @@ struct RichAIMessageBubbleView: View {
                             .background(pomodoroManager.isRunning ? Color.cartoonMint : Color.cartoonCoral)
                             .cornerRadius(8)
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.4))
-                            .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                            .shadow(color: .black, radius: 0, x: 1, y: 1)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
@@ -227,7 +227,7 @@ struct RichAIMessageBubbleView: View {
                             .background(didScheduleReminder ? Color.cartoonMint : Color.cartoonYellow)
                             .cornerRadius(8)
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.4))
-                            .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                            .shadow(color: .black, radius: 0, x: 1, y: 1)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
@@ -252,7 +252,7 @@ struct RichAIMessageBubbleView: View {
                             .background(Color.cartoonLavender)
                             .cornerRadius(8)
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.4))
-                            .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                            .shadow(color: .black, radius: 0, x: 1, y: 1)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                     }
@@ -260,8 +260,8 @@ struct RichAIMessageBubbleView: View {
 
                 if let reminderSuccess = reminderSuccessMessage {
                     Text(reminderSuccess)
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(.green)
+                        .font(.system(size: 11, weight: .heavy, design: .rounded))
+                        .foregroundColor(Color(red: 0.1, green: 0.6, blue: 0.2))
                         .transition(.opacity)
                 }
             }
@@ -277,18 +277,19 @@ struct RichAIMessageBubbleView: View {
                     .foregroundColor(.black)
 
                 Text("Rancangan Tugas Siap Disimpan")
-                    .font(.system(size: 12.5, weight: .heavy, design: .rounded))
+                    .font(.system(size: 13, weight: .heavy, design: .rounded))
                     .foregroundColor(.black)
 
                 Spacer()
 
                 Text(proposal.priority)
                     .font(.system(size: 11, weight: .heavy, design: .monospaced))
+                    .foregroundColor(.black)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
                     .background(Color.cartoonYellow)
                     .cornerRadius(6)
-                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1))
+                    .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
             }
 
             VStack(alignment: .leading, spacing: 6) {
@@ -303,13 +304,13 @@ struct RichAIMessageBubbleView: View {
                     } label: {
                         HStack(spacing: 8) {
                             Image(systemName: checkedSubtaskIndices.contains(idx) ? "checkmark.square.fill" : "square")
-                                .font(.system(size: 14, weight: .bold))
-                                .foregroundColor(checkedSubtaskIndices.contains(idx) ? .cartoonMint : .black)
+                                .font(.system(size: 14, weight: .black))
+                                .foregroundColor(.black)
 
                             Text(sub)
-                                .font(.system(size: 12.5, weight: .medium, design: .rounded))
+                                .font(.system(size: 13, weight: .bold, design: .rounded))
                                 .foregroundColor(.black)
-                                .strikethrough(checkedSubtaskIndices.contains(idx), color: .black)
+                                .strikethrough(checkedSubtaskIndices.contains(idx), color: Color.black.opacity(0.7))
 
                             Spacer()
                         }
@@ -320,7 +321,7 @@ struct RichAIMessageBubbleView: View {
             .padding(10)
             .background(Color.white)
             .cornerRadius(8)
-            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black.opacity(0.2), lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.0))
 
             Button {
                 HapticManager.shared.success()
@@ -359,7 +360,7 @@ struct RichAIMessageBubbleView: View {
             .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
         }
         .padding(12)
-        .background(Color.cartoonPink.opacity(0.4))
+        .background(Color.cartoonPink.opacity(0.45))
         .cornerRadius(12)
         .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.5))
     }
@@ -379,7 +380,7 @@ struct RichAIMessageBubbleView: View {
         }
     }
 
-    // MARK: - 📝 Structured Assistant Content Parser & Renderer
+    // MARK: - 📝 Structured Assistant Content Parser & Renderer (Teks Tajam & Bold)
     @ViewBuilder
     private func renderAssistantRichBlocks() -> some View {
         let blocks = parseContentToBlocks(message.content)
@@ -389,9 +390,9 @@ struct RichAIMessageBubbleView: View {
                 switch block {
                 case .header(let text):
                     Text(.init(text))
-                        .font(.system(size: 14.5, weight: .heavy, design: .rounded))
+                        .font(.system(size: 15, weight: .heavy, design: .rounded))
                         .foregroundColor(.black)
-                        .padding(.top, 2)
+                        .padding(.top, 3)
 
                 case .numberedItem(let num, let text):
                     HStack(alignment: .top, spacing: 10) {
@@ -401,11 +402,11 @@ struct RichAIMessageBubbleView: View {
                             .frame(width: 22, height: 22)
                             .background(Color.cartoonYellow)
                             .cornerRadius(6)
-                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
+                            .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.2))
                             .padding(.top, 1)
 
                         Text(.init(text))
-                            .font(.system(size: 13.5, weight: .medium, design: .rounded))
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
                             .foregroundColor(.black)
                             .lineSpacing(3)
                             .fixedSize(horizontal: false, vertical: true)
@@ -414,20 +415,20 @@ struct RichAIMessageBubbleView: View {
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 8)
-                    .background(Color.cartoonBg.opacity(0.85))
+                    .background(Color(red: 0.95, green: 0.95, blue: 0.97))
                     .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black.opacity(0.18), lineWidth: 1.0))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.0))
 
                 case .bulletItem(let text):
                     HStack(alignment: .top, spacing: 10) {
                         Circle()
                             .fill(Color.cartoonMint)
-                            .frame(width: 8, height: 8)
-                            .overlay(Circle().stroke(Color.black, lineWidth: 0.8))
+                            .frame(width: 9, height: 9)
+                            .overlay(Circle().stroke(Color.black, lineWidth: 1.0))
                             .padding(.top, 6)
 
                         Text(.init(text))
-                            .font(.system(size: 13.5, weight: .medium, design: .rounded))
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
                             .foregroundColor(.black)
                             .lineSpacing(3)
                             .fixedSize(horizontal: false, vertical: true)
@@ -436,13 +437,13 @@ struct RichAIMessageBubbleView: View {
                     }
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
-                    .background(Color.cartoonBg.opacity(0.65))
+                    .background(Color(red: 0.96, green: 0.96, blue: 0.98))
                     .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black.opacity(0.12), lineWidth: 1.0))
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.0))
 
                 case .paragraph(let text):
                     Text(.init(text))
-                        .font(.system(size: 14, weight: .medium, design: .rounded))
+                        .font(.system(size: 14.5, weight: .bold, design: .rounded))
                         .foregroundColor(.black)
                         .lineSpacing(4)
                         .fixedSize(horizontal: false, vertical: true)
@@ -450,18 +451,19 @@ struct RichAIMessageBubbleView: View {
                 case .infoBox(let title, let details):
                     VStack(alignment: .leading, spacing: 6) {
                         Text(title)
-                            .font(.system(size: 12.5, weight: .heavy, design: .rounded))
+                            .font(.system(size: 13, weight: .heavy, design: .rounded))
                             .foregroundColor(.black)
                         ForEach(details, id: \.self) { d in
                             Text("• \(d)")
-                                .font(.system(size: 12, weight: .medium, design: .rounded))
-                                .foregroundColor(.secondary)
+                                .font(.system(size: 12.5, weight: .semibold, design: .rounded))
+                                .foregroundColor(Color.black.opacity(0.85))
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(10)
-                    .background(Color.cartoonBg)
+                    .background(Color(red: 0.94, green: 0.94, blue: 0.96))
                     .cornerRadius(8)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.0))
                 }
             }
         }
