@@ -2,11 +2,12 @@
 //  AddActivity.swift
 //  learning
 //
-//  Created by macbook on 8/30/26.
+//  Created by macbook on 8/31/26.
 //
 
 import SwiftUI
 import SwiftData
+import EventKit
 import WidgetKit
 
 struct AddActivity: View {
@@ -14,11 +15,11 @@ struct AddActivity: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var existingItems: [Item]
 
-    // Form States
     @State private var taskTitle: String = ""
     @State private var taskDetails: String = ""
     @State private var dueDate: Date = Date()
     @State private var selectedCategory: String = "Belajar"
+    @State private var selectedPriority: String = "Normal"
     @State private var getAlert: Bool = true
     @State private var syncToCalendar: Bool = false
     
@@ -30,6 +31,8 @@ struct AddActivity: View {
     // Subtasks & Attachments States
     @State private var subtasks: [SubtaskItem] = []
     @State private var imageAttachmentData: Data? = nil
+
+    private let priorities = ["Tinggi", "Normal", "Rendah"]
 
     // Deteksi Konflik Jadwal
     private var detectedConflicts: [ScheduleConflict] {
@@ -54,7 +57,7 @@ struct AddActivity: View {
 
                             Spacer()
 
-                            Text("New Activity")
+                            Text("New Task")
                                 .font(.system(size: 18, weight: .heavy, design: .rounded))
                                 .foregroundColor(.black)
 
@@ -83,12 +86,70 @@ struct AddActivity: View {
                                     .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                             )
                             .shadow(color: .black, radius: 0, x: 2, y: 2)
+
+                            // 🤖 AI Task Breakdown & Auto-Tag Actions Card
+                            CartoonAITaskBreakdownCard(
+                                taskTitle: taskTitle,
+                                taskNotes: taskDetails,
+                                onAddSubtasks: { newTitles in
+                                    for t in newTitles {
+                                        if !subtasks.contains(where: { $0.title.lowercased() == t.lowercased() }) {
+                                            subtasks.append(SubtaskItem(title: t))
+                                        }
+                                    }
+                                },
+                                onAutoTagApplied: { cat, priority in
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                                        selectedCategory = cat.rawValue
+                                        selectedPriority = priority.rawValue
+                                    }
+                                }
+                            )
                         }
 
                         // 3. Form Input: Category Picker Grid
                         CartoonCategoryPicker(
                             selectedCategory: $selectedCategory
                         )
+
+                        // Form Input: Priority Selector
+                        VStack(alignment: .leading, spacing: HIGSpacing.xxs) {
+                            Text("PRIORITY")
+                                .font(.system(size: 11, weight: .heavy, design: .rounded))
+                                .foregroundColor(.secondary)
+                                .padding(.horizontal, HIGSpacing.xxs)
+
+                            HStack(spacing: 8) {
+                                ForEach(priorities, id: \.self) { priority in
+                                    let isSelected = selectedPriority == priority
+                                    Button {
+                                        HapticManager.shared.selection()
+                                        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+                                            selectedPriority = priority
+                                        }
+                                    } label: {
+                                        HStack(spacing: 4) {
+                                            if priority == "Tinggi" {
+                                                Image(systemName: "flame.fill")
+                                            }
+                                            Text(priority)
+                                        }
+                                        .font(.system(size: 12, weight: .heavy, design: .rounded))
+                                        .foregroundColor(.black)
+                                        .frame(maxWidth: .infinity)
+                                        .padding(.vertical, 8)
+                                        .background(isSelected ? priorityColor(for: priority) : Color.white)
+                                        .cornerRadius(8)
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color.black, lineWidth: isSelected ? 1.6 : 1.0)
+                                        )
+                                        .shadow(color: .black, radius: 0, x: isSelected ? 1.5 : 0.5, y: isSelected ? 1.5 : 0.5)
+                                    }
+                                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
+                                }
+                            }
+                        }
 
                         // 4. Form Input: Details / Description
                         VStack(alignment: .leading, spacing: HIGSpacing.xxs) {
@@ -220,103 +281,113 @@ struct AddActivity: View {
                 ToolbarItemGroup(placement: .keyboard) {
                     Spacer()
                     Button("Selesai") {
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
+                        hideKeyboard()
                     }
-                    .font(.system(.subheadline, design: .rounded).weight(.bold))
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(.black)
                 }
             }
         }
     }
 
-    // MARK: - Section Scheduler / Jadwal Rutin
+    private func priorityColor(for priority: String) -> Color {
+        switch priority {
+        case "Tinggi": return .cartoonCoral
+        case "Rendah": return .cartoonMint
+        default: return .cartoonYellow
+        }
+    }
+
+    // MARK: - 🔄 Section Scheduler / Jadwal Rutin (Mirip Pengaturan)
     private var schedulerSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("JADWAL RUTIN (SCHEDULER)")
+        VStack(alignment: .leading, spacing: HIGSpacing.xs) {
+            Text("JADWAL RUTIN / RECURRING")
                 .font(.system(size: 10, weight: .heavy, design: .rounded))
                 .foregroundColor(.secondary)
                 .padding(.leading, 4)
 
             VStack(spacing: HIGSpacing.sm) {
-                // Baris Switch Aktifkan Scheduler
+                // Switch Aktifkan Pengulangan
                 CartoonToggleRow(
-                    icon: "repeat.circle.fill",
+                    icon: "repeat",
                     iconColor: .black,
                     iconBgColor: Color.cartoonLavender,
-                    title: "Ulangi Tugas",
-                    subtitle: "Buat tugas berulang secara otomatis",
+                    title: "Ulangi Aktivitas",
+                    subtitle: "Jadwalkan tugas otomatis berkala",
                     isOn: $isSchedulerEnabled,
                     activeColor: Color.cartoonLavender
                 )
 
                 if isSchedulerEnabled {
-                    // Pilihan Frekuensi Berulang
-                    HStack(spacing: HIGSpacing.xs) {
-                        ForEach(RecurrenceRule.allCases, id: \.self) { rule in
-                            if rule != .none {
+                    VStack(alignment: .leading, spacing: HIGSpacing.xs) {
+                        Text("PILIH POLA PENGULANGAN")
+                            .font(.system(size: 10, weight: .heavy, design: .rounded))
+                            .foregroundColor(.secondary)
+                            .padding(.leading, 2)
+
+                        // Grid Pilihan Aturan Jadwal
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: HIGSpacing.xs) {
+                            ForEach(RecurrenceRule.allCases.filter { $0 != .none }) { rule in
                                 let isSelected = selectedRecurrence == rule
                                 Button {
+                                    HapticManager.shared.selection()
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                                         selectedRecurrence = rule
-                                        HapticManager.shared.selection()
                                     }
                                 } label: {
-                                    HStack(spacing: 4) {
+                                    HStack(spacing: 6) {
                                         Image(systemName: rule.icon)
-                                            .font(.system(size: 11, weight: .bold))
-                                        Text(rule.title)
+                                            .font(.system(size: 12, weight: .bold))
+                                        Text(rule.shortTitle)
                                             .font(.system(size: 11.5, weight: .heavy, design: .rounded))
                                     }
                                     .foregroundColor(.black)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 8)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(isSelected ? Color.cartoonYellow : Color.white)
-                                            .shadow(color: .black, radius: 0, x: isSelected ? 1.5 : 0.8, y: isSelected ? 1.5 : 0.8)
-                                    )
+                                    .background(isSelected ? rule.badgeColor : Color.white)
+                                    .cornerRadius(8)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
                                             .stroke(Color.black, lineWidth: isSelected ? 1.6 : 1.0)
                                     )
+                                    .shadow(color: .black, radius: 0, x: isSelected ? 1.5 : 0.5, y: isSelected ? 1.5 : 0.5)
                                 }
-                                .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
+                                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                             }
                         }
                     }
-
-                    // Pemilih Suara Notifikasi Khusus
-                    CartoonAlarmSoundPicker(selectedSoundName: $selectedCustomSound)
+                    .padding(HIGSpacing.sm)
+                    .background(Color.cartoonLavender.opacity(0.15))
+                    .cornerRadius(CartoonMetrics.cardCornerRadius)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                            .stroke(Color.cartoonLavender.opacity(0.5), lineWidth: 1.2)
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 }
             }
-            .padding(HIGSpacing.sm)
-            .background(
-                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                    .fill(Color.white)
-                    .shadow(color: .black, radius: 0, x: 2, y: 2)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                    .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-            )
         }
     }
 
-    // MARK: - Logic Create Task
+    // MARK: - Helper Methods
     private func createTask() {
         let trimmedTitle = taskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTitle.isEmpty else { return }
 
+        HapticManager.shared.impact(style: .medium)
+
+        let recurrenceRuleString = isSchedulerEnabled ? selectedRecurrence.rawValue : RecurrenceRule.none.rawValue
+
         let newItem = Item(
             title: trimmedTitle,
-            notes: taskDetails.trimmingCharacters(in: .whitespacesAndNewlines),
+            notes: taskDetails,
             timestamp: dueDate,
             isCompleted: false,
             completedAt: nil,
-            priority: "Normal",
+            priority: selectedPriority,
             category: selectedCategory,
             isRecurring: isSchedulerEnabled,
-            recurrenceRule: isSchedulerEnabled ? selectedRecurrence.rawValue : "Sekali Saja",
+            recurrenceRule: recurrenceRuleString,
             customSoundName: selectedCustomSound,
             subtasks: subtasks,
             imageAttachmentData: imageAttachmentData
@@ -326,18 +397,19 @@ struct AddActivity: View {
 
         do {
             try modelContext.save()
+            WidgetCenter.shared.reloadAllTimelines()
 
-            // Jadwalkan notifikasi jika aktif
+            // Jadwalkan Notifikasi
             if getAlert {
                 Task {
                     await NotificationManager.shared.scheduleNotification(for: newItem)
                 }
             }
 
-            // Sync ke Apple Calendar jika diaktifkan
+            // Sinkronisasi Kalender iOS
             if syncToCalendar {
                 Task {
-                    _ = try? await CalendarSyncManager.shared.addEventToCalendar(
+                    try? await CalendarSyncManager.shared.addEventToCalendar(
                         title: newItem.title,
                         startDate: newItem.timestamp,
                         notes: newItem.notes
@@ -345,13 +417,15 @@ struct AddActivity: View {
                 }
             }
 
-            // Reload Timeline Widget
-            WidgetCenter.shared.reloadAllTimelines()
-
             HapticManager.shared.success()
+            SoundManager.shared.playSuccessChime()
             dismiss()
         } catch {
-            print("Gagal menyimpan tugas baru: \(error.localizedDescription)")
+            print("Gagal menyimpan aktivitas baru: \(error.localizedDescription)")
         }
+    }
+
+    private func hideKeyboard() {
+        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
     }
 }

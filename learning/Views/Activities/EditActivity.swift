@@ -14,20 +14,19 @@ struct EditActivity: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var existingItems: [Item]
 
-    // Binding item yang sedang diedit
     @Bindable var item: Item
-    var onDelete: (() -> Void)?
+    var onDelete: (() -> Void)? = nil
 
-    // State form
     @State private var taskTitle: String = ""
-    @State private var dueDate: Date = Date()
     @State private var taskDetails: String = ""
-    @State private var selectedCategory: String = "Belajar"
+    @State private var dueDate: Date = Date()
     @State private var selectedPriority: String = "Normal"
+    @State private var selectedCategory: String = "Design"
     @State private var isCompleted: Bool = false
+    @State private var getAlert: Bool = true
     @State private var isShowingDatePicker: Bool = false
     
-    // Scheduler States
+    // Scheduler / Jadwal Rutin States (Mirip di Pengaturan)
     @State private var isSchedulerEnabled: Bool = false
     @State private var selectedRecurrence: RecurrenceRule = .daily
     @State private var selectedCustomSound: String? = "cartoon_bell.caf"
@@ -38,14 +37,19 @@ struct EditActivity: View {
 
     private let priorities = ["Tinggi", "Normal", "Rendah"]
 
-    // Deteksi Konflik Jadwal (Kecualikan Item Ini Sendiri)
+    // Deteksi Konflik Jadwal (Kecualikan item saat ini)
     private var detectedConflicts: [ScheduleConflict] {
-        ScheduleConflictDetector.shared.detectConflicts(for: dueDate, in: existingItems, excludingItemId: item.id)
+        ScheduleConflictDetector.shared.detectConflicts(
+            for: dueDate,
+            in: existingItems,
+            excludingItemId: item.id
+        )
     }
 
     dynamic var body: some View {
         NavigationStack {
             ZStack {
+                // Background Utama
                 Color.cartoonBg
                     .ignoresSafeArea()
 
@@ -187,6 +191,25 @@ struct EditActivity: View {
                                     .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
                             )
 
+                            // 🤖 AI Task Breakdown & Auto-Tag Actions Card
+                            CartoonAITaskBreakdownCard(
+                                taskTitle: taskTitle,
+                                taskNotes: taskDetails,
+                                onAddSubtasks: { newTitles in
+                                    for t in newTitles {
+                                        if !subtasks.contains(where: { $0.title.lowercased() == t.lowercased() }) {
+                                            subtasks.append(SubtaskItem(title: t))
+                                        }
+                                    }
+                                },
+                                onAutoTagApplied: { cat, priority in
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                                        selectedCategory = cat.rawValue
+                                        selectedPriority = priority.rawValue
+                                    }
+                                }
+                            )
+
                             // Field 2: Date Picker Selector
                             Button {
                                 withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
@@ -319,7 +342,7 @@ struct EditActivity: View {
                                         )
                                         .overlay(
                                             RoundedRectangle(cornerRadius: 10)
-                                                .stroke(Color.black, lineWidth: isSelected ? 2.0 : 1.4)
+                                                .stroke(Color.black, lineWidth: isSelected ? 1.8 : 1.2)
                                         )
                                     }
                                     .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
@@ -327,182 +350,170 @@ struct EditActivity: View {
                             }
                         }
 
-                        // 8. 🎨 Reusable Category Picker Grid
-                        CartoonCategoryPicker(selectedCategory: $selectedCategory)
-                            .padding(.top, HIGSpacing.xxs)
+                        // 8. Kategori Selector Kartun (10 Kategori Baru)
+                        CartoonCategoryPicker(
+                            selectedCategory: $selectedCategory
+                        )
 
-                        // 9. Tombol Simpan Perubahan Utama di Bawah
-                        CartoonPrimaryButton(
-                            title: "Simpan Perubahan",
-                            icon: "checkmark.circle.fill",
-                            bgColor: Color.cartoonYellow,
-                            fgColor: .black,
-                            isEnabled: !taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        ) {
+                        // 9. Tombol Simpan Perubahan (Save Changes)
+                        let isTitleValid = !taskTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        Button {
+                            HapticManager.shared.success()
                             saveChanges()
+                        } label: {
+                            HStack(spacing: HIGSpacing.xs) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .font(.system(size: 16, weight: .black))
+                                Text("Simpan Perubahan")
+                                    .font(.system(size: 16, weight: .heavy, design: .rounded))
+                            }
+                            .foregroundColor(isTitleValid ? .black : Color.black.opacity(0.4))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 54)
+                            .background(isTitleValid ? Color.cartoonYellow : Color(red: 0.92, green: 0.92, blue: 0.94))
+                            .cornerRadius(CartoonMetrics.cardCornerRadius)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                                    .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+                            )
+                            .shadow(color: .black, radius: 0, x: isTitleValid ? 2.5 : 1.5, y: isTitleValid ? 2.5 : 1.5)
                         }
-                        .padding(.top, HIGSpacing.xs)
+                        .buttonStyle(CartoonPressButtonStyle(pressOffset: isTitleValid ? 1.5 : 0))
+                        .disabled(!isTitleValid)
+                        .padding(.top, HIGSpacing.sm)
                         .padding(.bottom, 60)
                     }
                     .padding(.horizontal, HIGSpacing.lg)
                 }
                 .scrollDismissesKeyboard(.interactively)
             }
-            .toolbar {
-                ToolbarItemGroup(placement: .keyboard) {
-                    Spacer()
-                    Button("Selesai") {
-                        UIApplication.shared.sendAction(#selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil)
-                    }
-                    .font(.system(.subheadline, design: .rounded).weight(.bold))
-                    .foregroundColor(.black)
-                }
+            .onAppear {
+                taskTitle = item.title
+                taskDetails = item.notes
+                dueDate = item.timestamp
+                selectedPriority = item.priority
+                selectedCategory = item.category
+                isCompleted = item.isCompleted
+                isSchedulerEnabled = item.isRecurring
+                selectedRecurrence = item.recurrence
+                selectedCustomSound = item.customSoundName ?? "cartoon_bell.caf"
+                subtasks = item.subtasks
+                imageAttachmentData = item.imageAttachmentData
             }
-        }
-        .onAppear {
-            taskTitle = item.title
-            dueDate = item.timestamp
-            taskDetails = item.notes
-            selectedCategory = item.category.isEmpty ? "Belajar" : item.category
-            selectedPriority = item.priority.isEmpty ? "Normal" : item.priority
-            isCompleted = item.isCompleted
-            isSchedulerEnabled = item.isRecurring
-            selectedRecurrence = item.recurrence
-            selectedCustomSound = item.customSoundName ?? "cartoon_bell.caf"
-            subtasks = item.subtasks
-            imageAttachmentData = item.imageAttachmentData
         }
     }
 
-    // MARK: - 🔁 Section Scheduler / Jadwal Berulang
+    // MARK: - 🔄 Section Scheduler / Jadwal Rutin
     private var schedulerSection: some View {
-        VStack(alignment: .leading, spacing: HIGSpacing.sm) {
-            HStack {
-                HStack(spacing: HIGSpacing.xs) {
-                    Image(systemName: "repeat.circle.fill")
-                        .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(.black)
-                    
-                    Text("Jadwal Rutin / Berulang")
-                        .font(.system(size: 14, weight: .heavy, design: .rounded))
-                        .foregroundColor(.black)
-                }
-                
-                Spacer()
-                
-                CartoonToggleSwitch(isOn: $isSchedulerEnabled)
-            }
-            
-            if isSchedulerEnabled {
-                VStack(spacing: HIGSpacing.sm) {
-                    // Pilihan Frekuensi Berulang
-                    HStack(spacing: HIGSpacing.xs) {
-                        ForEach(RecurrenceRule.allCases, id: \.self) { rule in
-                            if rule != .none {
+        VStack(alignment: .leading, spacing: HIGSpacing.xs) {
+            Text("JADWAL RUTIN / RECURRING")
+                .font(.system(size: 10, weight: .heavy, design: .rounded))
+                .foregroundColor(.secondary)
+                .padding(.leading, 4)
+
+            VStack(spacing: HIGSpacing.sm) {
+                // Switch Aktifkan Pengulangan
+                CartoonToggleRow(
+                    icon: "repeat",
+                    iconColor: .black,
+                    iconBgColor: Color.cartoonLavender,
+                    title: "Ulangi Aktivitas",
+                    subtitle: "Jadwalkan tugas otomatis berkala",
+                    isOn: $isSchedulerEnabled,
+                    activeColor: Color.cartoonLavender
+                )
+
+                if isSchedulerEnabled {
+                    VStack(alignment: .leading, spacing: HIGSpacing.xs) {
+                        Text("PILIH POLA PENGULANGAN")
+                            .font(.system(size: 10, weight: .heavy, design: .rounded))
+                            .foregroundColor(.secondary)
+                            .padding(.leading, 2)
+
+                        // Grid Pilihan Aturan Jadwal
+                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: HIGSpacing.xs) {
+                            ForEach(RecurrenceRule.allCases.filter { $0 != .none }) { rule in
                                 let isSelected = selectedRecurrence == rule
                                 Button {
+                                    HapticManager.shared.selection()
                                     withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
                                         selectedRecurrence = rule
-                                        HapticManager.shared.selection()
                                     }
                                 } label: {
-                                    HStack(spacing: 4) {
+                                    HStack(spacing: 6) {
                                         Image(systemName: rule.icon)
-                                            .font(.system(size: 11, weight: .bold))
-                                        Text(rule.title)
+                                            .font(.system(size: 12, weight: .bold))
+                                        Text(rule.shortTitle)
                                             .font(.system(size: 11.5, weight: .heavy, design: .rounded))
                                     }
                                     .foregroundColor(.black)
                                     .frame(maxWidth: .infinity)
                                     .padding(.vertical, 8)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .fill(isSelected ? Color.cartoonYellow : Color.white)
-                                            .shadow(color: .black, radius: 0, x: isSelected ? 1.5 : 0.8, y: isSelected ? 1.5 : 0.8)
-                                    )
+                                    .background(isSelected ? rule.badgeColor : Color.white)
+                                    .cornerRadius(8)
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 8)
                                             .stroke(Color.black, lineWidth: isSelected ? 1.6 : 1.0)
                                     )
+                                    .shadow(color: .black, radius: 0, x: isSelected ? 1.5 : 0.5, y: isSelected ? 1.5 : 0.5)
                                 }
-                                .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
+                                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                             }
                         }
                     }
-                    
-                    // Pemilih Suara Notifikasi Khusus
-                    CartoonAlarmSoundPicker(selectedSoundName: $selectedCustomSound)
+                    .padding(HIGSpacing.sm)
+                    .background(Color.cartoonLavender.opacity(0.15))
+                    .cornerRadius(CartoonMetrics.cardCornerRadius)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
+                            .stroke(Color.cartoonLavender.opacity(0.5), lineWidth: 1.2)
+                    )
+                    .transition(.opacity.combined(with: .scale(scale: 0.95)))
                 }
-                .padding(HIGSpacing.sm)
-                .background(
-                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                        .fill(Color.cartoonBg)
-                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                        .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
-                )
-                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
     }
 
-    // MARK: - 🎨 Helpers Warna Prioritas Kartun
-    private func priorityBgColor(for priority: String, isSelected: Bool) -> Color {
-        guard isSelected else { return .white }
-        switch priority {
-        case "Tinggi": return Color.cartoonCoral
-        case "Normal": return Color.cartoonYellow
-        case "Rendah": return Color.cartoonMint
-        default: return Color.white
-        }
-    }
-
-    // MARK: - 💾 Logic Simpan Perubahan ke SwiftData
+    // MARK: - Helper Methods
     private func saveChanges() {
         let trimmedTitle = taskTitle.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTitle.isEmpty else { return }
 
-        // Batalkan notifikasi lama
-        NotificationManager.shared.cancelNotification(for: item)
-
-        // Update atribut item
         item.title = trimmedTitle
+        item.notes = taskDetails
         item.timestamp = dueDate
-        item.notes = taskDetails.trimmingCharacters(in: .whitespacesAndNewlines)
-        item.category = selectedCategory
         item.priority = selectedPriority
+        item.category = selectedCategory
         item.isCompleted = isCompleted
         item.completedAt = isCompleted ? (item.completedAt ?? Date()) : nil
         item.isRecurring = isSchedulerEnabled
-        item.recurrence = isSchedulerEnabled ? selectedRecurrence : .none
+        item.recurrenceRule = isSchedulerEnabled ? selectedRecurrence.rawValue : RecurrenceRule.none.rawValue
         item.customSoundName = selectedCustomSound
         item.subtasks = subtasks
         item.imageAttachmentData = imageAttachmentData
 
         do {
             try modelContext.save()
-            
-            // Jadwalkan notifikasi baru jika belum selesai
-            if !isCompleted {
-                Task {
-                    await NotificationManager.shared.scheduleNotification(for: item)
-                }
-            }
-
-            // Sync ke Kalender Apple jika izin diberikan
-            Task {
-                _ = try? await CalendarSyncManager.shared.addEventToCalendar(title: item.title, startDate: item.timestamp, notes: item.notes)
-            }
-
-            // Reload Timeline Widget
             WidgetCenter.shared.reloadAllTimelines()
 
-            HapticManager.shared.success()
+            // Jadwalkan Ulang Notifikasi
+            Task {
+                await NotificationManager.shared.scheduleNotification(for: item)
+            }
+
             dismiss()
         } catch {
-            print("Gagal menyimpan perubahan tugas: \(error.localizedDescription)")
+            print("Gagal menyimpan perubahan aktivitas: \(error.localizedDescription)")
+        }
+    }
+
+    private func priorityBgColor(for priority: String, isSelected: Bool) -> Color {
+        guard isSelected else { return Color.white }
+        switch priority {
+        case "Tinggi": return Color.cartoonCoral
+        case "Normal": return Color.cartoonYellow
+        case "Rendah": return Color.cartoonMint
+        default: return Color.cartoonYellow
         }
     }
 }
