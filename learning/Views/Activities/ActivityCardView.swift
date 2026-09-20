@@ -22,7 +22,7 @@ struct ActivityCardView: View {
         VStack(alignment: .leading, spacing: 8) {
             // MARK: - Baris Utama: Ikon Kategori Bulat + Judul Multiline + Aksi
             HStack(alignment: .top, spacing: 12) {
-                // 1. 🏷️ Ikon Kategori dalam Lingkaran di Samping Kiri Judul
+                // 1. 🏷️ Ikon Kategori dalam Lingkaran di Samping Kiri Judul (1-Tap Checkbox)
                 categoryIconCircle
                     .padding(.top, 2)
 
@@ -85,20 +85,33 @@ struct ActivityCardView: View {
         }
     }
 
-    // MARK: - 🏷️ Lingkaran Ikon Kategori (Samping Kiri Judul)
+    // MARK: - 🏷️ Lingkaran Ikon Kategori & Checkbox 1-Tap
     private var categoryIconCircle: some View {
         let (icon, color) = categoryIconAndColor(for: item.category)
-        return ZStack {
-            Circle()
-                .fill(color)
-                .frame(width: 30, height: 30)
-                .overlay(Circle().stroke(Color.black, lineWidth: 1.6))
-                .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+        return Button {
+            HapticManager.shared.success()
+            SoundManager.shared.playPop()
+            onToggle?()
+        } label: {
+            ZStack {
+                Circle()
+                    .fill(item.isCompleted ? Color.cartoonMint : color)
+                    .frame(width: 32, height: 32)
+                    .overlay(Circle().stroke(Color.black, lineWidth: 1.6))
+                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
 
-            Image(systemName: icon)
-                .font(.system(size: 13, weight: .heavy))
-                .foregroundColor(.black)
+                if item.isCompleted {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .black))
+                        .foregroundColor(.black)
+                } else {
+                    Image(systemName: icon)
+                        .font(.system(size: 13, weight: .heavy))
+                        .foregroundColor(.black)
+                }
+            }
         }
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
     }
 
     // MARK: - 🏷️ Metadata Bawah (Waktu, Subtask, Lampiran, Recurring)
@@ -166,7 +179,7 @@ struct ActivityCardView: View {
         }
     }
 
-    // MARK: - 🔼 Expand Button
+    // MARK: - 🔽 Expand Button
     private var expandButton: some View {
         Button {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
@@ -178,175 +191,144 @@ struct ActivityCardView: View {
                 .font(.system(size: 20, weight: .bold))
                 .foregroundColor(.black.opacity(0.75))
         }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.5))
     }
 
     // MARK: - 🗑️ Delete Button
     private var deleteButton: some View {
         Button {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                SoundManager.shared.playDeleteSound()
-                onDelete()
-            }
+            HapticManager.shared.warning()
+            onDelete()
         } label: {
-            ZStack {
-                Circle()
-                    .fill(Color.cartoonPink)
-                    .frame(width: 28, height: 28)
-                    .overlay(Circle().stroke(Color.black, lineWidth: 1.8))
-                    .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
-
-                Image(systemName: "trash.fill")
-                    .font(.system(size: 11, weight: .black))
-                    .foregroundColor(.black)
-            }
-            .frame(width: 30, height: 30)
-            .contentShape(Rectangle())
+            Image(systemName: "trash.circle.fill")
+                .font(.system(size: 20, weight: .bold))
+                .foregroundColor(.red.opacity(0.75))
         }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.2))
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.5))
     }
 
-    // MARK: - 📋 Expanded Details View
+    // MARK: - 📋 Subtasks & Foto Details (Expanded State)
     private var expandedDetailsView: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: 8) {
             Divider()
-                .background(Color.black.opacity(0.15))
-                .padding(.vertical, 2)
+                .overlay(Color.black.opacity(0.2))
 
-            // Subtasks Checklist
+            // Subtask items
             if !item.subtasks.isEmpty {
-                VStack(alignment: .leading, spacing: 5) {
+                VStack(alignment: .leading, spacing: 6) {
                     ForEach(item.subtasks.indices, id: \.self) { index in
                         let subtask = item.subtasks[index]
                         Button {
                             toggleSubtask(at: index)
                         } label: {
                             HStack(spacing: 8) {
-                                ZStack {
-                                    RoundedRectangle(cornerRadius: 4)
-                                        .fill(subtask.isCompleted ? Color.cartoonMint : Color.white)
-                                        .frame(width: 18, height: 18)
-                                        .overlay(RoundedRectangle(cornerRadius: 4).stroke(Color.black, lineWidth: 1.2))
-
-                                    if subtask.isCompleted {
-                                        Image(systemName: "checkmark")
-                                            .font(.system(size: 10, weight: .black))
-                                            .foregroundColor(.black)
-                                    }
-                                }
+                                Image(systemName: subtask.isCompleted ? "checkmark.square.fill" : "square")
+                                    .font(.system(size: 13, weight: .bold))
+                                    .foregroundColor(subtask.isCompleted ? .cartoonMint : .black)
 
                                 Text(subtask.title)
-                                    .font(.system(size: 12.5, weight: .bold, design: .rounded))
+                                    .font(.system(size: 12.5, weight: .medium, design: .rounded))
                                     .foregroundColor(.black)
-                                    .strikethrough(subtask.isCompleted, color: .black.opacity(0.6))
-                                    .multilineTextAlignment(.leading)
+                                    .strikethrough(subtask.isCompleted, color: .black)
 
                                 Spacer()
                             }
-                            .padding(.vertical, 3)
-                            .padding(.horizontal, 4)
                         }
-                        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
+                        .buttonStyle(.plain)
                     }
                 }
+                .padding(8)
+                .background(Color.white)
+                .cornerRadius(8)
+                .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black.opacity(0.15), lineWidth: 1))
             }
 
-            // Thumbnail Foto Terlampir
-            if let imgData = item.imageAttachmentData,
-               let uiImg = ImageCacheManager.shared.thumbnail(for: imgData, key: "\(item.id)", targetSize: CGSize(width: 100, height: 100)) {
-                HStack(spacing: 8) {
-                    Image(uiImage: uiImg)
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 48, height: 48)
-                        .clipped()
-                        .cornerRadius(6)
-                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.2))
-                        .shadow(color: .black.opacity(0.1), radius: 0, x: 1, y: 1)
-                        .onTapGesture {
-                            isShowingFullImage = true
-                        }
+            // Image Thumbnail
+            if let imgData = item.imageAttachmentData, let uiImage = UIImage(data: imgData) {
+                Button {
+                    isShowingFullImage = true
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(uiImage: uiImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 48, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Foto Lampiran")
-                            .font(.system(size: 11, weight: .heavy, design: .rounded))
-                            .foregroundColor(.black)
-                        Text("Ketuk untuk perbesar")
-                            .font(.system(size: 9.5, weight: .medium, design: .rounded))
-                            .foregroundColor(.secondary)
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("Lampiran Gambar")
+                                .font(.system(size: 11.5, weight: .heavy, design: .rounded))
+                                .foregroundColor(.black)
+                            Text("Ketuk untuk melihat ukuran penuh")
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundColor(.secondary)
+                        }
+                        Spacer()
                     }
-                    Spacer()
+                    .padding(6)
+                    .background(Color.white)
+                    .cornerRadius(8)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black.opacity(0.15), lineWidth: 1))
                 }
-                .padding(6)
-                .background(Color.white.opacity(0.7))
-                .cornerRadius(8)
+                .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.5))
             }
         }
-        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+        .padding(.top, 4)
     }
 
-    @ViewBuilder
+    private func toggleSubtask(at index: Int) {
+        HapticManager.shared.selection()
+        item.subtasks[index].isCompleted.toggle()
+        try? modelContext.save()
+    }
+
+    // MARK: - 🔍 Fullscreen Image Viewer
     private var fullscreenImageSheet: some View {
-        if let imgData = item.imageAttachmentData, let uiImg = UIImage(data: imgData) {
-            NavigationStack {
-                ZStack {
-                    Color.black.ignoresSafeArea()
-                    Image(uiImage: uiImg)
+        NavigationStack {
+            ZStack {
+                Color.black.ignoresSafeArea()
+                if let imgData = item.imageAttachmentData, let uiImage = UIImage(data: imgData) {
+                    Image(uiImage: uiImage)
                         .resizable()
                         .scaledToFit()
                         .padding()
                 }
-                .toolbar {
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button("Tutup") {
-                            isShowingFullImage = false
-                        }
-                        .font(.system(.body, design: .rounded).weight(.bold))
-                        .foregroundColor(.white)
+            }
+            .navigationTitle("Lampiran Tugas")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Tutup") {
+                        isShowingFullImage = false
                     }
+                    .foregroundColor(.white)
+                    .fontWeight(.bold)
                 }
             }
         }
     }
 
-    private func toggleSubtask(at index: Int) {
-        guard index < item.subtasks.count else { return }
-        HapticManager.shared.impact(style: .light)
-        SoundManager.shared.playPop()
-        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
-            var updated = item.subtasks
-            updated[index].isCompleted.toggle()
-            item.subtasks = updated
-            try? modelContext.save()
-        }
-    }
-
-    // MARK: - Warna Background Kartu Mewakili Prioritas
+    // MARK: - 🎨 Helpers Warna & Ikon Kategori
     private func cardBgColor(for priority: String) -> Color {
         switch priority {
-        case "Tinggi": return Color(red: 1.0, green: 0.88, blue: 0.88)
-        case "Normal", "Sedang": return Color(red: 1.0, green: 0.95, blue: 0.82)
-        case "Rendah": return Color(red: 0.88, green: 0.95, blue: 1.0)
-        default: return .white
+        case "Tinggi": return Color.cartoonPink.opacity(0.55)
+        case "Normal": return Color.cartoonYellow.opacity(0.45)
+        case "Rendah": return Color.cartoonMint.opacity(0.45)
+        default: return Color.white
         }
     }
 
-    // MARK: - Helper Ikon dan Warna Kategori
-    private func categoryIconAndColor(for category: String) -> (icon: String, color: Color) {
-        switch category {
-        case "Belajar": return ("book.fill", .cartoonYellow)
-        case "Kesehatan": return ("heart.fill", .cartoonPink)
-        case "Pekerjaan": return ("briefcase.fill", .cartoonLavender)
-        case "Pribadi": return ("person.fill", .cartoonMint)
-        case "Keuangan": return ("creditcard.fill", .cartoonBlue)
-        case "Ibadah": return ("sparkles", .cartoonOrange)
-        case "Rumah": return ("house.fill", .cartoonYellow)
-        case "Sosial": return ("person.2.fill", .cartoonPink)
-        case "Belanja": return ("cart.fill", .cartoonMint)
-        case "Design": return ("paintbrush.pointed.fill", .cartoonLavender)
-        case "Coding": return ("curlybraces", .cartoonBlue)
-        case "Meeting": return ("bubble.left.and.bubble.right.fill", .cartoonOrange)
-        default: return ("folder.fill", .cartoonMint)
+    private func categoryIconAndColor(for category: String) -> (String, Color) {
+        switch category.lowercased() {
+        case "coding": return ("chevron.left.forwardslash.chevron.right", Color.cartoonBlue)
+        case "belajar": return ("book.fill", Color.cartoonYellow)
+        case "kesehatan": return ("heart.fill", Color.cartoonPink)
+        case "belanja": return ("cart.fill", Color.cartoonOrange)
+        case "meeting": return ("person.2.fill", Color.cartoonLavender)
+        case "ibadah": return ("hands.and.sparkles.fill", Color.cartoonMint)
+        case "keuangan": return ("banknote.fill", Color.cartoonMint)
+        default: return ("briefcase.fill", Color.cartoonYellow)
         }
     }
 }
