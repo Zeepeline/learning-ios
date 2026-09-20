@@ -76,8 +76,9 @@ final class MCPAIAssistantService: ObservableObject {
         Saya dapat membantu kamu:
         • 🌅 Menyusun rencana harian (*"Susun rencana hari ini"*)
         • 🌙 Evaluasi malam & kesehatan (*"Evaluasi hari ini"*)
-        • ⚡ Tambah tugas cerdas & jadwal (*"Coding besok jam 8 malam"*)
-        • 🤖 Menata ulang jadwal yang terlewat (*"Tata ulang jadwalku"*)
+        • 🪄 Pecah tugas jadi subtask (*"Pecah tugas presentasi"* )
+        • ⚡ Tambah tugas cerdas (*"Coding besok jam 8 malam"*)
+        • 🤖 Menata ulang jadwal terlewat (*"Tata ulang jadwalku"*)
         • ⏱️ Mulai timer Pomodoro (*"Mulai fokus 25 menit"*)
         • 🛡️ Batasi distraksi (*"Kunci aplikasi pengganggu"*)
         • 🔥 Check-in habit harian (*"Ceklis habit membaca"*)
@@ -125,6 +126,12 @@ final class MCPAIAssistantService: ObservableObject {
             return
         }
 
+        // AI Task Breakdown & Auto Subtask
+        if lower.contains("pecah") || lower.contains("breakdown") || lower.contains("subtask") || lower.contains("bagi tugas") {
+            await executeTaskBreakdownTool(prompt: trimmed, modelContext: modelContext)
+            return
+        }
+
         // AI Schedule Rebalancer
         if lower.contains("tata ulang") || lower.contains("rebalance") || lower.contains("rapikan jadwal") || lower.contains("atur ulang jadwal") || lower.contains("jadwal berantakan") {
             await executeRebalanceScheduleTool(modelContext: modelContext)
@@ -169,6 +176,62 @@ final class MCPAIAssistantService: ObservableObject {
             ninerouterBaseUrl: ninerouterBaseUrl,
             ninerouterModel: ninerouterModel,
             modelContext: modelContext
+        )
+    }
+
+    // MARK: - 🪄 AI Task Breakdown & Subtask Generator Tool
+    private func executeTaskBreakdownTool(prompt: String, modelContext: ModelContext) async {
+        var cleanTitle = prompt
+            .replacingOccurrences(of: "pecah tugas", with: "", options: .caseInsensitive)
+            .replacingOccurrences(of: "pecah", with: "", options: .caseInsensitive)
+            .replacingOccurrences(of: "breakdown", with: "", options: .caseInsensitive)
+            .replacingOccurrences(of: "jadi subtask", with: "", options: .caseInsensitive)
+            .replacingOccurrences(of: "tolong", with: "", options: .caseInsensitive)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if cleanTitle.isEmpty {
+            cleanTitle = "Aktivitas Fokus"
+        }
+
+        let proposals = AITaskBreakdownService.shared.generateSubtasks(for: cleanTitle)
+        let subtaskTitles = proposals.map { $0.title }
+        let tags = AITaskBreakdownService.shared.suggestTags(for: cleanTitle)
+
+        let actionProposal = AIActionProposal(
+            title: cleanTitle,
+            subtitle: "Dianalisis otomatis oleh AI Task Breakdown",
+            category: tags.category.rawValue,
+            priority: tags.priority.rawValue,
+            targetDate: Date(),
+            subtasks: subtaskTitles
+        )
+
+        let toolCall = MCPToolInvocation(
+            name: "generate_task_breakdown",
+            argumentsSummary: "task: \(cleanTitle), subtasks: \(subtaskTitles.count)",
+            icon: "wand.and.stars",
+            badgeColorHex: "#C4B5FD"
+        )
+
+        var listText = ""
+        for (i, t) in subtaskTitles.enumerated() {
+            listText += "\n\(i + 1). ▫️ \(t)"
+        }
+
+        let reply = """
+        🪄 **Tugas Berhasil Dipecah Menjadi Langkah Konkret!**
+
+        Tugas **"\(cleanTitle)"** telah dianalisis dengan estimasi kategori **\(tags.category.rawValue)** dan prioritas **\(tags.priority.rawValue)**:
+        \(listText)
+
+        Kamu dapat langsung menerapkan subtask ini ke dalam daftarmu! 🚀
+        """
+
+        await streamAssistantMessage(
+            fullContent: reply,
+            toolCall: toolCall,
+            toolResult: "\(subtaskTitles.count) subtasks generated",
+            proposal: actionProposal
         )
     }
 
@@ -533,7 +596,9 @@ final class MCPAIAssistantService: ObservableObject {
         let taskTitle = parsed.cleanText.isEmpty ? "Tugas Baru" : parsed.cleanText
         let taskDate = parsed.targetDate
 
-        let suggestedCategory = determineCategory(from: taskTitle)
+        let tagSuggestion = AITaskBreakdownService.shared.suggestTags(for: taskTitle)
+        let suggestedCategory = tagSuggestion.category.rawValue
+        let suggestedPriority = tagSuggestion.priority.rawValue
 
         let conflicts = ScheduleConflictDetector.shared.detectConflicts(
             for: taskDate,
@@ -547,7 +612,7 @@ final class MCPAIAssistantService: ObservableObject {
             timestamp: taskDate,
             isCompleted: false,
             completedAt: nil,
-            priority: "Normal",
+            priority: suggestedPriority,
             category: suggestedCategory,
             isRecurring: false,
             recurrenceRule: "Sekali Saja",
@@ -573,6 +638,7 @@ final class MCPAIAssistantService: ObservableObject {
 
         • **Judul:** \(taskTitle)
         • **Kategori:** \(suggestedCategory)
+        • **Prioritas:** \(suggestedPriority)
         • **Waktu:** \(taskDate.formatted(date: .complete, time: .shortened))
         """
 
@@ -583,21 +649,6 @@ final class MCPAIAssistantService: ObservableObject {
         }
 
         await streamAssistantMessage(fullContent: reply, toolCall: toolCall, toolResult: "Created \(taskTitle)")
-    }
-
-    private func determineCategory(from text: String) -> String {
-        let lower = text.lowercased()
-        if lower.contains("coding") || lower.contains("code") || lower.contains("bug") || lower.contains("deploy") || lower.contains("program") {
-            return "Coding"
-        } else if lower.contains("belajar") || lower.contains("baca") || lower.contains("kuliah") || lower.contains("kursus") || lower.contains("ujian") {
-            return "Belajar"
-        } else if lower.contains("olahraga") || lower.contains("gym") || lower.contains("lari") || lower.contains("workout") || lower.contains("jalan") {
-            return "Olahraga"
-        } else if lower.contains("kerja") || lower.contains("meeting") || lower.contains("kantor") || lower.contains("proyek") {
-            return "Kerja"
-        } else {
-            return "General"
-        }
     }
 
     // MARK: - 🌊 Typing Effect Streaming Assistant Message
