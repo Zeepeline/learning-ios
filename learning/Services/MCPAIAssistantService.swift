@@ -701,7 +701,26 @@ final class MCPAIAssistantService: ObservableObject {
 
             await streamAssistantMessage(fullContent: replyText)
         } catch {
-            let errorReply = "⚠️ Maaf, terjadi kendala koneksi AI: \(error.localizedDescription)\n\nSilakan cek koneksi internet atau pengaturan API key di menu Pengaturan Asisten."
+            let errorReply: String
+            if provider == .googleAccount {
+                errorReply = """
+                ⚠️ **Sesi Akun Google Gemini Belum Aktif**
+
+                Untuk menggunakan mode web gratis:
+                1. Ketuk tombol **Login 🔑** pada banner di atas chat, atau buka **Pengaturan (⚙️)**.
+                2. Masuk ke akun Google Anda satu kali.
+
+                💡 *Tips: Anda juga bisa beralih ke **Gemini API Key** (gratis & cepat dari Google AI Studio) di menu Pengaturan.*
+                """
+            } else if provider == .geminiApiKey && apiKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                errorReply = """
+                ⚠️ **Gemini API Key Belum Diisi**
+
+                Silakan buka **Pengaturan (⚙️)** di pojok kanan atas dan masukkan API Key Anda dari Google AI Studio.
+                """
+            } else {
+                errorReply = "⚠️ Maaf, terjadi kendala koneksi AI: \(error.localizedDescription)\n\nSilakan periksa koneksi internet atau pengaturan AI di menu Pengaturan Asisten (⚙️)."
+            }
             await streamAssistantMessage(fullContent: errorReply)
         }
     }

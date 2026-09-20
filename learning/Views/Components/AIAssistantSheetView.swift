@@ -13,6 +13,7 @@ struct AIAssistantSheetView: View {
     @Environment(\.modelContext) private var modelContext
     @ObservedObject private var assistantService = MCPAIAssistantService.shared
     @ObservedObject private var voiceManager = VoiceInputManager.shared
+    @ObservedObject private var headlessEngine = GeminiHeadlessEngine.shared
 
     @AppStorage("selectedAIProvider") private var selectedProviderRaw: String = AIProviderType.googleAccount.rawValue
     @AppStorage("geminiAPIKey") private var geminiAPIKey: String = ""
@@ -22,6 +23,7 @@ struct AIAssistantSheetView: View {
 
     @State private var inputText: String = ""
     @State private var isShowingSettings: Bool = false
+    @State private var isShowingGoogleLoginWeb: Bool = false
     @State private var tempApiKey: String = ""
     @State private var tempNinerouterModel: String = ""
     @FocusState private var isInputFocused: Bool
@@ -57,6 +59,11 @@ struct AIAssistantSheetView: View {
                     .allowsHitTesting(false)
 
                 VStack(spacing: 0) {
+                    // MARK: - 🔐 Login Notice Banner (Jika Google Account belum terhubung)
+                    if currentProvider == .googleAccount && !headlessEngine.isLoggedIn {
+                        googleLoginRequiredBanner
+                    }
+
                     // MARK: - 💬 Chat Messages ScrollView (Lebar Maksimal Bersih)
                     ScrollViewReader { proxy in
                         ScrollView(showsIndicators: false) {
@@ -107,6 +114,11 @@ struct AIAssistantSheetView: View {
             .animation(.spring(response: 0.35, dampingFraction: 0.8), value: voiceManager.errorMessage)
             .navigationTitle("AI Assistant")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                Task {
+                    _ = await headlessEngine.checkLoginStatus()
+                }
+            }
             .onDisappear {
                 voiceManager.stopRecording()
             }
@@ -124,7 +136,7 @@ struct AIAssistantSheetView: View {
                             .background(Color.white)
                             .cornerRadius(8)
                             .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
-                            .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                            .shadow(color: .black, radius: 0, x: 1, y: 1)
                     }
                     .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                 }
@@ -141,7 +153,7 @@ struct AIAssistantSheetView: View {
                                 .frame(width: 6, height: 6)
                             Text(voiceManager.isRecording ? "Mendengarkan Suara..." : "Asisten Aktif")
                                 .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                .foregroundColor(voiceManager.isRecording ? Color.cartoonCoral : .secondary)
+                                .foregroundColor(voiceManager.isRecording ? Color.cartoonCoral : Color.black.opacity(0.75))
                         }
                     }
                 }
@@ -160,7 +172,7 @@ struct AIAssistantSheetView: View {
                                 .background(Color.white)
                                 .cornerRadius(8)
                                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
-                                .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                                .shadow(color: .black, radius: 0, x: 1, y: 1)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
 
@@ -178,7 +190,7 @@ struct AIAssistantSheetView: View {
                                 .background(Color.cartoonYellow)
                                 .cornerRadius(8)
                                 .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
-                                .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                                .shadow(color: .black, radius: 0, x: 1, y: 1)
                         }
                         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                     }
@@ -187,7 +199,55 @@ struct AIAssistantSheetView: View {
             .sheet(isPresented: $isShowingSettings) {
                 aiSettingsSheet
             }
+            .sheet(isPresented: $isShowingGoogleLoginWeb) {
+                GeminiWebMCPView()
+                    .onDisappear {
+                        Task {
+                            _ = await headlessEngine.checkLoginStatus()
+                        }
+                    }
+            }
         }
+    }
+
+    // MARK: - 🔐 Google Login Required Banner
+    private var googleLoginRequiredBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "person.crop.circle.badge.exclamationmark")
+                .font(.system(size: 16, weight: .black))
+                .foregroundColor(.black)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Sesi Akun Google Belum Terhubung")
+                    .font(.system(size: 12, weight: .heavy, design: .rounded))
+                    .foregroundColor(.black)
+                Text("Login sekali untuk menggunakan AI Gemini gratis")
+                    .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+                    .foregroundColor(Color.black.opacity(0.8))
+            }
+
+            Spacer()
+
+            Button {
+                HapticManager.shared.selection()
+                isShowingGoogleLoginWeb = true
+            } label: {
+                Text("Login 🔑")
+                    .font(.system(size: 11, weight: .heavy, design: .rounded))
+                    .foregroundColor(.black)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.white)
+                    .cornerRadius(8)
+                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
+            }
+            .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(Color.cartoonYellow)
+        .overlay(Rectangle().frame(height: 1.2).foregroundColor(.black), alignment: .bottom)
     }
 
     // MARK: - 💡 Quick Prompt Suggestions Carousel
@@ -211,7 +271,7 @@ struct AIAssistantSheetView: View {
                         .background(item.color)
                         .cornerRadius(8)
                         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.4))
-                        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                        .shadow(color: .black, radius: 0, x: 1, y: 1)
                     }
                     .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                 }
@@ -227,7 +287,8 @@ struct AIAssistantSheetView: View {
             // Text Field Input
             HStack(spacing: 6) {
                 TextField("Tanya AI, minta rangkuman, atau dikte tugas...", text: $inputText)
-                    .font(.system(size: 13.5, weight: .medium, design: .rounded))
+                    .font(.system(size: 13.5, weight: .bold, design: .rounded))
+                    .foregroundColor(.black)
                     .focused($isInputFocused)
                     .onSubmit {
                         submitCurrentInput()
@@ -239,7 +300,7 @@ struct AIAssistantSheetView: View {
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .font(.system(size: 14, weight: .bold))
-                            .foregroundColor(.secondary)
+                            .foregroundColor(.black.opacity(0.6))
                     }
                 }
             }
@@ -312,7 +373,7 @@ struct AIAssistantSheetView: View {
         .background(Color.cartoonCoral)
         .cornerRadius(8)
         .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.4))
-        .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+        .shadow(color: .black, radius: 0, x: 1, y: 1)
         .padding(.horizontal, HIGSpacing.md)
         .padding(.top, 4)
     }
@@ -351,14 +412,15 @@ struct AIAssistantSheetView: View {
                 .frame(width: 7, height: 7)
 
             Text("AI sedang berpikir & menyusun respons...")
-                .font(.system(size: 12, weight: .bold, design: .rounded))
-                .foregroundColor(.secondary)
+                .font(.system(size: 12, weight: .heavy, design: .rounded))
+                .foregroundColor(Color.black.opacity(0.8))
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(Color.white)
         .cornerRadius(10)
         .overlay(RoundedRectangle(cornerRadius: 10).stroke(Color.black, lineWidth: 1.2))
+        .shadow(color: .black, radius: 0, x: 1, y: 1)
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
@@ -375,8 +437,37 @@ struct AIAssistantSheetView: View {
                     .pickerStyle(.menu)
                 }
 
-                if currentProvider == .geminiApiKey {
-                    Section(header: Text("Gemini API Key")) {
+                if currentProvider == .googleAccount {
+                    Section(header: Text("Status Akun Google Gemini"), footer: Text("Mode ini gratis tanpa memerlukan API Key. Cukup login ke akun Google Anda satu kali.")) {
+                        HStack {
+                            Text("Status Sesi")
+                            Spacer()
+                            HStack(spacing: 4) {
+                                Circle()
+                                    .fill(headlessEngine.isLoggedIn ? Color.cartoonMint : Color.cartoonCoral)
+                                    .frame(width: 8, height: 8)
+                                Text(headlessEngine.isLoggedIn ? "Terhubung" : "Belum Login")
+                                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                                    .foregroundColor(headlessEngine.isLoggedIn ? .green : .red)
+                            }
+                        }
+
+                        Button {
+                            isShowingSettings = false
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                isShowingGoogleLoginWeb = true
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "safari.fill")
+                                Text(headlessEngine.isLoggedIn ? "Perbarui / Ganti Akun Google" : "Login ke Akun Google Gemini 🔑")
+                                    .fontWeight(.bold)
+                            }
+                            .foregroundColor(.blue)
+                        }
+                    }
+                } else if currentProvider == .geminiApiKey {
+                    Section(header: Text("Gemini API Key"), footer: Text("Dapatkan API Key gratis di https://aistudio.google.com")) {
                         SecureField("Masukkan Gemini API Key...", text: $tempApiKey)
                             .font(.system(size: 13, design: .monospaced))
                     }
