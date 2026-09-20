@@ -89,7 +89,7 @@ enum AIContentBlock: Identifiable {
 
 // MARK: - 💬 Rich AI Message Bubble (Dengan Sudut Lancip & Quick Action Buttons)
 struct RichAIMessageBubbleView: View {
-    let message: MCPAIChatMessage
+    let message: AIMessage
     @Environment(\.modelContext) private var modelContext
     @ObservedObject private var assistantService = MCPAIAssistantService.shared
     private var pomodoroManager = PomodoroManager.shared
@@ -101,7 +101,7 @@ struct RichAIMessageBubbleView: View {
 
     var body: some View {
         Group {
-            if message.role == .user {
+            if message.isUser {
                 // MARK: - 👤 Bubble Pengguna (Kanan, Lancip di Sudut Kanan Bawah)
                 HStack {
                     Spacer(minLength: 28)
@@ -234,7 +234,11 @@ struct RichAIMessageBubbleView: View {
                         // 🛡️ Kunci Distraksi (Screen Time Shield)
                         Button {
                             HapticManager.shared.warning()
-                            screenTimeManager.isShieldActive.toggle()
+                            if screenTimeManager.isShieldActive {
+                                screenTimeManager.disableAppShield()
+                            } else {
+                                screenTimeManager.enableAppShield()
+                            }
                         } label: {
                             HStack(spacing: 5) {
                                 Image(systemName: screenTimeManager.isShieldActive ? "shield.fill" : "shield")
@@ -265,7 +269,7 @@ struct RichAIMessageBubbleView: View {
     }
 
     // MARK: - 📋 Interactive Proposal Card
-    private func interactiveProposalCard(proposal: TaskProposal) -> some View {
+    private func interactiveProposalCard(proposal: AIActionProposal) -> some View {
         VStack(alignment: .leading, spacing: 10) {
             HStack {
                 Image(systemName: "sparkles")
@@ -278,7 +282,7 @@ struct RichAIMessageBubbleView: View {
 
                 Spacer()
 
-                Text("~\(proposal.estimatedMinutes)m")
+                Text(proposal.priority)
                     .font(.system(size: 11, weight: .heavy, design: .monospaced))
                     .padding(.horizontal, 6)
                     .padding(.vertical, 2)
@@ -320,9 +324,23 @@ struct RichAIMessageBubbleView: View {
 
             Button {
                 HapticManager.shared.success()
-                Task {
-                    await assistantService.confirmProposalDirectly(modelContext: modelContext)
-                }
+                let subtaskItems = proposal.subtasks.map { SubtaskItem(title: $0, isCompleted: false) }
+                let newItem = Item(
+                    title: proposal.title,
+                    notes: proposal.subtitle,
+                    timestamp: proposal.targetDate,
+                    isCompleted: false,
+                    completedAt: nil,
+                    priority: proposal.priority,
+                    category: proposal.category,
+                    isRecurring: false,
+                    recurrenceRule: "Sekali Saja",
+                    customSoundName: nil,
+                    subtasks: subtaskItems,
+                    imageAttachmentData: nil
+                )
+                modelContext.insert(newItem)
+                try? modelContext.save()
             } label: {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
@@ -474,26 +492,24 @@ struct RichAIMessageBubbleView: View {
         var blocks: [AIContentBlock] = []
 
         for line in rawLines {
-            if let match = line.range(of: #"^\d+[\.\)]\s*"#, options: .regularExpression) {
-                let numPrefix = line[match]
-                let numStr = numPrefix.filter { $0.isNumber }
-                let itemNum = Int(numStr) ?? (blocks.count + 1)
-                let itemBody = String(line[match.upperBound...]).trimmingCharacters(in: .whitespaces)
-                blocks.append(.numberedItem(number: itemNum, text: itemBody))
-            } else if line.hasPrefix("• ") || line.hasPrefix("- ") || line.hasPrefix("* ") {
-                let body = String(line.dropFirst(2)).trimmingCharacters(in: .whitespaces)
-                blocks.append(.bulletItem(text: body))
-            } else if line.hasPrefix("### ") || line.hasPrefix("## ") || line.hasPrefix("# ") {
-                let heading = line.replacingOccurrences(of: "^#+\\s*", with: "", options: .regularExpression)
-                blocks.append(.header(heading))
-            } else if line.hasPrefix("**") && line.hasSuffix("**") && line.count < 60 {
-                let cleanHeader = line.replacingOccurrences(of: "**", with: "")
-                blocks.append(.header(cleanHeader))
+            let trimmed = line.trimmingCharacters(in: .whitespaces)
+
+            if trimmed.hasPrefix("### ") || trimmed.hasPrefix("## ") || trimmed.hasPrefix("# ") {
+                let text = trimmed.replacingOccurrences(of: "^#{1,3}\\s*", with: "", options: .regularExpression)
+                blocks.append(.header(text))
+            } else if let match = trimmed.range(of: "^([0-9]+)[.)]\\s+", options: .regularExpression) {
+                let numStr = String(trimmed[match]).trimmingCharacters(in: CharacterSet(charactersIn: "0123456789").inverted)
+                let num = Int(numStr) ?? 1
+                let text = String(trimmed[match.upperBound...])
+                blocks.append(.numberedItem(number: num, text: text))
+            } else if trimmed.hasPrefix("• ") || trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") || trimmed.hasPrefix("🔹 ") || trimmed.hasPrefix("📌 ") {
+                let text = trimmed.replacingOccurrences(of: "^[•\\-*🔹📌]\\s*", with: "", options: .regularExpression)
+                blocks.append(.bulletItem(text: text))
             } else {
-                blocks.append(.paragraph(line))
+                blocks.append(.paragraph(trimmed))
             }
         }
 
-        return blocks.isEmpty ? [.paragraph(rawContent)] : blocks
+        return blocks
     }
 }
