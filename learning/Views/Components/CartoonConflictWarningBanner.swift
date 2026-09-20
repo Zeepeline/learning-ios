@@ -7,19 +7,19 @@
 
 import SwiftUI
 
-// MARK: - ⚠️ Cartoon Conflict Warning Banner
+// MARK: - ⚠️ Cartoon Conflict Warning Banner (Clean & Flat Typography)
 struct CartoonConflictWarningBanner: View {
     let conflict: ScheduleConflict
     var onShiftTime: (Date) -> Void
 
-    dynamic var body: some View {
+    var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 8) {
                 ZStack {
                     Circle()
                         .fill(Color.cartoonCoral)
                         .frame(width: 24, height: 24)
-                        .overlay(Circle().stroke(Color.black, lineWidth: 1.4))
+                        .overlay(Circle().stroke(Color.black, lineWidth: 1.3))
 
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 11, weight: .black))
@@ -34,15 +34,16 @@ struct CartoonConflictWarningBanner: View {
             }
 
             Text(conflict.localizedWarningMessage)
-                .font(.system(size: 11.5, weight: .bold, design: .rounded))
-                .foregroundColor(Color.black.opacity(0.85))
+                .font(.system(size: 12, weight: .semibold, design: .default))
+                .foregroundColor(.black)
+                .lineSpacing(2)
                 .fixedSize(horizontal: false, vertical: true)
 
             // Quick Resolution Action Chips
             HStack(spacing: 6) {
                 Text("Solusi Cepat:")
-                    .font(.system(size: 10, weight: .heavy, design: .rounded))
-                    .foregroundColor(.black.opacity(0.6))
+                    .font(.system(size: 10.5, weight: .heavy, design: .rounded))
+                    .foregroundColor(Color.black.opacity(0.7))
 
                 // +30 Menit
                 Button {
@@ -62,7 +63,6 @@ struct CartoonConflictWarningBanner: View {
                     .background(Color.cartoonYellow)
                     .cornerRadius(6)
                     .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.2))
-                    .shadow(color: .black, radius: 0, x: 1, y: 1)
                 }
                 .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
 
@@ -84,7 +84,6 @@ struct CartoonConflictWarningBanner: View {
                     .background(Color.cartoonMint)
                     .cornerRadius(6)
                     .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.2))
-                    .shadow(color: .black, radius: 0, x: 1, y: 1)
                 }
                 .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
             }
@@ -95,8 +94,7 @@ struct CartoonConflictWarningBanner: View {
         .cornerRadius(CartoonMetrics.cardCornerRadius)
         .overlay(
             RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                .stroke(Color.black, lineWidth: 1.5)
+                .stroke(Color.black, lineWidth: 1.4)
         )
-        .shadow(color: .black, radius: 0, x: 2, y: 2)
     }
 }

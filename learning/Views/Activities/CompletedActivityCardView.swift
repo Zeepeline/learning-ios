@@ -2,60 +2,53 @@
 //  CompletedActivityCardView.swift
 //  learning
 //
-//  Created by macbook on 9/18/26.
+//  Created by macbook on 8/30/26.
 //
 
 import SwiftUI
 import SwiftData
 
 struct CompletedActivityCardView: View {
+    @Environment(\.modelContext) private var modelContext
     let item: Item
     var onToggle: () -> Void
     var onDelete: () -> Void
-    var onTap: (() -> Void)?
 
     @State private var isExpanded: Bool = false
 
     dynamic var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            // MARK: - Baris Utama: Checkbox Selesai + Ikon Kategori + Judul + Hapus
+        VStack(alignment: .leading, spacing: 6) {
+            // MARK: - Baris Utama: Checkbox + Judul Strikethrough + Tanggal Selesai + Tombol
             HStack(alignment: .top, spacing: 10) {
-                // 1. 🔘 Checkbox Selesai (Mint Checkmark)
-                checkboxButton
-                    .padding(.top, 2)
+                // 1. Checkbox Lingkaran Hijau (Bisa di-uncheck)
+                completedCheckbox
 
-                // 2. 🏷️ Ikon Kategori dalam Lingkaran di Samping Kiri Judul
+                // 2. Ikon Kategori
                 categoryIconCircle
-                    .padding(.top, 2)
 
-                // 3. 📝 Judul Tugas & Waktu Selesai
-                VStack(alignment: .leading, spacing: 4) {
+                // 3. Judul & Waktu Selesai (Multiline)
+                VStack(alignment: .leading, spacing: 3) {
                     Text(item.title)
-                        .font(.system(size: 14.5, weight: .heavy, design: .rounded))
-                        .foregroundColor(Color.black)
+                        .font(.system(size: 14.5, weight: .bold, design: .rounded))
+                        .foregroundColor(Color.black.opacity(0.85))
                         .strikethrough(true, color: Color.black.opacity(0.7))
                         .multilineTextAlignment(.leading)
                         .fixedSize(horizontal: false, vertical: true)
 
-                    // Metadata Selesai
-                    if let completedAt = item.completedAt {
-                        HStack(spacing: 3) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .font(.system(size: 9, weight: .bold))
-                            Text(completedAt, format: Date.FormatStyle(date: .omitted, time: .shortened))
-                                .font(.system(size: 10, weight: .heavy, design: .rounded))
-                        }
-                        .foregroundColor(Color.black.opacity(0.85))
-                        .padding(.top, 1)
+                    // Waktu Selesai & Tanggal
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundColor(Color.cartoonMint)
+
+                        Text("Selesai: \(formattedCompletionDate(item.completedAt ?? item.timestamp))")
+                            .font(.system(size: 10.5, weight: .semibold, design: .rounded))
+                            .foregroundColor(Color.black.opacity(0.6))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    onTap?()
-                }
 
-                // 4. 🛠️ Tombol Aksi (Expand & Delete)
+                // 4. Tombol Aksi (Expand jika ada detail, & Delete)
                 HStack(spacing: 6) {
                     if !item.subtasks.isEmpty || !item.notes.isEmpty {
                         expandButton
@@ -65,28 +58,29 @@ struct CompletedActivityCardView: View {
                 .padding(.top, 2)
             }
 
-            // MARK: - Subtasks / Catatan Tambahan (Jika Di-expand)
+            // MARK: - Detail Tambahan (Jika Di-expand)
             if isExpanded {
                 expandedDetailsView
             }
         }
         .padding(.horizontal, HIGSpacing.md)
-        .padding(.vertical, HIGSpacing.sm)
+        .padding(.vertical, HIGSpacing.xs)
         .background(
             RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                .fill(Color(red: 0.94, green: 0.96, blue: 0.95))
+                .fill(Color(red: 0.94, green: 0.94, blue: 0.94))
                 .shadow(color: .black, radius: 0, x: 1, y: 1)
         )
         .overlay(
             RoundedRectangle(cornerRadius: CartoonMetrics.cardCornerRadius)
-                .stroke(Color.black, lineWidth: CartoonMetrics.borderWidth)
+                .stroke(Color.black, lineWidth: 1.2)
         )
     }
 
-    // MARK: - 🔘 Checkbox Button
-    private var checkboxButton: some View {
+    // MARK: - Checkbox Lingkaran Mint Selesai
+    private var completedCheckbox: some View {
         Button {
-            withAnimation(.spring(response: 0.28, dampingFraction: 0.65)) {
+            HapticManager.shared.impact(style: .medium)
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                 SoundManager.shared.playPop()
                 onToggle()
             }
@@ -108,7 +102,7 @@ struct CompletedActivityCardView: View {
         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
     }
 
-    // MARK: - 🏷️ Lingkaran Ikon Kategori
+    // MARK: - Lingkaran Ikon Kategori
     private var categoryIconCircle: some View {
         let icon = categoryIcon(for: item.category)
         return ZStack {
@@ -123,7 +117,7 @@ struct CompletedActivityCardView: View {
         }
     }
 
-    // MARK: - 🔽 Expand Button
+    // MARK: - Expand Button (Cartoonish Circle Badge)
     private var expandButton: some View {
         Button {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
@@ -131,27 +125,47 @@ struct CompletedActivityCardView: View {
                 HapticManager.shared.selection()
             }
         } label: {
-            Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.black)
+            ZStack {
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 26, height: 26)
+                    .overlay(Circle().stroke(Color.black, lineWidth: 1.3))
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
+
+                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 11, weight: .black))
+                    .foregroundColor(.black)
+            }
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.5))
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
     }
 
-    // MARK: - 🗑️ Delete Button
+    // MARK: - Delete Button (Cartoonish Coral Badge with Heavy Trash Icon)
     private var deleteButton: some View {
         Button {
             HapticManager.shared.warning()
             onDelete()
         } label: {
-            Image(systemName: "trash.circle.fill")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.red)
+            ZStack {
+                Circle()
+                    .fill(Color.cartoonCoral)
+                    .frame(width: 26, height: 26)
+                    .overlay(Circle().stroke(Color.black, lineWidth: 1.3))
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
+
+                Image(systemName: "trash.fill")
+                    .font(.system(size: 11.5, weight: .black))
+                    .foregroundColor(.black)
+            }
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.5))
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
     }
 
-    // MARK: - 📋 Subtasks & Catatan Tambahan (Expanded State)
+    // MARK: - Subtasks & Catatan Tambahan (Expanded State)
     private var expandedDetailsView: some View {
         VStack(alignment: .leading, spacing: 6) {
             Divider()
@@ -178,33 +192,41 @@ struct CompletedActivityCardView: View {
                                 .font(.system(size: 12, weight: .bold, design: .rounded))
                                 .foregroundColor(Color.black)
                                 .strikethrough(subtask.isCompleted, color: Color.black.opacity(0.7))
+
+                            Spacer()
                         }
                     }
                 }
                 .padding(6)
                 .background(Color.white)
                 .cornerRadius(6)
-                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 1.0))
+                .overlay(RoundedRectangle(cornerRadius: 6).stroke(Color.black, lineWidth: 0.8))
             }
         }
     }
 
-    private func categoryIcon(for category: String) -> String {
-        let lower = category.lowercased()
-        if lower.contains("belajar") || lower.contains("study") || lower.contains("learning") {
-            return "book.closed.fill"
-        } else if lower.contains("kerja") || lower.contains("work") || lower.contains("kantor") {
-            return "briefcase.fill"
-        } else if lower.contains("coding") || lower.contains("dev") || lower.contains("program") {
-            return "chevron.left.forwardslash.chevron.right"
-        } else if lower.contains("olahraga") || lower.contains("gym") || lower.contains("sehat") {
-            return "figure.run"
-        } else if lower.contains("pribadi") || lower.contains("personal") {
-            return "person.fill"
-        } else if lower.contains("keuangan") || lower.contains("finance") {
-            return "banknote.fill"
+    // MARK: - Formatter Tanggal Selesai
+    private func formattedCompletionDate(_ date: Date) -> String {
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return "Hari ini, \(date.formatted(date: .omitted, time: .shortened))"
+        } else if calendar.isDateInYesterday(date) {
+            return "Kemarin, \(date.formatted(date: .omitted, time: .shortened))"
         } else {
-            return "star.fill"
+            return date.formatted(date: .abbreviated, time: .shortened)
+        }
+    }
+
+    // MARK: - Helper Ikon Kategori
+    private func categoryIcon(for category: String) -> String {
+        switch category {
+        case "Belajar": return "book.fill"
+        case "Kerja": return "briefcase.fill"
+        case "Olahraga": return "figure.run"
+        case "Kesehatan": return "heart.fill"
+        case "Ibadah": return "moon.stars.fill"
+        case "Keuangan": return "dollarsign.circle.fill"
+        default: return "checkmark.circle.fill"
         }
     }
 }

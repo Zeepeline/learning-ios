@@ -157,11 +157,8 @@ struct ContentView: View {
                 )
             }
         }
-        .sheet(isPresented: $isShowingAIAssistant) {
+        .fullScreenCover(isPresented: $isShowingAIAssistant) {
             AIAssistantSheetView()
-                .presentationDetents([.fraction(0.85), .large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(24)
         }
         .sheet(isPresented: $quickActionManager.isShowingAddActivity) {
             AddActivity()

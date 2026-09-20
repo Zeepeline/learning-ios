@@ -22,11 +22,11 @@ struct ActivityCardView: View {
         VStack(alignment: .leading, spacing: 8) {
             // MARK: - Baris Utama: Ikon Kategori Bulat + Judul Multiline + Aksi
             HStack(alignment: .top, spacing: 12) {
-                // 1. 🏷️ Ikon Kategori dalam Lingkaran di Samping Kiri Judul (1-Tap Checkbox)
+                // 1. Ikon Kategori dalam Lingkaran di Samping Kiri Judul (1-Tap Checkbox)
                 categoryIconCircle
                     .padding(.top, 2)
 
-                // 2. 📝 Judul Tugas & Metadata Bawah (Multiline Rapi)
+                // 2. Judul Tugas & Metadata Bawah (Multiline Rapi)
                 VStack(alignment: .leading, spacing: 5) {
                     Text(item.title)
                         .font(.system(size: 15, weight: .heavy, design: .rounded))
@@ -54,7 +54,7 @@ struct ActivityCardView: View {
                     onTap?()
                 }
 
-                // 3. 🛠️ Tombol Aksi (Expand & Delete)
+                // 3. Tombol Aksi (Expand & Delete)
                 HStack(spacing: 6) {
                     if !item.subtasks.isEmpty || item.imageAttachmentData != nil {
                         expandButton
@@ -85,7 +85,7 @@ struct ActivityCardView: View {
         }
     }
 
-    // MARK: - 🏷️ Lingkaran Ikon Kategori & Checkbox 1-Tap
+    // MARK: - Lingkaran Ikon Kategori & Checkbox 1-Tap
     private var categoryIconCircle: some View {
         let (icon, color) = categoryIconAndColor(for: item.category)
         return Button {
@@ -114,7 +114,7 @@ struct ActivityCardView: View {
         .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
     }
 
-    // MARK: - 🏷️ Metadata Bawah (Waktu, Subtask, Lampiran, Recurring)
+    // MARK: - Metadata Bawah (Waktu, Subtask, Lampiran, Recurring)
     private var bottomMetadataRow: some View {
         HStack(spacing: 6) {
             // Waktu / Jam
@@ -179,7 +179,7 @@ struct ActivityCardView: View {
         }
     }
 
-    // MARK: - 🔽 Expand Button
+    // MARK: - Expand Button (Cartoonish Circle Badge)
     private var expandButton: some View {
         Button {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
@@ -187,27 +187,47 @@ struct ActivityCardView: View {
                 HapticManager.shared.selection()
             }
         } label: {
-            Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.black)
+            ZStack {
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: 26, height: 26)
+                    .overlay(Circle().stroke(Color.black, lineWidth: 1.3))
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
+
+                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    .font(.system(size: 11, weight: .black))
+                    .foregroundColor(.black)
+            }
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.5))
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
     }
 
-    // MARK: - 🗑️ Delete Button
+    // MARK: - Cartoon Delete Button (Vibrant Coral Badge with Heavy Trash Icon)
     private var deleteButton: some View {
         Button {
             HapticManager.shared.warning()
             onDelete()
         } label: {
-            Image(systemName: "trash.circle.fill")
-                .font(.system(size: 20, weight: .bold))
-                .foregroundColor(.red)
+            ZStack {
+                Circle()
+                    .fill(Color.cartoonCoral)
+                    .frame(width: 26, height: 26)
+                    .overlay(Circle().stroke(Color.black, lineWidth: 1.3))
+                    .shadow(color: .black, radius: 0, x: 1, y: 1)
+
+                Image(systemName: "trash.fill")
+                    .font(.system(size: 11.5, weight: .black))
+                    .foregroundColor(.black)
+            }
+            .frame(width: 28, height: 28)
+            .contentShape(Rectangle())
         }
-        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.5))
+        .buttonStyle(CartoonPressButtonStyle(pressOffset: 0.8))
     }
 
-    // MARK: - 📋 Subtasks & Foto Details (Expanded State)
+    // MARK: - Subtasks & Foto Details (Expanded State)
     private var expandedDetailsView: some View {
         VStack(alignment: .leading, spacing: 8) {
             Divider()
@@ -275,7 +295,7 @@ struct ActivityCardView: View {
         }
     }
 
-    // MARK: - 🖼️ Fullscreen Image Sheet
+    // MARK: - Fullscreen Image Sheet
     private var fullscreenImageSheet: some View {
         NavigationStack {
             ZStack {
@@ -287,50 +307,56 @@ struct ActivityCardView: View {
                         .padding()
                 }
             }
+            .navigationTitle("Lampiran Foto")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button("Tutup") {
                         isShowingFullImage = false
                     }
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
+                    .bold()
                     .foregroundColor(.white)
                 }
             }
         }
     }
 
-    // MARK: - ⚙️ Helper Methods
     private func toggleSubtask(at index: Int) {
+        guard index < item.subtasks.count else { return }
         HapticManager.shared.selection()
         item.subtasks[index].isCompleted.toggle()
         try? modelContext.save()
     }
 
+    // MARK: - Priority Card Background Color
     private func cardBgColor(for priority: String) -> Color {
         switch priority {
-        case "Tinggi": return Color.cartoonPink
-        case "Sedang": return Color.cartoonYellow
-        case "Rendah": return Color.cartoonMint
-        default: return Color.white
+        case "Tinggi":
+            return Color.cartoonYellow
+        case "Sedang":
+            return Color.cartoonMint
+        default:
+            return Color.white
         }
     }
 
+    // MARK: - Helper Category Icon & Color
     private func categoryIconAndColor(for category: String) -> (String, Color) {
-        let lower = category.lowercased()
-        if lower.contains("belajar") || lower.contains("study") || lower.contains("learning") {
-            return ("book.closed.fill", .cartoonYellow)
-        } else if lower.contains("kerja") || lower.contains("work") || lower.contains("kantor") {
-            return ("briefcase.fill", .cartoonBlue)
-        } else if lower.contains("coding") || lower.contains("dev") || lower.contains("program") {
-            return ("chevron.left.forwardslash.chevron.right", .cartoonMint)
-        } else if lower.contains("olahraga") || lower.contains("gym") || lower.contains("sehat") {
-            return ("figure.run", .cartoonMint)
-        } else if lower.contains("pribadi") || lower.contains("personal") {
-            return ("person.fill", .cartoonPink)
-        } else if lower.contains("keuangan") || lower.contains("finance") {
-            return ("banknote.fill", .cartoonYellow)
-        } else {
-            return ("star.fill", .cartoonYellow)
+        switch category {
+        case "Belajar":
+            return ("book.fill", Color.cartoonYellow)
+        case "Kerja":
+            return ("briefcase.fill", Color.cartoonBlue)
+        case "Olahraga":
+            return ("figure.run", Color.cartoonMint)
+        case "Kesehatan":
+            return ("heart.fill", Color.cartoonPink)
+        case "Ibadah":
+            return ("moon.stars.fill", Color.cartoonLavender)
+        case "Keuangan":
+            return ("dollarsign.circle.fill", Color.cartoonMint)
+        default:
+            return ("checkmark.circle.fill", Color.cartoonLavender)
         }
     }
 }
