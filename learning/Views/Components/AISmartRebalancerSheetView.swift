@@ -16,6 +16,7 @@ struct AISmartRebalancerSheetView: View {
     @State private var proposals: [RebalanceProposalItem] = []
     @State private var isApplying: Bool = false
     @State private var showSuccessCelebration: Bool = false
+    @State private var pulseWand: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -43,6 +44,9 @@ struct AISmartRebalancerSheetView: View {
             }
             .onAppear {
                 loadProposals()
+                withAnimation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true)) {
+                    pulseWand = true
+                }
             }
         }
     }
@@ -114,6 +118,7 @@ struct AISmartRebalancerSheetView: View {
                     .disabled(!hasSelection || isApplying)
 
                     Button {
+                        HapticManager.shared.impact(style: .light)
                         dismiss()
                     } label: {
                         Text("Batal & Biarkan Jadwal Asli")
@@ -142,6 +147,7 @@ struct AISmartRebalancerSheetView: View {
                 Image(systemName: "wand.and.stars")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(.black)
+                    .scaleEffect(pulseWand ? 1.12 : 0.95)
             }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -173,6 +179,7 @@ struct AISmartRebalancerSheetView: View {
             // Checkbox
             Button {
                 HapticManager.shared.selection()
+                SoundManager.shared.playPop()
                 withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
                     proposal.wrappedValue.isIncluded.toggle()
                 }
@@ -243,6 +250,8 @@ struct AISmartRebalancerSheetView: View {
         )
         .shadow(color: .black, radius: 0, x: prop.isIncluded ? 2 : 1, y: prop.isIncluded ? 2 : 1)
         .opacity(prop.isIncluded ? 1.0 : 0.65)
+        .scaleEffect(prop.isIncluded ? 1.0 : 0.98)
+        .animation(.spring(response: 0.25, dampingFraction: 0.75), value: prop.isIncluded)
     }
 
     // MARK: - Empty State View
@@ -273,6 +282,7 @@ struct AISmartRebalancerSheetView: View {
             }
 
             Button {
+                HapticManager.shared.selection()
                 dismiss()
             } label: {
                 Text("Tutup")
@@ -319,6 +329,7 @@ struct AISmartRebalancerSheetView: View {
             }
 
             Button {
+                HapticManager.shared.impact(style: .medium)
                 dismiss()
             } label: {
                 Text("Kembali ke Beranda")
@@ -344,10 +355,13 @@ struct AISmartRebalancerSheetView: View {
 
     private func applyScheduleChanges() {
         isApplying = true
+        HapticManager.shared.impact(style: .medium)
         Task {
             await AIScheduleRebalancerService.shared.applyRebalance(proposals: proposals, in: modelContext)
             await MainActor.run {
                 isApplying = false
+                HapticManager.shared.success()
+                SoundManager.shared.playSuccessChime()
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
                     showSuccessCelebration = true
                 }
