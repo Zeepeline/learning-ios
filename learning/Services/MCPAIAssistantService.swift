@@ -124,7 +124,8 @@ final class MCPAIAssistantService: ObservableObject {
         ninerouterBaseUrl: String = "https://api.ninerouter.com/v1",
         ninerouterModel: String = "deepseek/deepseek-chat"
     ) async {
-        let trimmed = userText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalized = VoiceInputManager.normalizeSpokenText(userText)
+        let trimmed = normalized.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         let userMsg = MCPAIChatMessage(role: .user, content: trimmed)

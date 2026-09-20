@@ -11,7 +11,7 @@ import AVFoundation
 import SwiftUI
 import Combine
 
-// MARK: - 🎙️ Voice Input & Speech Recognition Manager (Voice-to-Task Dictation)
+// MARK: - 🎙️ Voice Input & Speech Recognition Manager (Voice-to-Task Dictation with Smart Phonetic Normalizer)
 @MainActor
 final class VoiceInputManager: ObservableObject {
     static let shared = VoiceInputManager()
@@ -25,6 +25,15 @@ final class VoiceInputManager: ObservableObject {
     private var recognitionRequest: SFSpeechAudioBufferRecognitionRequest?
     private var recognitionTask: SFSpeechRecognitionTask?
     private let audioEngine = AVAudioEngine()
+
+    // Domain Keywords for Speech Recognition Bias
+    private let contextualAppKeywords = [
+        "Pomodoro", "SwiftData", "SwiftUI", "Coding", "Habit",
+        "Screen Time", "Subtask", "Belajar", "Prioritas", "Notifikasi",
+        "Kalender", "Olahraga", "Tugas", "To-Do", "Catat", "Jadwal",
+        "Selesai", "Checklist", "Fokus", "Tinggi", "Sedang", "Rendah",
+        "Meeting", "Workout", "Gym", "Langkah", "Kalori", "Shield"
+    ]
 
     private init() {
         // Coba gunakan Bahasa Indonesia terlebih dahulu, fallback ke sistem lokal jika tidak tersedia
@@ -68,7 +77,7 @@ final class VoiceInputManager: ObservableObject {
         return true
     }
 
-    /// Mulai Merekam dan Menerjemahkan Suara Pengguna secara Real-Time
+    /// Mulai Merekam dan Menerjemahkan Suara Pengguna secara Real-Time dengan Context Bias
     func startRecording(onTranscription: @escaping (String) -> Void) async {
         guard !isRecording else { return }
 
@@ -96,6 +105,7 @@ final class VoiceInputManager: ObservableObject {
         }
 
         recognitionRequest.shouldReportPartialResults = true
+        recognitionRequest.contextualStrings = contextualAppKeywords
         if #available(iOS 16.0, *) {
             recognitionRequest.addsPunctuation = true
         }
@@ -138,10 +148,11 @@ final class VoiceInputManager: ObservableObject {
             guard let self = self else { return }
 
             if let result = result {
-                let text = result.bestTranscription.formattedString
+                let rawText = result.bestTranscription.formattedString
+                let normalized = Self.normalizeSpokenText(rawText)
                 Task { @MainActor in
-                    self.transcribedText = text
-                    onTranscription(text)
+                    self.transcribedText = normalized
+                    onTranscription(normalized)
                 }
             }
 
@@ -180,5 +191,45 @@ final class VoiceInputManager: ObservableObject {
         } else {
             await startRecording(onTranscription: onTranscription)
         }
+    }
+
+    // MARK: - 🧠 Smart Phonetic & Indonesian Speech Normalizer (Instan ~0.001s)
+    static func normalizeSpokenText(_ raw: String) -> String {
+        guard !raw.isEmpty else { return raw }
+        var text = raw
+
+        // Kamus Perbaikan Fonetik & Salah Dengar Suara Umum (Indo-English Mixed)
+        let phoneticRules: [(pattern: String, replacement: String)] = [
+            // Typo Kata Tugas / Task
+            ("(?i)\\b(tas|tes|taks|teks)\\s+(koding|coding|belajar|swift|kerja)", "tugas $2"),
+            ("(?i)\\b(bikin|buat|tambah|tambahkan|catat)\\s+(tas|taks|tek)\\b", "$1 tugas"),
+            ("(?i)\\b(to\\s*do|tu\\s*du|tudu)\\b", "to-do"),
+
+            // Typo Nama Teknologi & Istilah
+            ("(?i)\\b(suif|suift|swif)\\s*(data|ui)?\\b", "Swift$2"),
+            ("(?i)\\b(koding|ngoding)\\b", "coding"),
+            ("(?i)\\b(pomo|pomodori|pemodoro|pomodro)\\b", "Pomodoro"),
+            ("(?i)\\b(hebit|hebit\\s*tracker)\\b", "Habit"),
+            ("(?i)\\b(skrin\\s*tem|skrip\\s*time|screen\\s*tem)\\b", "Screen Time"),
+            ("(?i)\\b(miting|rapat\\s*online)\\b", "meeting"),
+            ("(?i)\\b(olga|gym\\s*session)\\b", "olahraga"),
+            ("(?i)\\b(notip|notipikasi)\\b", "notifikasi"),
+            ("(?i)\\b(ceklis|cek\\s*list|centang)\\b", "ceklis"),
+            ("(?i)\\b(sub\\s*tas|sub\\s*taks|sabtes)\\b", "subtasks"),
+            ("(?i)\\b(urgent|urgen|mendesak)\\b", "prioritas tinggi"),
+            ("(?i)\\b(fokus\\s*duapuluh\\s*lima)\\b", "fokus 25 menit"),
+            ("(?i)\\b(fokus\\s*limapuluh)\\b", "fokus 50 menit")
+        ]
+
+        for rule in phoneticRules {
+            if let regex = try? NSRegularExpression(pattern: rule.pattern, options: []) {
+                let range = NSRange(location: 0, length: text.utf16.count)
+                text = regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: rule.replacement)
+            }
+        }
+
+        // Rapikan spasi berlebih
+        text = text.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
