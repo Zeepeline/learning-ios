@@ -7,321 +7,126 @@
 
 import SwiftUI
 import WebKit
-import SwiftData
 
-// MARK: - 🌐 Gemini.com Web & MCP Two-Way Bridge View
 struct GeminiWebMCPView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
-    @StateObject private var assistantService = MCPAIAssistantService.shared
+    @StateObject private var headlessEngine = GeminiHeadlessEngine.shared
 
-    @State private var webView = WKWebView()
-    @State private var lastExtractedText: String = ""
-    @State private var showActionSuccessToast: Bool = false
-    @State private var successToastMessage: String = ""
-    @State private var isLoadingWeb: Bool = true
+    @State private var webURLString: String = "https://gemini.google.com/app"
+    @State private var canGoBack: Bool = false
+    @State private var canGoForward: Bool = false
+    @State private var isLoading: Bool = true
+    @State private var pageTitle: String = "Google Gemini"
+    @State private var reloadTrigger: Bool = false
 
-    dynamic var body: some View {
+    var body: some View {
         NavigationStack {
             ZStack {
                 Color.cartoonBg
                     .ignoresSafeArea()
 
                 VStack(spacing: 0) {
-                    // MARK: - 🛠️ Top MCP Quick Action Bar
-                    mcpActionBar
+                    // Status Banner
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(headlessEngine.isLoggedIn ? Color.cartoonMint : Color.cartoonYellow)
+                            .frame(width: 10, height: 10)
+                            .overlay(Circle().stroke(Color.black, lineWidth: 1.0))
 
-                    // MARK: - 🌐 Gemini Webview Container
-                    ZStack {
-                        GeminiWKWebViewRepresentable(webView: $webView, isLoading: $isLoadingWeb)
-                            .cornerRadius(12)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.5))
-                            .padding(.horizontal, HIGSpacing.xs)
-                            .padding(.bottom, HIGSpacing.xs)
+                        Text(headlessEngine.isLoggedIn ? "Sesi Gemini Terhubung (Mode Gratis Aktif)" : "Silakan Login Akun Google Anda")
+                            .font(.system(size: 11.5, weight: .heavy, design: .rounded))
+                            .foregroundColor(.black)
 
-                        if isLoadingWeb {
-                            VStack(spacing: 8) {
-                                ProgressView()
-                                    .scaleEffect(1.2)
-                                Text("Menghubungkan ke gemini.google.com...")
-                                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding(16)
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Color.black, lineWidth: 1.2))
-                            .shadow(color: .black, radius: 0, x: 2, y: 2)
-                        }
-                    }
-                }
-
-                // MARK: - 🎉 Floating Success Toast
-                if showActionSuccessToast {
-                    VStack {
                         Spacer()
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.cartoonMint)
-                            Text(successToastMessage)
-                                .font(.system(size: 13, weight: .heavy, design: .rounded))
+
+                        Button {
+                            HapticManager.shared.impact(style: .light)
+                            reloadTrigger.toggle()
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 12, weight: .bold))
                                 .foregroundColor(.black)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
-                        .background(Color.white)
-                        .cornerRadius(16)
-                        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.black, lineWidth: 2))
-                        .shadow(color: .black, radius: 0, x: 3, y: 3)
-                        .padding(.bottom, 24)
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
+                    .padding(.horizontal, HIGSpacing.md)
+                    .padding(.vertical, 8)
+                    .background(Color.white)
+                    .overlay(Rectangle().frame(height: 1.2).foregroundColor(.black), alignment: .bottom)
+
+                    // WebView Container
+                    GeminiWKWebViewRepresentable(
+                        urlString: webURLString,
+                        canGoBack: $canGoBack,
+                        canGoForward: $canGoForward,
+                        isLoading: $isLoading,
+                        pageTitle: $pageTitle,
+                        reloadTrigger: $reloadTrigger
+                    )
                 }
             }
-            .navigationTitle("Gemini.com + MCP Bridge")
+            .navigationTitle("Login Akun Google Gemini")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button {
-                        HapticManager.shared.impact(style: .light)
+                    CartoonIconButton(icon: "xmark") {
                         dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 13, weight: .black))
-                            .foregroundColor(.black)
-                            .frame(width: 32, height: 32)
-                            .background(Color.white)
-                            .cornerRadius(8)
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
-                            .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
                     }
-                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        webView.reload()
+                        HapticManager.shared.success()
+                        Task {
+                            _ = await headlessEngine.checkLoginStatus()
+                            dismiss()
+                        }
                     } label: {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 13, weight: .bold))
+                        Text("Selesai")
+                            .font(.system(size: 13, weight: .heavy, design: .rounded))
                             .foregroundColor(.black)
-                            .frame(width: 32, height: 32)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
                             .background(Color.cartoonYellow)
                             .cornerRadius(8)
-                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.5))
-                            .shadow(color: .black, radius: 0, x: 1.5, y: 1.5)
+                            .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
                     }
-                    .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
                 }
-            }
-        }
-    }
-
-    // MARK: - 🛠️ MCP Action Bar (Integrasi Aksi Nyata)
-    private var mcpActionBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                // 1. Kirim Konteks Tugas Saat Ini ke Kolom Chat Gemini.com
-                Button {
-                    injectTodayContextIntoGeminiChat()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "arrow.up.doc.fill")
-                            .font(.system(size: 11, weight: .bold))
-                        Text("Kirim Data Jadwal ke Gemini")
-                            .font(.system(size: 11.5, weight: .heavy, design: .rounded))
-                    }
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(Color.cartoonBlue)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-                    .shadow(color: .black, radius: 0, x: 1, y: 1)
-                }
-                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-
-                // 2. Eksekusi Jawaban Gemini Jadi Tugas MCP
-                Button {
-                    extractAndExecuteTaskFromGemini()
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "sparkles.rectangle.stack.fill")
-                            .font(.system(size: 11, weight: .bold))
-                        Text("⚡ Jadwalkan Hasil Gemini (MCP)")
-                            .font(.system(size: 11.5, weight: .heavy, design: .rounded))
-                    }
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(Color.cartoonMint)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-                    .shadow(color: .black, radius: 0, x: 1, y: 1)
-                }
-                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-
-                // 3. Mulai Pomodoro Langsung
-                Button {
-                    PomodoroManager.shared.selectPreset(.quickFocus)
-                    PomodoroManager.shared.startTimer()
-                    showToast("⏱️ Sesi Pomodoro 25m Dimulai!")
-                } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "timer")
-                            .font(.system(size: 11, weight: .bold))
-                        Text("Mulai Fokus 25m")
-                            .font(.system(size: 11.5, weight: .heavy, design: .rounded))
-                    }
-                    .foregroundColor(.black)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 7)
-                    .background(Color.cartoonCoral)
-                    .cornerRadius(8)
-                    .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.black, lineWidth: 1.2))
-                    .shadow(color: .black, radius: 0, x: 1, y: 1)
-                }
-                .buttonStyle(CartoonPressButtonStyle(pressOffset: 1.0))
-            }
-            .padding(.horizontal, HIGSpacing.md)
-            .padding(.vertical, 8)
-        }
-        .background(Color.white)
-        .overlay(Rectangle().frame(height: 1).foregroundColor(Color.black.opacity(0.1)), alignment: .bottom)
-    }
-
-    // MARK: - 🧠 Two-Way Bridge Logic
-
-    /// Menyalin ringkasan aktivitas app & memasukkannya langsung ke kotak ketik Gemini.com
-    private func injectTodayContextIntoGeminiChat() {
-        let descriptor = FetchDescriptor<Item>()
-        let items = (try? modelContext.fetch(descriptor)) ?? []
-        let pending = items.filter { !$0.isCompleted }
-
-        var prompt = "Halo Gemini! Ini konteks aktivitasku hari ini dari aplikasi:\\n"
-        if pending.isEmpty {
-            prompt += "- Belum ada tugas terjadwal.\\n"
-        } else {
-            for (i, it) in pending.prefix(5).enumerated() {
-                prompt += "\(i+1). [\(it.category)] \(it.title)\\n"
-            }
-        }
-        prompt += "\\nTolong berikan saran rencana produktivitas & subtasks yang perlu aku kerjakan!"
-
-        let jsCode = """
-        (function() {
-            var textareas = document.querySelectorAll('textarea, div[contenteditable="true"], rich-textarea');
-            if (textareas.length > 0) {
-                var el = textareas[textareas.length - 1];
-                if (el.tagName.toLowerCase() === 'textarea') {
-                    el.value = "\(prompt)";
-                    el.dispatchEvent(new Event('input', { bubbles: true }));
-                } else {
-                    el.innerText = "\(prompt)";
-                    el.dispatchEvent(new Event('input', { bubbles: true }));
-                }
-                return "injected";
-            }
-            return "not_found";
-        })();
-        """
-
-        webView.evaluateJavaScript(jsCode) { result, error in
-            UIPasteboard.general.string = prompt.replacingOccurrences(of: "\\n", with: "\n")
-            showToast("📋 Data jadwal siap ditempel di chat Gemini!")
-            HapticManager.shared.success()
-        }
-    }
-
-    /// Membaca jawaban respons terakhir dari Gemini.com dan otomatis menjadikannya Item SwiftData
-    private func extractAndExecuteTaskFromGemini() {
-        let extractJS = """
-        (function() {
-            var responses = document.querySelectorAll('.model-response-text, message-content, [data-test-id="model-response"]');
-            if (responses.length > 0) {
-                return responses[responses.length - 1].innerText;
-            }
-            return window.getSelection().toString() || document.body.innerText.substring(0, 500);
-        })();
-        """
-
-        webView.evaluateJavaScript(extractJS) { result, error in
-            let text = (result as? String) ?? ""
-            guard !text.isEmpty else {
-                showToast("⚠️ Belum ada respon yang terbaca dari Gemini")
-                return
-            }
-
-            // Parsing baris teks untuk dijadikan subtasks & judul
-            let lines = text.components(separatedBy: .newlines)
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty && ($0.hasPrefix("1.") || $0.hasPrefix("2.") || $0.hasPrefix("3.") || $0.hasPrefix("4.") || $0.hasPrefix("-") || $0.hasPrefix("•") || $0.hasPrefix("*")) }
-
-            let title = lines.first?.replacingOccurrences(of: "^[0-9]+[.\\s-]+", with: "", options: .regularExpression) ?? "Rencana dari Gemini.com"
-            let subtaskItems = lines.prefix(4).map { line in
-                let clean = line.replacingOccurrences(of: "^[0-9]+[.\\s-*•]+", with: "", options: .regularExpression)
-                return SubtaskItem(title: clean, isCompleted: false)
-            }
-
-            let newItem = Item(
-                title: title.isEmpty ? "Rencana Kerja Gemini" : title,
-                notes: "Diekstrak otomatis dari percakapan gemini.google.com via MCP Bridge",
-                timestamp: Date(),
-                isCompleted: false,
-                priority: "Tinggi",
-                category: "Pekerjaan",
-                subtasks: subtaskItems.isEmpty ? [SubtaskItem(title: "Langkah persiapan", isCompleted: false)] : Array(subtaskItems)
-            )
-
-            modelContext.insert(newItem)
-            try? modelContext.save()
-
-            HapticManager.shared.success()
-            SoundManager.shared.playSuccessChime()
-            showToast("✅ Berhasil dijadwalkan ke To-Do List!")
-        }
-    }
-
-    private func showToast(_ msg: String) {
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-            successToastMessage = msg
-            showActionSuccessToast = true
-        }
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-            withAnimation {
-                showActionSuccessToast = false
             }
         }
     }
 }
 
-// MARK: - 📱 WKWebView Representable dengan Sesi Google
+// MARK: - 🌐 Interactive WKWebView Representable
 struct GeminiWKWebViewRepresentable: UIViewRepresentable {
-    @Binding var webView: WKWebView
+    let urlString: String
+    @Binding var canGoBack: Bool
+    @Binding var canGoForward: Bool
     @Binding var isLoading: Bool
+    @Binding var pageTitle: String
+    @Binding var reloadTrigger: Bool
 
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
-        config.websiteDataStore = WKWebsiteDataStore.default() // Berbagi cookies/sesi Google
+        config.websiteDataStore = WKWebsiteDataStore.default() // Berbagi session cookies
         config.allowsInlineMediaPlayback = true
 
-        let wv = WKWebView(frame: .zero, configuration: config)
-        wv.navigationDelegate = context.coordinator
-        wv.allowsBackForwardNavigationGestures = true
+        let webView = WKWebView(frame: .zero, configuration: config)
+        webView.customUserAgent = "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1"
+        webView.navigationDelegate = context.coordinator
 
-        if let url = URL(string: "https://gemini.google.com") {
-            let request = URLRequest(url: url)
-            wv.load(request)
+        if let url = URL(string: urlString) {
+            webView.load(URLRequest(url: url))
         }
 
-        DispatchQueue.main.async {
-            self.webView = wv
-        }
-        return wv
+        return webView
     }
 
-    func updateUIView(_ uiView: WKWebView, context: Context) {}
+    func updateUIView(_ uiView: WKWebView, context: Context) {
+        if reloadTrigger != context.coordinator.lastReloadTrigger {
+            context.coordinator.lastReloadTrigger = reloadTrigger
+            uiView.reload()
+        }
+    }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -329,24 +134,26 @@ struct GeminiWKWebViewRepresentable: UIViewRepresentable {
 
     class Coordinator: NSObject, WKNavigationDelegate {
         var parent: GeminiWKWebViewRepresentable
+        var lastReloadTrigger: Bool = false
 
         init(_ parent: GeminiWKWebViewRepresentable) {
             self.parent = parent
+            self.lastReloadTrigger = parent.reloadTrigger
         }
 
-        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
+        func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation?) {
             DispatchQueue.main.async {
                 self.parent.isLoading = true
             }
         }
 
-        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        func webView(_ webView: WKWebView, didFinish navigation: WKNavigation?) {
             DispatchQueue.main.async {
                 self.parent.isLoading = false
             }
         }
 
-        func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        func webView(_ webView: WKWebView, didFail navigation: WKNavigation?, withError error: Error) {
             DispatchQueue.main.async {
                 self.parent.isLoading = false
             }

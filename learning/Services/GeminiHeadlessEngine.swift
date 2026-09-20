@@ -193,14 +193,14 @@ final class GeminiHeadlessEngine: NSObject, ObservableObject {
 
 // MARK: - 🌐 WKNavigationDelegate
 extension GeminiHeadlessEngine: WKNavigationDelegate {
-    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation?) {
         Task {
             _ = await checkLoginStatus()
             self.isReady = true
         }
     }
 
-    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation?, withError error: Error) {
         self.lastError = error.localizedDescription
     }
 }
